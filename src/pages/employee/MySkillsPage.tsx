@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Header } from "@/components/Header";
 import { CompetencyBar } from "@/components/CompetencyBar";
 import { SubSkillModal } from "@/components/SubSkillModal";
@@ -6,6 +6,8 @@ import { GlassCard, GlassCardContent, GlassCardHeader, GlassCardTitle } from "@/
 import { ScrollReveal } from "@/components/ScrollReveal";
 import { AnimatedCounter } from "@/components/AnimatedCounter";
 import { ParallaxBackground } from "@/components/ParallaxBackground";
+import { SkillImpactChart, generateSkillProgressData } from "@/components/SkillImpactChart";
+import { StrengthsWeaknessesRadar } from "@/components/StrengthsWeaknessesRadar";
 import {
   employees,
   DEFAULT_EMPLOYEE_ID,
@@ -15,7 +17,6 @@ import {
 } from "@/data/mockData";
 import { getCompetencyById, generateSubSkillRatings } from "@/data/competenciesData";
 import { Target, TrendingUp, AlertTriangle } from "lucide-react";
-import { useMemo } from "react";
 
 const MySkillsPage = () => {
   const employee = getEmployeeById(DEFAULT_EMPLOYEE_ID) || employees[0];
@@ -51,6 +52,38 @@ const MySkillsPage = () => {
   const competenciesBelowDemand = employee.skills.filter(
     (s) => s.currentLevel < s.demandedLevel
   ).length;
+
+  // Calculate base scores by category for impact chart
+  const categoryScores = useMemo(() => {
+    const scores = { legalCore: 0, businessAcumen: 0, technology: 0, softSkills: 0 };
+    const counts = { legalCore: 0, businessAcumen: 0, technology: 0, softSkills: 0 };
+
+    employee.skills.forEach((skill) => {
+      const skillId = skill.skillId;
+      if (skillId === 'legal-analysis' || skillId === 'contract-drafting' || skillId === 'ma-structuring') {
+        scores.legalCore += skill.currentLevel;
+        counts.legalCore++;
+      } else if (skillId === 'commercial-awareness') {
+        scores.businessAcumen += skill.currentLevel;
+        counts.businessAcumen++;
+      } else if (skillId === 'tech-legal-ops') {
+        scores.technology += skill.currentLevel;
+        counts.technology++;
+      } else {
+        scores.softSkills += skill.currentLevel;
+        counts.softSkills++;
+      }
+    });
+
+    return {
+      legalCore: counts.legalCore ? Math.round(scores.legalCore / counts.legalCore) : 50,
+      businessAcumen: counts.businessAcumen ? Math.round(scores.businessAcumen / counts.businessAcumen) : 50,
+      technology: counts.technology ? Math.round(scores.technology / counts.technology) : 50,
+      softSkills: counts.softSkills ? Math.round(scores.softSkills / counts.softSkills) : 50,
+    };
+  }, [employee]);
+
+  const progressData = useMemo(() => generateSkillProgressData(categoryScores), [categoryScores]);
 
   // Group competencies by category
   const coreCompetencies = employee.skills.filter((s) => {
@@ -174,6 +207,39 @@ const MySkillsPage = () => {
                     <AlertTriangle className="w-6 h-6 text-[hsl(var(--skill-weak))] transition-transform duration-300 group-hover:scale-110 group-hover:rotate-12" />
                   </div>
                 </div>
+              </GlassCardContent>
+            </GlassCard>
+          </ScrollReveal>
+        </div>
+
+        {/* Charts Section */}
+        <div className="grid md:grid-cols-2 gap-4 mb-8">
+          <ScrollReveal delay={250}>
+            <GlassCard className="hover-glow">
+              <GlassCardHeader>
+                <div className="flex items-center gap-2">
+                  <TrendingUp className="w-5 h-5 text-primary" />
+                  <GlassCardTitle>Competency Development Impact</GlassCardTitle>
+                </div>
+                <p className="text-sm text-muted-foreground">Progress over the last 6 months</p>
+              </GlassCardHeader>
+              <GlassCardContent>
+                <SkillImpactChart data={progressData} showLegend={true} />
+              </GlassCardContent>
+            </GlassCard>
+          </ScrollReveal>
+
+          <ScrollReveal delay={300}>
+            <GlassCard className="hover-glow">
+              <GlassCardHeader>
+                <div className="flex items-center gap-2">
+                  <Target className="w-5 h-5 text-primary" />
+                  <GlassCardTitle>Strengths & Weaknesses</GlassCardTitle>
+                </div>
+                <p className="text-sm text-muted-foreground">Competency overview at a glance</p>
+              </GlassCardHeader>
+              <GlassCardContent>
+                <StrengthsWeaknessesRadar skills={employee.skills} />
               </GlassCardContent>
             </GlassCard>
           </ScrollReveal>

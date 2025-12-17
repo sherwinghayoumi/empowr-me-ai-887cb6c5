@@ -4,6 +4,7 @@ import { getCompetencyById, generateSubSkillRatings } from "@/data/competenciesD
 import { CompetencyBar } from "./CompetencyBar";
 import { SubSkillModal } from "./SubSkillModal";
 import { SkillImpactChart, generateSkillProgressData } from "./SkillImpactChart";
+import { StrengthsWeaknessesRadar } from "./StrengthsWeaknessesRadar";
 import { EmployeeSkillGapCard } from "./EmployeeSkillGapCard";
 import { GlassCard, GlassCardContent, GlassCardHeader, GlassCardTitle } from "@/components/GlassCard";
 import { AnimatedCounter } from "@/components/AnimatedCounter";
@@ -163,20 +164,35 @@ export function EmployeeProfile({ employee, onClose }: EmployeeProfileProps) {
         </div>
       </ScrollReveal>
 
-      {/* Competency Development Impact */}
+      {/* Charts Section */}
       <ScrollReveal delay={450}>
-        <GlassCard className="hover-glow">
-          <GlassCardHeader>
-            <div className="flex items-center gap-2">
-              <TrendingUp className="w-5 h-5 text-primary" />
-              <GlassCardTitle>Competency Development Impact</GlassCardTitle>
-            </div>
-            <p className="text-sm text-muted-foreground">Your progress over the last 6 months</p>
-          </GlassCardHeader>
-          <GlassCardContent>
-            <SkillImpactChart data={progressData} showLegend={true} />
-          </GlassCardContent>
-        </GlassCard>
+        <div className="grid md:grid-cols-2 gap-4">
+          <GlassCard className="hover-glow">
+            <GlassCardHeader>
+              <div className="flex items-center gap-2">
+                <TrendingUp className="w-5 h-5 text-primary" />
+                <GlassCardTitle>Competency Development Impact</GlassCardTitle>
+              </div>
+              <p className="text-sm text-muted-foreground">Progress over the last 6 months</p>
+            </GlassCardHeader>
+            <GlassCardContent>
+              <SkillImpactChart data={progressData} showLegend={true} />
+            </GlassCardContent>
+          </GlassCard>
+
+          <GlassCard className="hover-glow">
+            <GlassCardHeader>
+              <div className="flex items-center gap-2">
+                <Target className="w-5 h-5 text-primary" />
+                <GlassCardTitle>Strengths & Weaknesses</GlassCardTitle>
+              </div>
+              <p className="text-sm text-muted-foreground">Competency overview at a glance</p>
+            </GlassCardHeader>
+            <GlassCardContent>
+              <StrengthsWeaknessesRadar skills={employee.skills} />
+            </GlassCardContent>
+          </GlassCard>
+        </div>
       </ScrollReveal>
 
       {/* Competencies Section */}

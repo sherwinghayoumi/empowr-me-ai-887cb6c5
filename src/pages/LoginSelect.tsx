@@ -103,7 +103,7 @@ const LoginSelect = () => {
       {/* Logo */}
       <div className="mb-8 text-center animate-fade-in-up relative">
         <div className="flex items-center justify-center mb-4">
-          <img alt="FUTURA TEAMS" src={futuraLogo} className="h-24 w-auto object-scale-down" />
+          <img alt="FUTURA TEAMS" src={futuraLogo} className="h-14 w-auto object-scale-down" />
         </div>
         <p className="text-muted-foreground text-base max-w-md italic">
           „Empower your teams for the future"

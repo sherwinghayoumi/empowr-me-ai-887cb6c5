@@ -4,7 +4,7 @@ import { Menu, LogOut, Users, LayoutDashboard, FileText, Award, AlertTriangle } 
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
-import futuraLogo from "@/assets/futura-teams-logo.png";
+import starLogo from "@/assets/star-logo.png";
 
 interface HeaderProps {
   variant: "admin" | "employee";
@@ -34,7 +34,7 @@ export function Header({ variant }: HeaderProps) {
         {/* Logo */}
         <Link to="/" className="flex items-center gap-3 group">
           <img 
-            src={futuraLogo} 
+            src={starLogo} 
             alt="FUTURA TEAMS" 
             className="h-8 w-auto transition-transform duration-300 group-hover:scale-105"
           />

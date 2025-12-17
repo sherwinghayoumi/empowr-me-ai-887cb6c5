@@ -1,9 +1,10 @@
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
-import { Menu, LogOut, Users, TrendingUp, LayoutDashboard, FileText, Award, GraduationCap, AlertTriangle } from "lucide-react";
+import { Menu, LogOut, Users, LayoutDashboard, FileText, Award, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
+import futuraLogo from "@/assets/futura-teams-logo.png";
 
 interface HeaderProps {
   variant: "admin" | "employee";
@@ -28,13 +29,15 @@ export function Header({ variant }: HeaderProps) {
   const navItems = variant === "admin" ? adminNavItems : employeeNavItems;
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-border/30 backdrop-blur-2xl bg-background/70">
+    <header className="sticky top-0 z-50 w-full border-b border-border/30 backdrop-blur-2xl bg-background/80">
       <div className="container flex h-16 items-center justify-between">
         {/* Logo */}
-        <Link to="/" className="flex items-center gap-2 group">
-          <span className="text-xl font-bold tracking-tight text-foreground font-montserrat transition-transform duration-300 group-hover:scale-105">
-            Skill<span className="text-primary">Ship</span>
-          </span>
+        <Link to="/" className="flex items-center gap-3 group">
+          <img 
+            src={futuraLogo} 
+            alt="FUTURA TEAMS" 
+            className="h-8 w-auto transition-transform duration-300 group-hover:scale-105"
+          />
         </Link>
 
         {/* Desktop Navigation */}
@@ -68,7 +71,7 @@ export function Header({ variant }: HeaderProps) {
         {/* Actions */}
         <div className="flex items-center gap-2">
           <Link to="/">
-            <Button variant="ghost" size="sm" className="text-muted-foreground group">
+            <Button variant="ghost" size="sm" className="text-muted-foreground group hover:text-primary">
               <LogOut className="w-4 h-4 mr-2 transition-transform duration-300 group-hover:-translate-x-1" />
               Logout
             </Button>

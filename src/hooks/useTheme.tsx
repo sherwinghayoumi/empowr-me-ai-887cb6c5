@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 
-type Theme = "dark" | "light";
+type Theme = "dark";
 
 interface ThemeContextType {
   theme: Theme;
@@ -11,28 +11,20 @@ interface ThemeContextType {
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [theme, setThemeState] = useState<Theme>(() => {
-    if (typeof window !== "undefined") {
-      const stored = localStorage.getItem("theme") as Theme;
-      if (stored) return stored;
-      return window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
-    }
-    return "dark";
-  });
+  const [theme] = useState<Theme>("dark");
 
   useEffect(() => {
     const root = window.document.documentElement;
-    root.classList.remove("light", "dark");
-    root.classList.add(theme);
-    localStorage.setItem("theme", theme);
-  }, [theme]);
+    root.classList.remove("light");
+    root.classList.add("dark");
+  }, []);
 
   const toggleTheme = () => {
-    setThemeState((prev) => (prev === "dark" ? "light" : "dark"));
+    // Dark mode only for FUTURA TEAMS
   };
 
-  const setTheme = (newTheme: Theme) => {
-    setThemeState(newTheme);
+  const setTheme = () => {
+    // Dark mode only for FUTURA TEAMS
   };
 
   return (

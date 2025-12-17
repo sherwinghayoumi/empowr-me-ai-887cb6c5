@@ -126,7 +126,7 @@ const LoginSelect = () => {
         <div className="flex items-center justify-center mb-4">
           <img 
             alt="FUTURA TEAMS" 
-            className="h-24 w-auto drop-shadow-lg animate-star-pulse" 
+            className="h-24 w-auto" 
             src={futuraLogo} 
           />
         </div>

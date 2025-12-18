@@ -6,7 +6,7 @@ import { DemandIndicator } from "@/components/DemandIndicator";
 import { EmployeeProfile } from "@/components/EmployeeProfile";
 import { AnimatedCounter } from "@/components/AnimatedCounter";
 import { ScrollReveal } from "@/components/ScrollReveal";
-import { SkillImpactChart, generateCompanyProgressData } from "@/components/SkillImpactChart";
+import { GrowthJourneyChart } from "@/components/GrowthJourneyChart";
 import { GlassCard, GlassCardContent, GlassCardHeader, GlassCardTitle } from "@/components/GlassCard";
 import {
   Select,
@@ -127,18 +127,15 @@ const AdminDashboard = () => {
 
         {/* Main Content Grid */}
         <div className="grid lg:grid-cols-3 gap-6">
-          {/* Skill Impact Overview */}
+          {/* Growth Journey Overview */}
           <ScrollReveal delay={100} direction="left">
             <GlassCard className="hover-glow h-full">
               <GlassCardHeader>
-                <GlassCardTitle className="text-foreground">Competency Development Impact</GlassCardTitle>
-                <p className="text-sm text-muted-foreground">Last 6 months progress by category</p>
+                <GlassCardTitle className="text-foreground">Unternehmens-Entwicklung</GlassCardTitle>
+                <p className="text-sm text-muted-foreground">ROI & Wachstums-Journey</p>
               </GlassCardHeader>
               <GlassCardContent>
-                <SkillImpactChart 
-                  data={generateCompanyProgressData()} 
-                  showLegend={true}
-                />
+                <GrowthJourneyChart variant="admin" />
                 <div className="mt-4 pt-4 border-t border-border/50 space-y-2">
                   {teams.map((team) => (
                     <div 

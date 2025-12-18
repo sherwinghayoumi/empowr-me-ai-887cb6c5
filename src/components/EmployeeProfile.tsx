@@ -3,7 +3,7 @@ import { Employee, getSkillById, getRoleById, getTeamById } from "@/data/mockDat
 import { getCompetencyById, generateSubSkillRatings } from "@/data/competenciesData";
 import { CompetencyBar } from "./CompetencyBar";
 import { SubSkillModal } from "./SubSkillModal";
-import { SkillImpactChart, generateSkillProgressData } from "./SkillImpactChart";
+import { GrowthJourneyChart } from "./GrowthJourneyChart";
 import { StrengthsWeaknessesRadar } from "./StrengthsWeaknessesRadar";
 import { EmployeeSkillGapCard } from "./EmployeeSkillGapCard";
 import { GlassCard, GlassCardContent, GlassCardHeader, GlassCardTitle } from "@/components/GlassCard";
@@ -40,37 +40,8 @@ export function EmployeeProfile({ employee, onClose }: EmployeeProfileProps) {
     return map;
   }, [employee.id]); // Only regenerate when employee changes
 
-  // Calculate base scores by category for impact chart
-  const categoryScores = useMemo(() => {
-    const scores = { legalCore: 0, businessAcumen: 0, technology: 0, softSkills: 0 };
-    const counts = { legalCore: 0, businessAcumen: 0, technology: 0, softSkills: 0 };
-
-    employee.skills.forEach((skill) => {
-      const skillId = skill.skillId;
-      if (skillId === 'legal-analysis' || skillId === 'contract-drafting' || skillId === 'ma-structuring') {
-        scores.legalCore += skill.currentLevel;
-        counts.legalCore++;
-      } else if (skillId === 'commercial-awareness') {
-        scores.businessAcumen += skill.currentLevel;
-        counts.businessAcumen++;
-      } else if (skillId === 'tech-legal-ops') {
-        scores.technology += skill.currentLevel;
-        counts.technology++;
-      } else {
-        scores.softSkills += skill.currentLevel;
-        counts.softSkills++;
-      }
-    });
-
-    return {
-      legalCore: counts.legalCore ? Math.round(scores.legalCore / counts.legalCore) : 50,
-      businessAcumen: counts.businessAcumen ? Math.round(scores.businessAcumen / counts.businessAcumen) : 50,
-      technology: counts.technology ? Math.round(scores.technology / counts.technology) : 50,
-      softSkills: counts.softSkills ? Math.round(scores.softSkills / counts.softSkills) : 50,
-    };
-  }, [employee]);
-
-  const progressData = useMemo(() => generateSkillProgressData(categoryScores), [categoryScores]);
+  // Get employee first name for journey title
+  const employeeFirstName = employee.name.split(" ")[0];
 
   const selectedCompetency = selectedCompetencyId ? getCompetencyById(selectedCompetencyId) : null;
   const selectedSkill = employee.skills.find(s => s.skillId === selectedCompetencyId);
@@ -171,12 +142,12 @@ export function EmployeeProfile({ employee, onClose }: EmployeeProfileProps) {
             <GlassCardHeader>
               <div className="flex items-center gap-2">
                 <TrendingUp className="w-5 h-5 text-primary" />
-                <GlassCardTitle>Competency Development Impact</GlassCardTitle>
+                <GlassCardTitle>Entwicklungs-Journey</GlassCardTitle>
               </div>
-              <p className="text-sm text-muted-foreground">Progress over the last 6 months</p>
+              <p className="text-sm text-muted-foreground">Lernfortschritt & Meilensteine</p>
             </GlassCardHeader>
             <GlassCardContent>
-              <SkillImpactChart data={progressData} showLegend={true} />
+              <GrowthJourneyChart variant="employee" employeeName={employeeFirstName} />
             </GlassCardContent>
           </GlassCard>
 

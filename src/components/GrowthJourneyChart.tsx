@@ -123,18 +123,18 @@ const MILESTONE_COLORS = {
 // Generate compelling mock metrics based on Premium-Membership pricing
 // Premium: €890 per employee / year (gross)
 function generateAdminMetrics(): ImpactMetrics {
-  const employeeCount = 25;
+  const employeeCount = 32;
   const pricePerEmployee = 890; // €890/employee/year Premium-Membership
-  const totalInvestment = employeeCount * pricePerEmployee; // €22.250
+  const totalInvestment = employeeCount * pricePerEmployee; // €28.480
   
-  // Realistic value creation:
-  // - Saved recruiting costs: 2 avoided external hires × ~€25.000 = €50.000
-  // - Productivity gain from upskilling: ~€15.000
-  // - Reduced turnover value: ~€8.000
-  const savedRecruiting = 50000;
-  const productivityValue = 15000;
-  const reducedTurnoverValue = 8000;
-  const totalValueCreated = savedRecruiting + productivityValue + reducedTurnoverValue; // €73.000
+  // Realistic value creation for 32 employees:
+  // - Saved recruiting costs: 3 avoided external hires × ~€25.000 = €75.000
+  // - Productivity gain from upskilling: ~€18.000
+  // - Reduced turnover value: ~€10.000
+  const savedRecruiting = 75000;
+  const productivityValue = 18000;
+  const reducedTurnoverValue = 10000;
+  const totalValueCreated = savedRecruiting + productivityValue + reducedTurnoverValue; // €103.000
   
   const roiPercentage = Math.round((totalValueCreated / totalInvestment) * 100); // ~328%
   

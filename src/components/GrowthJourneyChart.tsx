@@ -121,25 +121,26 @@ const MILESTONE_COLORS = {
 };
 
 // Generate compelling mock metrics based on Premium-Membership pricing
-// Premium: €890 per employee / year (gross)
+// Premium: €890 per employee / year (gross) - calculated for LAST 6 MONTHS
 function generateAdminMetrics(): ImpactMetrics {
   const employeeCount = 32;
   const pricePerEmployee = 890; // €890/employee/year Premium-Membership
-  const totalInvestment = employeeCount * pricePerEmployee; // €28.480
+  const monthsCalculated = 6;
+  const totalInvestment = Math.round((employeeCount * pricePerEmployee) / 12 * monthsCalculated); // €14.240 for 6 months
   
-  // Realistic value creation for 32 employees:
-  // - Saved recruiting costs: 3 avoided external hires × ~€25.000 = €75.000
-  // - Productivity gain from upskilling: ~€18.000
-  // - Reduced turnover value: ~€10.000
-  const savedRecruiting = 75000;
-  const productivityValue = 18000;
-  const reducedTurnoverValue = 10000;
-  const totalValueCreated = savedRecruiting + productivityValue + reducedTurnoverValue; // €103.000
+  // Realistic value creation for 32 employees over 6 months:
+  // - Saved recruiting costs: 2 avoided external hires × ~€25.000 = €50.000
+  // - Productivity gain from upskilling: ~€12.000
+  // - Reduced turnover value: ~€6.000
+  const savedRecruiting = 50000;
+  const productivityValue = 12000;
+  const reducedTurnoverValue = 6000;
+  const totalValueCreated = savedRecruiting + productivityValue + reducedTurnoverValue; // €68.000
   
-  const roiPercentage = Math.round((totalValueCreated / totalInvestment) * 100); // ~328%
+  const roiPercentage = Math.round((totalValueCreated / totalInvestment) * 100); // ~477%
   
   return {
-    totalROI: totalValueCreated - totalInvestment, // Net gain: €50.750
+    totalROI: totalValueCreated - totalInvestment, // Net gain
     roiPercentage: roiPercentage,
     productivityGain: 19,
     skillGapReduction: 34,
@@ -148,7 +149,7 @@ function generateAdminMetrics(): ImpactMetrics {
     employeesUpskilled: employeeCount,
     avgCompetencyBefore: 54,
     avgCompetencyNow: 72,
-    costPerEmployee: pricePerEmployee,
+    costPerEmployee: Math.round(pricePerEmployee / 12 * monthsCalculated), // 6-month cost per employee
     savedRecruitingCosts: savedRecruiting,
     timeToCompetency: 4,
     industryBenchmarkComparison: 2.3,
@@ -212,7 +213,7 @@ export function GrowthJourneyChart({
             <div className="flex items-start justify-between">
               <div>
                 <p className="text-xs font-medium text-[hsl(var(--skill-very-strong))] uppercase tracking-wider mb-1">
-                  Return on Investment
+                  ROI – Letzte 6 Monate
                 </p>
                 <div className="flex items-baseline gap-2">
                   <span className="text-3xl font-bold text-foreground">
@@ -327,7 +328,7 @@ export function GrowthJourneyChart({
             {/* Hero Section in Detail */}
             <div className="mt-6 p-6 rounded-xl bg-gradient-to-br from-[hsl(var(--skill-very-strong))]/20 via-[hsl(var(--skill-very-strong))]/10 to-transparent border border-[hsl(var(--skill-very-strong))]/20">
               <p className="text-sm font-medium text-[hsl(var(--skill-very-strong))] uppercase tracking-wider mb-2">
-                Gesamter Return on Investment
+                ROI – Letzte 6 Monate
               </p>
               <div className="flex items-baseline gap-3">
                 <span className="text-5xl font-bold text-foreground">

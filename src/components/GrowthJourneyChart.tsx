@@ -120,20 +120,36 @@ const MILESTONE_COLORS = {
   goal: "hsl(var(--skill-moderate))",
 };
 
-// Generate compelling mock metrics
+// Generate compelling mock metrics based on Premium-Membership pricing
+// Premium: €890 per employee / year (gross)
 function generateAdminMetrics(): ImpactMetrics {
+  const employeeCount = 25;
+  const pricePerEmployee = 890; // €890/employee/year Premium-Membership
+  const totalInvestment = employeeCount * pricePerEmployee; // €22.250
+  
+  // Realistic value creation:
+  // - Saved recruiting costs: 2 avoided external hires × ~€25.000 = €50.000
+  // - Productivity gain from upskilling: ~€15.000
+  // - Reduced turnover value: ~€8.000
+  const savedRecruiting = 50000;
+  const productivityValue = 15000;
+  const reducedTurnoverValue = 8000;
+  const totalValueCreated = savedRecruiting + productivityValue + reducedTurnoverValue; // €73.000
+  
+  const roiPercentage = Math.round((totalValueCreated / totalInvestment) * 100); // ~328%
+  
   return {
-    totalROI: 47500,
-    roiPercentage: 285,
-    productivityGain: 23,
+    totalROI: totalValueCreated - totalInvestment, // Net gain: €50.750
+    roiPercentage: roiPercentage,
+    productivityGain: 19,
     skillGapReduction: 34,
     hoursTrainingCompleted: 1240,
     certificationsEarned: 18,
-    employeesUpskilled: 25,
+    employeesUpskilled: employeeCount,
     avgCompetencyBefore: 54,
     avgCompetencyNow: 72,
-    costPerEmployee: 1900,
-    savedRecruitingCosts: 62000,
+    costPerEmployee: pricePerEmployee,
+    savedRecruitingCosts: savedRecruiting,
     timeToCompetency: 4,
     industryBenchmarkComparison: 2.3,
     monthlyTrend: [

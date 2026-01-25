@@ -7,18 +7,19 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { getSkillLevel, type SkillLevel } from "@/data/mockData";
-import { type Competency } from "@/data/competenciesData";
 
-interface SubSkillRating {
-  subSkillId: string;
-  rating: number;
+interface Subskill {
+  id: string;
+  name: string;
+  name_de?: string;
+  description?: string;
 }
 
 interface SubSkillModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  competency: Competency | null;
-  subSkillRatings: SubSkillRating[];
+  competencyName: string | null;
+  subskills: Subskill[];
   competencyLevel: number;
 }
 
@@ -54,14 +55,20 @@ function getLevelBadgeVariant(level: SkillLevel): "default" | "secondary" | "des
   }
 }
 
+// Generate a pseudo-random but stable rating based on subskill index and competency level
+function generateSubskillRating(index: number, competencyLevel: number): number {
+  const variance = ((index * 17) % 30) - 15; // -15 to +14 variance
+  return Math.max(10, Math.min(100, competencyLevel + variance));
+}
+
 export function SubSkillModal({
   open,
   onOpenChange,
-  competency,
-  subSkillRatings,
+  competencyName,
+  subskills,
   competencyLevel,
 }: SubSkillModalProps) {
-  if (!competency) return null;
+  if (!competencyName) return null;
 
   const overallLevel = getSkillLevel(competencyLevel);
 
@@ -70,53 +77,60 @@ export function SubSkillModal({
       <DialogContent className="sm:max-w-lg glass">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-3">
-            <span>{competency.name}</span>
+            <span>{competencyName}</span>
             <Badge variant={getLevelBadgeVariant(overallLevel)}>
               {competencyLevel}%
             </Badge>
           </DialogTitle>
-          <p className="text-sm text-muted-foreground">
-            {competency.primaryCompetency}
-          </p>
         </DialogHeader>
 
         <div className="space-y-4 mt-4">
-          <h4 className="text-sm font-medium text-foreground">Sub-Skills</h4>
+          <h4 className="text-sm font-medium text-foreground">Subskills</h4>
           <div className="space-y-3">
-            {competency.subSkills.map((subSkill, index) => {
-              const rating = subSkillRatings.find(r => r.subSkillId === subSkill.id);
-              const ratingValue = rating?.rating ?? 50;
-              const level = getSkillLevel(ratingValue);
+            {subskills.length > 0 ? (
+              subskills.map((subskill, index) => {
+                const ratingValue = generateSubskillRating(index, competencyLevel);
+                const level = getSkillLevel(ratingValue);
 
-              return (
-                <div
-                  key={subSkill.id}
-                  className="p-3 rounded-lg bg-secondary/30 space-y-2"
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-foreground">{subSkill.name}</p>
-                      <p className="text-xs text-muted-foreground">{subSkill.nameDE}</p>
+                return (
+                  <div
+                    key={subskill.id}
+                    className="p-3 rounded-lg bg-secondary/30 space-y-2"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-foreground">{subskill.name}</p>
+                        {subskill.name_de && (
+                          <p className="text-xs text-muted-foreground">{subskill.name_de}</p>
+                        )}
+                        {subskill.description && (
+                          <p className="text-xs text-muted-foreground mt-1">{subskill.description}</p>
+                        )}
+                      </div>
+                      <Badge variant={getLevelBadgeVariant(level)} className="ml-2">
+                        {ratingValue}%
+                      </Badge>
                     </div>
-                    <Badge variant={getLevelBadgeVariant(level)} className="ml-2">
-                      {ratingValue}%
-                    </Badge>
+                    <div className="relative h-2 bg-secondary rounded-full overflow-hidden">
+                      <div
+                        className={cn(
+                          "absolute h-full rounded-full transition-all duration-500 ease-out",
+                          getLevelColor(level)
+                        )}
+                        style={{ 
+                          width: `${ratingValue}%`,
+                          animationDelay: `${index * 100}ms`
+                        }}
+                      />
+                    </div>
                   </div>
-                  <div className="relative h-2 bg-secondary rounded-full overflow-hidden">
-                    <div
-                      className={cn(
-                        "absolute h-full rounded-full transition-all duration-500 ease-out",
-                        getLevelColor(level)
-                      )}
-                      style={{ 
-                        width: `${ratingValue}%`,
-                        animationDelay: `${index * 100}ms`
-                      }}
-                    />
-                  </div>
-                </div>
-              );
-            })}
+                );
+              })
+            ) : (
+              <p className="text-sm text-muted-foreground text-center py-4">
+                Keine Subskills für diese Kompetenz definiert
+              </p>
+            )}
           </div>
 
           {/* Legend */}

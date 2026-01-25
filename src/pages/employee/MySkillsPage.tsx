@@ -251,8 +251,8 @@ const MySkillsPage = () => {
       <SubSkillModal
         open={!!selectedCompetencyId}
         onOpenChange={(open) => !open && setSelectedCompetencyId(null)}
-        competency={selectedCompetency ?? null}
-        subSkillRatings={selectedCompetencyId ? (subSkillRatingsMap[selectedCompetencyId] || []) : []}
+        competencyName={selectedCompetency?.name ?? null}
+        subskills={selectedCompetency?.subSkills?.map(s => ({ id: s.id, name: s.name, name_de: s.nameDE })) || []}
         competencyLevel={selectedSkill?.currentLevel ?? 0}
       />
     </div>

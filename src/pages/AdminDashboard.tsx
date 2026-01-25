@@ -476,28 +476,7 @@ const AdminDashboard = () => {
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto glass">
           {selectedEmployee && (
             <EmployeeProfile 
-              employee={{
-                id: selectedEmployee.id,
-                name: selectedEmployee.full_name,
-                email: '',
-                roleId: selectedEmployee.role_profile?.role_key || 'employee',
-                teamId: selectedEmployee.team?.id || '',
-                age: 0,
-                education: '',
-                totalExperience: 0,
-                firmExperience: 0,
-                careerObjective: '',
-                overallScore: selectedEmployee.overall_score || 0,
-                avatar: selectedEmployee.avatar_url || undefined,
-                skills: selectedEmployee.competencies?.map(c => ({
-                  skillId: c.competency?.id || '',
-                  currentLevel: c.current_level || 0,
-                  demandedLevel: c.demanded_level || 50,
-                  futureLevel: c.future_level || 70,
-                  level: getSkillLevel(c.current_level || 0),
-                })) || [],
-                learningPaths: [],
-              }} 
+              employeeId={selectedEmployee.id}
               onClose={() => setSelectedEmployee(null)} 
             />
           )}

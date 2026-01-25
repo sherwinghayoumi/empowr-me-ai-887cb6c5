@@ -142,7 +142,8 @@ export function EmployeeFormDialog({
         });
       }
     }
-  }, [open, form]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
 
   const handleSubmit = async (data: EmployeeFormData) => {
     await onSubmit(data);

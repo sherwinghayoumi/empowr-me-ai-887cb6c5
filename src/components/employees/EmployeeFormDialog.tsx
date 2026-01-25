@@ -54,6 +54,19 @@ interface Team {
   name: string;
 }
 
+interface EditingEmployee {
+  id: string;
+  full_name: string;
+  email: string | null;
+  role_profile: { id: string } | null;
+  team: { id: string } | null;
+  education: string | null;
+  total_experience_years: number | null;
+  firm_experience_years: number | null;
+  career_objective: string | null;
+  age: number | null;
+}
+
 interface EmployeeFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -61,7 +74,7 @@ interface EmployeeFormDialogProps {
   isLoading?: boolean;
   roleProfiles: RoleProfile[];
   teams: Team[];
-  defaultValues?: Partial<EmployeeFormData>;
+  editingEmployee?: EditingEmployee | null;
   mode?: "create" | "edit";
 }
 
@@ -72,7 +85,7 @@ export function EmployeeFormDialog({
   isLoading,
   roleProfiles,
   teams,
-  defaultValues,
+  editingEmployee,
   mode = "create",
 }: EmployeeFormDialogProps) {
   const form = useForm<EmployeeFormData>({
@@ -87,12 +100,14 @@ export function EmployeeFormDialog({
       firm_experience_years: undefined,
       career_objective: "",
       age: undefined,
-      ...defaultValues,
     },
   });
 
   // Track previous open state to detect when dialog opens
   const prevOpenRef = useRef(open);
+  // Store editingEmployee in a ref so we can access it without adding to dependencies
+  const editingEmployeeRef = useRef(editingEmployee);
+  editingEmployeeRef.current = editingEmployee;
 
   // Reset form only when dialog opens (not on every render)
   useEffect(() => {
@@ -100,17 +115,32 @@ export function EmployeeFormDialog({
     prevOpenRef.current = open;
     
     if (wasOpening) {
-      form.reset({
-        full_name: defaultValues?.full_name || "",
-        email: defaultValues?.email || "",
-        role_profile_id: defaultValues?.role_profile_id || "",
-        team_id: defaultValues?.team_id || "",
-        education: defaultValues?.education || "",
-        total_experience_years: defaultValues?.total_experience_years,
-        firm_experience_years: defaultValues?.firm_experience_years,
-        career_objective: defaultValues?.career_objective || "",
-        age: defaultValues?.age,
-      });
+      const emp = editingEmployeeRef.current;
+      if (emp) {
+        form.reset({
+          full_name: emp.full_name,
+          email: emp.email || "",
+          role_profile_id: emp.role_profile?.id || "",
+          team_id: emp.team?.id || "",
+          education: emp.education || "",
+          total_experience_years: emp.total_experience_years ?? undefined,
+          firm_experience_years: emp.firm_experience_years ?? undefined,
+          career_objective: emp.career_objective || "",
+          age: emp.age ?? undefined,
+        });
+      } else {
+        form.reset({
+          full_name: "",
+          email: "",
+          role_profile_id: "",
+          team_id: "",
+          education: "",
+          total_experience_years: undefined,
+          firm_experience_years: undefined,
+          career_objective: "",
+          age: undefined,
+        });
+      }
     }
   }, [open, form]);
 

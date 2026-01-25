@@ -335,21 +335,7 @@ const EmployeesPage = () => {
         isLoading={createEmployee.isPending || updateEmployee.isPending}
         roleProfiles={roleProfiles?.map((r) => ({ id: r.id, role_title: r.role_title, role_key: r.role_key })) || []}
         teams={teams?.map((t) => ({ id: t.id, name: t.name })) || []}
-        defaultValues={
-          editingEmployee
-            ? {
-                full_name: editingEmployee.full_name,
-                email: editingEmployee.email || "",
-                role_profile_id: editingEmployee.role_profile?.id || "",
-                team_id: editingEmployee.team?.id || "",
-                education: editingEmployee.education || "",
-                total_experience_years: editingEmployee.total_experience_years || undefined,
-                firm_experience_years: editingEmployee.firm_experience_years || undefined,
-                career_objective: editingEmployee.career_objective || "",
-                age: editingEmployee.age || undefined,
-              }
-            : undefined
-        }
+        editingEmployee={editingEmployee}
         mode={editingEmployee ? "edit" : "create"}
       />
 

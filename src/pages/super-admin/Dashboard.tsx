@@ -4,16 +4,16 @@ import { useAuth } from "@/contexts/AuthContext";
 import { 
   Building2, 
   Users, 
-  Shield, 
   Activity, 
-  Settings, 
-  Database,
+  TrendingUp,
   FileText,
-  TrendingUp
+  Settings,
+  Database,
+  Shield
 } from "lucide-react";
 import { Link } from "react-router-dom";
 
-const SuperAdminDashboard = () => {
+const Dashboard = () => {
   const { profile } = useAuth();
 
   const stats = [
@@ -55,10 +55,16 @@ const SuperAdminDashboard = () => {
       link: "/super-admin/organizations" 
     },
     { 
-      label: "Benutzer & Rollen", 
-      description: "Admins und Mitarbeiter verwalten",
+      label: "Rollenprofile", 
+      description: "Kompetenzen und Rollen definieren",
       icon: Shield, 
-      link: "/super-admin/users" 
+      link: "/super-admin/role-profiles" 
+    },
+    { 
+      label: "Reports", 
+      description: "Quartalsberichte und Analysen",
+      icon: FileText, 
+      link: "/super-admin/reports" 
     },
     { 
       label: "System-Einstellungen", 
@@ -71,12 +77,6 @@ const SuperAdminDashboard = () => {
       description: "Backups und Wartung",
       icon: Database, 
       link: "/super-admin/database" 
-    },
-    { 
-      label: "Audit Log", 
-      description: "Alle Systemaktivitäten",
-      icon: FileText, 
-      link: "/super-admin/audit-log" 
     },
   ];
 
@@ -147,4 +147,4 @@ const SuperAdminDashboard = () => {
   );
 };
 
-export default SuperAdminDashboard;
+export default Dashboard;

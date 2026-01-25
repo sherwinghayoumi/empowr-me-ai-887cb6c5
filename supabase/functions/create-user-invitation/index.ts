@@ -10,11 +10,14 @@ const corsHeaders = {
 };
 
 interface CreateUserRequest {
+  action?: "create" | "set-password";
   email: string;
-  full_name: string;
-  role: "super_admin" | "org_admin" | "employee";
-  organization_id: string | null;
-  invite_url: string;
+  full_name?: string;
+  role?: "super_admin" | "org_admin" | "employee";
+  organization_id?: string | null;
+  invite_url?: string;
+  password?: string;
+  user_id?: string;
 }
 
 async function sendEmail(to: string, subject: string, html: string) {
@@ -47,16 +50,8 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const { email, full_name, role, organization_id, invite_url }: CreateUserRequest = await req.json();
-
-    // Validate required fields
-    if (!email || !full_name || !role) {
-      throw new Error("Missing required fields");
-    }
-
-    if (!RESEND_API_KEY) {
-      throw new Error("RESEND_API_KEY is not configured");
-    }
+    const requestData: CreateUserRequest = await req.json();
+    const { action = "create", email, full_name, role, organization_id, invite_url, password, user_id } = requestData;
 
     // Create Supabase admin client
     const supabaseAdmin = createClient(
@@ -64,6 +59,49 @@ const handler = async (req: Request): Promise<Response> => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
       { auth: { autoRefreshToken: false, persistSession: false } }
     );
+
+    // Action: Set password for existing user
+    if (action === "set-password") {
+      if (!user_id || !password) {
+        throw new Error("Missing user_id or password");
+      }
+
+      if (password.length < 8) {
+        throw new Error("Password must be at least 8 characters");
+      }
+
+      const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(user_id, {
+        password: password,
+        email_confirm: true, // Also confirm email when setting password
+      });
+
+      if (updateError) {
+        throw updateError;
+      }
+
+      console.log("Password set successfully for user:", user_id);
+
+      return new Response(JSON.stringify({ 
+        success: true, 
+        message: "Password set successfully" 
+      }), {
+        status: 200,
+        headers: {
+          "Content-Type": "application/json",
+          ...corsHeaders,
+        },
+      });
+    }
+
+    // Action: Create new user (default)
+    // Validate required fields for create
+    if (!email || !full_name || !role) {
+      throw new Error("Missing required fields for user creation");
+    }
+
+    if (!RESEND_API_KEY) {
+      throw new Error("RESEND_API_KEY is not configured");
+    }
 
     // Create user with admin API
     const { data: userData, error: userError } = await supabaseAdmin.auth.admin.createUser({

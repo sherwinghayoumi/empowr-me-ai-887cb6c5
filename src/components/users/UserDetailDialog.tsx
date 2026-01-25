@@ -81,6 +81,11 @@ export function UserDetailDialog({
   const [isSaving, setIsSaving] = useState(false);
   const [resetPasswordOpen, setResetPasswordOpen] = useState(false);
   const [isSendingReset, setIsSendingReset] = useState(false);
+  const [setPasswordOpen, setSetPasswordOpen] = useState(false);
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [isSettingPassword, setIsSettingPassword] = useState(false);
+  const [passwordError, setPasswordError] = useState<string | null>(null);
 
   const handleEdit = () => {
     setEditData({
@@ -127,6 +132,48 @@ export function UserDetailDialog({
       });
     } finally {
       setIsSendingReset(false);
+    }
+  };
+
+  const handleSetPassword = async () => {
+    if (!userId) return;
+    
+    setPasswordError(null);
+    
+    // Validation
+    if (!newPassword || newPassword.length < 8) {
+      setPasswordError('Passwort muss mindestens 8 Zeichen lang sein');
+      return;
+    }
+    
+    if (newPassword !== confirmPassword) {
+      setPasswordError('Passwörter stimmen nicht überein');
+      return;
+    }
+    
+    setIsSettingPassword(true);
+    try {
+      const { error } = await supabase.functions.invoke('create-user-invitation', {
+        body: {
+          action: 'set-password',
+          user_id: userId,
+          password: newPassword,
+        },
+      });
+      
+      if (error) throw error;
+      
+      toast.success('Passwort gesetzt', {
+        description: 'Der Benutzer kann sich jetzt mit dem neuen Passwort anmelden',
+      });
+      setSetPasswordOpen(false);
+      setNewPassword('');
+      setConfirmPassword('');
+    } catch (error: any) {
+      console.error('Error setting password:', error);
+      setPasswordError(error.message || 'Fehler beim Setzen des Passworts');
+    } finally {
+      setIsSettingPassword(false);
     }
   };
 
@@ -309,10 +356,29 @@ export function UserDetailDialog({
                 <TabsContent value="security" className="flex-1 overflow-hidden mt-4">
                   <ScrollArea className="h-full">
                     <div className="space-y-4 pr-4">
-                      <div className="p-4 rounded-lg bg-muted/30">
+                      {/* Set Password Directly */}
+                      <div className="p-4 rounded-lg bg-primary/5 border border-primary/20">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-3">
                             <Key className="w-5 h-5 text-primary" />
+                            <div>
+                              <p className="font-medium">Passwort direkt setzen</p>
+                              <p className="text-sm text-muted-foreground">
+                                Passwort ohne E-Mail-Versand festlegen
+                              </p>
+                            </div>
+                          </div>
+                          <Button onClick={() => setSetPasswordOpen(true)}>
+                            Passwort setzen
+                          </Button>
+                        </div>
+                      </div>
+
+                      {/* Send Password Reset Email */}
+                      <div className="p-4 rounded-lg bg-muted/30">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <Mail className="w-5 h-5 text-muted-foreground" />
                             <div>
                               <p className="font-medium">Passwort zurücksetzen</p>
                               <p className="text-sm text-muted-foreground">
@@ -425,6 +491,74 @@ export function UserDetailDialog({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Set Password Dialog */}
+      <Dialog open={setPasswordOpen} onOpenChange={(open) => {
+        setSetPasswordOpen(open);
+        if (!open) {
+          setNewPassword('');
+          setConfirmPassword('');
+          setPasswordError(null);
+        }
+      }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Key className="w-5 h-5 text-primary" />
+              Passwort setzen
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            {passwordError && (
+              <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 text-destructive shrink-0" />
+                <p className="text-sm text-destructive">{passwordError}</p>
+              </div>
+            )}
+            
+            <div className="p-3 rounded-lg bg-muted/50 text-sm text-muted-foreground">
+              Setzen Sie ein Passwort für <strong>{user?.email}</strong>. Der Benutzer kann sich danach sofort anmelden.
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="new-password">Neues Passwort</Label>
+              <Input
+                id="new-password"
+                type="password"
+                placeholder="Mindestens 8 Zeichen"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="confirm-password">Passwort bestätigen</Label>
+              <Input
+                id="confirm-password"
+                type="password"
+                placeholder="Passwort wiederholen"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+              />
+            </div>
+          </div>
+          
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setSetPasswordOpen(false)}>
+              Abbrechen
+            </Button>
+            <Button onClick={handleSetPassword} disabled={isSettingPassword}>
+              {isSettingPassword ? (
+                <Loader2 className="w-4 h-4 animate-spin mr-2" />
+              ) : (
+                <Key className="w-4 h-4 mr-2" />
+              )}
+              Passwort setzen
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

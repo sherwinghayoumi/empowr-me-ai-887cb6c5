@@ -43,9 +43,12 @@ export function StrengthsWeaknessesRadar({
     });
   }, [skills]);
 
+  // Calculate appropriate height based on className
+  const hasCustomHeight = className?.includes('h-[');
+  
   return (
     <div className={className}>
-      <ResponsiveContainer width="100%" height={350}>
+      <ResponsiveContainer width="100%" height={hasCustomHeight ? "100%" : 350}>
         <RadarChart cx="50%" cy="50%" outerRadius="70%" data={radarData}>
           <PolarGrid 
             stroke="hsl(var(--border))" 

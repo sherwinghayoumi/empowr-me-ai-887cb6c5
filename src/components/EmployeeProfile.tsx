@@ -2,14 +2,15 @@ import { useMemo, useState } from "react";
 import { useEmployee } from "@/hooks/useOrgData";
 import { CompetencyBar } from "./CompetencyBar";
 import { SubSkillModal } from "./SubSkillModal";
-import { GrowthJourneyChart } from "./GrowthJourneyChart";
 import { StrengthsWeaknessesRadar } from "./StrengthsWeaknessesRadar";
+import { RadarChartModal } from "./RadarChartModal";
 import { EmployeeSkillGapCard } from "./EmployeeSkillGapCard";
 import { GlassCard, GlassCardContent, GlassCardHeader, GlassCardTitle } from "@/components/GlassCard";
 import { AnimatedCounter } from "@/components/AnimatedCounter";
 import { ScrollReveal } from "@/components/ScrollReveal";
 import { Skeleton } from "@/components/ui/skeleton";
-import { X, Target, GraduationCap, Briefcase, TrendingUp, AlertTriangle } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { X, Target, GraduationCap, Briefcase, AlertTriangle, Maximize2, ChevronDown, ChevronUp } from "lucide-react";
 
 interface EmployeeProfileProps {
   employeeId: string;
@@ -31,6 +32,8 @@ interface MappedCompetency {
 export function EmployeeProfile({ employeeId, onClose }: EmployeeProfileProps) {
   const { data: employee, isLoading } = useEmployee(employeeId);
   const [selectedCompetencyId, setSelectedCompetencyId] = useState<string | null>(null);
+  const [isRadarModalOpen, setIsRadarModalOpen] = useState(false);
+  const [showAllGaps, setShowAllGaps] = useState(false);
 
   // Map competencies from database structure to component-friendly format
   const mappedCompetencies = useMemo<MappedCompetency[]>(() => {
@@ -58,9 +61,6 @@ export function EmployeeProfile({ employeeId, onClose }: EmployeeProfileProps) {
       futureLevel: comp.futureLevel
     }));
   }, [mappedCompetencies]);
-
-  // Get employee first name for journey title
-  const employeeFirstName = employee?.full_name?.split(" ")[0] || "";
 
   // Selected competency for modal
   const selectedCompetency = useMemo(() => {
@@ -195,35 +195,31 @@ export function EmployeeProfile({ employeeId, onClose }: EmployeeProfileProps) {
         </ScrollReveal>
       )}
 
-      {/* Charts Section */}
+      {/* Radar Chart Section */}
       <ScrollReveal delay={450}>
-        <div className="grid md:grid-cols-2 gap-4">
-          <GlassCard className="hover-glow">
-            <GlassCardHeader>
-              <div className="flex items-center gap-2">
-                <TrendingUp className="w-5 h-5 text-primary" />
-                <GlassCardTitle>Entwicklungs-Journey</GlassCardTitle>
-              </div>
-              <p className="text-sm text-muted-foreground">Lernfortschritt & Meilensteine</p>
-            </GlassCardHeader>
-            <GlassCardContent>
-              <GrowthJourneyChart variant="employee" employeeName={employeeFirstName} />
-            </GlassCardContent>
-          </GlassCard>
-
-          <GlassCard className="hover-glow">
-            <GlassCardHeader>
+        <GlassCard className="hover-glow">
+          <GlassCardHeader>
+            <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Target className="w-5 h-5 text-primary" />
                 <GlassCardTitle>Stärken & Schwächen</GlassCardTitle>
               </div>
-              <p className="text-sm text-muted-foreground">Kompetenzübersicht auf einen Blick</p>
-            </GlassCardHeader>
-            <GlassCardContent>
-              <StrengthsWeaknessesRadar skills={radarSkills} />
-            </GlassCardContent>
-          </GlassCard>
-        </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsRadarModalOpen(true)}
+                className="text-muted-foreground hover:text-foreground"
+              >
+                <Maximize2 className="w-4 h-4 mr-1" />
+                Vergrößern
+              </Button>
+            </div>
+            <p className="text-sm text-muted-foreground">Kompetenzübersicht auf einen Blick</p>
+          </GlassCardHeader>
+          <GlassCardContent>
+            <StrengthsWeaknessesRadar skills={radarSkills} />
+          </GlassCardContent>
+        </GlassCard>
       </ScrollReveal>
 
       {/* Competencies Section */}
@@ -266,6 +262,9 @@ export function EmployeeProfile({ employeeId, onClose }: EmployeeProfileProps) {
         
         if (skillGaps.length === 0) return null;
         
+        const displayedGaps = showAllGaps ? skillGaps : skillGaps.slice(0, 4);
+        const hasMore = skillGaps.length > 4;
+        
         return (
           <ScrollReveal delay={600}>
             <GlassCard>
@@ -278,9 +277,9 @@ export function EmployeeProfile({ employeeId, onClose }: EmployeeProfileProps) {
                   {skillGaps.length} Kompetenz{skillGaps.length === 1 ? '' : 'en'} unter Zielniveau
                 </p>
               </GlassCardHeader>
-              <GlassCardContent>
+              <GlassCardContent className="space-y-4">
                 <div className="grid md:grid-cols-2 gap-4">
-                  {skillGaps.slice(0, 4).map((comp, index) => (
+                  {displayedGaps.map((comp, index) => (
                     <EmployeeSkillGapCard
                       key={comp.id}
                       skillId={comp.id}
@@ -293,6 +292,29 @@ export function EmployeeProfile({ employeeId, onClose }: EmployeeProfileProps) {
                     />
                   ))}
                 </div>
+                
+                {hasMore && (
+                  <div className="flex justify-center pt-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowAllGaps(!showAllGaps)}
+                      className="gap-2"
+                    >
+                      {showAllGaps ? (
+                        <>
+                          <ChevronUp className="w-4 h-4" />
+                          Weniger anzeigen
+                        </>
+                      ) : (
+                        <>
+                          <ChevronDown className="w-4 h-4" />
+                          Alle {skillGaps.length} Gaps anzeigen
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                )}
               </GlassCardContent>
             </GlassCard>
           </ScrollReveal>
@@ -306,6 +328,14 @@ export function EmployeeProfile({ employeeId, onClose }: EmployeeProfileProps) {
         competencyName={selectedCompetency?.name || null}
         subskills={selectedCompetency?.subskills || []}
         competencyLevel={selectedCompetency?.currentLevel ?? 0}
+      />
+
+      {/* Radar Chart Modal */}
+      <RadarChartModal
+        open={isRadarModalOpen}
+        onOpenChange={setIsRadarModalOpen}
+        skills={radarSkills}
+        title={`Kompetenz-Radar: ${employee.full_name}`}
       />
     </div>
   );

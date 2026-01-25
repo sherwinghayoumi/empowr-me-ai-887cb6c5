@@ -8,10 +8,10 @@ import {
   ResponsiveContainer,
   Legend,
 } from "recharts";
-import { getCompetencyById } from "@/data/competenciesData";
 
 interface SkillData {
   skillId: string;
+  skillName?: string;
   currentLevel: number;
   demandedLevel: number;
   futureLevel?: number;
@@ -30,8 +30,7 @@ export function StrengthsWeaknessesRadar({
 }: StrengthsWeaknessesRadarProps) {
   const radarData = useMemo(() => {
     return skills.map((skill) => {
-      const competency = getCompetencyById(skill.skillId);
-      const name = competency?.name || skill.skillId;
+      const name = skill.skillName || skill.skillId;
       // Truncate long names for better display
       const shortName = name.length > 15 ? name.substring(0, 12) + "..." : name;
       

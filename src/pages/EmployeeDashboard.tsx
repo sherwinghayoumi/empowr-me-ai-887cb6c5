@@ -2,14 +2,14 @@ import { Header } from "@/components/Header";
 import { EmployeeProfile } from "@/components/EmployeeProfile";
 import { ScrollReveal } from "@/components/ScrollReveal";
 import { ParallaxBackground } from "@/components/ParallaxBackground";
-import {
-  employees,
-  DEFAULT_EMPLOYEE_ID,
-  getEmployeeById,
-} from "@/data/mockData";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useAuth } from "@/contexts/AuthContext";
 
 const EmployeeDashboard = () => {
-  const employee = getEmployeeById(DEFAULT_EMPLOYEE_ID) || employees[0];
+  const { profile } = useAuth();
+  
+  // If the user has an employee_id, use it; otherwise show placeholder
+  const employeeId = profile?.employee_id;
 
   return (
     <div className="min-h-screen bg-background relative">
@@ -18,7 +18,24 @@ const EmployeeDashboard = () => {
 
       <main className="container py-8 relative">
         <ScrollReveal>
-          <EmployeeProfile employee={employee} />
+          {employeeId ? (
+            <EmployeeProfile employeeId={employeeId} />
+          ) : (
+            <div className="space-y-6">
+              <div className="flex items-center gap-4">
+                <Skeleton className="w-16 h-16 rounded-full" />
+                <div className="space-y-2">
+                  <Skeleton className="h-6 w-48" />
+                  <Skeleton className="h-4 w-32" />
+                </div>
+              </div>
+              <div className="text-center py-12">
+                <p className="text-muted-foreground">
+                  Kein Mitarbeiterprofil verknüpft. Bitte kontaktieren Sie Ihren Administrator.
+                </p>
+              </div>
+            </div>
+          )}
         </ScrollReveal>
       </main>
     </div>

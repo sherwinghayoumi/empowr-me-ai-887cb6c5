@@ -8,13 +8,13 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Certification, getCertificationsForCompetency } from "@/data/certificationsData";
-import { getCompetencyById } from "@/data/competenciesData";
 import { ExternalLink, Clock, GraduationCap, Monitor, Award } from "lucide-react";
 
 interface CertificationModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   competencyId: string;
+  competencyName?: string;
   employeeName: string;
   gapPercentage: number;
 }
@@ -47,13 +47,12 @@ export function CertificationModal({
   open,
   onOpenChange,
   competencyId,
+  competencyName,
   employeeName,
   gapPercentage,
 }: CertificationModalProps) {
-  const competency = getCompetencyById(competencyId);
   const certifications = getCertificationsForCompetency(competencyId);
-
-  if (!competency) return null;
+  const displayName = competencyName || competencyId;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -61,13 +60,13 @@ export function CertificationModal({
         <DialogHeader>
           <DialogTitle className="text-xl text-foreground flex items-center gap-2">
             <GraduationCap className="w-5 h-5 text-primary" />
-            Learning Recommendations
+            Lernempfehlungen
           </DialogTitle>
           <DialogDescription className="text-muted-foreground">
-            Recommended certifications to close the{" "}
-            <span className="text-foreground font-medium">{competency.name}</span> gap for{" "}
-            <span className="text-foreground font-medium">{employeeName}</span>
-            <span className="text-destructive font-medium ml-1">({gapPercentage}% gap)</span>
+            Empfohlene Zertifizierungen um die{" "}
+            <span className="text-foreground font-medium">{displayName}</span> Lücke für{" "}
+            <span className="text-foreground font-medium">{employeeName}</span> zu schließen
+            <span className="text-destructive font-medium ml-1">({gapPercentage}% Gap)</span>
           </DialogDescription>
         </DialogHeader>
 

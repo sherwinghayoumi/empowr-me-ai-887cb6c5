@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Loader2, Shield, FileText, Clock, Mail, UserCheck } from 'lucide-react';
+import { Loader2, Shield, FileText, Clock, Mail, UserCheck, Brain } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -13,7 +13,6 @@ import {
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 
 interface GDPRConsentModalProps {
@@ -87,11 +86,12 @@ export function GDPRConsentModal({ open, onConsentGiven }: GDPRConsentModalProps
   return (
     <Dialog open={open} onOpenChange={() => {}}>
       <DialogContent 
-        className="max-w-2xl max-h-[90vh] flex flex-col"
+        className="max-w-2xl h-[90vh] p-0 gap-0 overflow-hidden"
         onPointerDownOutside={(e) => e.preventDefault()}
         onEscapeKeyDown={(e) => e.preventDefault()}
       >
-        <DialogHeader className="flex-shrink-0">
+        {/* Fixed Header */}
+        <DialogHeader className="p-6 pb-4 border-b border-border">
           <div className="flex items-center gap-3 mb-2">
             <div className="p-2 rounded-full bg-primary/10">
               <Shield className="h-6 w-6 text-primary" />
@@ -103,7 +103,8 @@ export function GDPRConsentModal({ open, onConsentGiven }: GDPRConsentModalProps
           </DialogDescription>
         </DialogHeader>
 
-        <ScrollArea className="flex-1 min-h-0 pr-4">
+        {/* Scrollable Content */}
+        <div className="flex-1 overflow-y-auto p-6">
           <div className="space-y-6">
             {/* Data Processing Section */}
             <div className="space-y-3">
@@ -144,9 +145,7 @@ export function GDPRConsentModal({ open, onConsentGiven }: GDPRConsentModalProps
             {/* AI Processing Notice */}
             <div className="space-y-3 p-4 bg-primary/5 rounded-lg border border-primary/10">
               <div className="flex items-center gap-2 text-foreground font-medium">
-                <svg className="h-4 w-4 text-primary" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/>
-                </svg>
+                <Brain className="h-4 w-4 text-primary" />
                 <span>KI-gestützte Analyse</span>
               </div>
               <p className="text-sm text-muted-foreground">
@@ -210,70 +209,71 @@ export function GDPRConsentModal({ open, onConsentGiven }: GDPRConsentModalProps
               </p>
             </div>
           </div>
-        </ScrollArea>
-
-        <Separator className="my-4" />
-
-        {/* Consent Checkboxes */}
-        <div className="space-y-4">
-          <div className="flex items-start space-x-3">
-            <Checkbox 
-              id="data-consent" 
-              checked={dataConsent}
-              onCheckedChange={(checked) => setDataConsent(checked === true)}
-              className="mt-0.5"
-            />
-            <Label 
-              htmlFor="data-consent" 
-              className="text-sm font-normal cursor-pointer leading-relaxed"
-            >
-              <span className="text-destructive">*</span> Ich stimme der Verarbeitung meiner Daten 
-              gemäß der oben beschriebenen Zwecke zu und habe die Datenschutzhinweise 
-              gelesen und verstanden.
-            </Label>
-          </div>
-
-          <div className="flex items-start space-x-3">
-            <Checkbox 
-              id="marketing-consent" 
-              checked={marketingConsent}
-              onCheckedChange={(checked) => setMarketingConsent(checked === true)}
-              className="mt-0.5"
-            />
-            <Label 
-              htmlFor="marketing-consent" 
-              className="text-sm font-normal cursor-pointer leading-relaxed text-muted-foreground"
-            >
-              Ich möchte über Produkt-Updates, neue Funktionen und Tipps zur 
-              Kompetenzentwicklung per E-Mail informiert werden. (Optional)
-            </Label>
-          </div>
         </div>
 
-        {/* Action Buttons */}
-        <div className="flex flex-col-reverse sm:flex-row gap-3 mt-4">
-          <Button 
-            variant="outline" 
-            onClick={handleDecline}
-            disabled={isSubmitting}
-            className="flex-1"
-          >
-            Ablehnen & Abmelden
-          </Button>
-          <Button 
-            onClick={handleAccept}
-            disabled={isSubmitting || !dataConsent}
-            className="flex-1"
-          >
-            {isSubmitting ? (
-              <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Wird gespeichert...
-              </>
-            ) : (
-              'Zustimmen'
-            )}
-          </Button>
+        {/* Fixed Footer */}
+        <div className="border-t border-border p-6 pt-4 bg-background">
+          {/* Consent Checkboxes */}
+          <div className="space-y-4 mb-4">
+            <div className="flex items-start space-x-3">
+              <Checkbox 
+                id="data-consent" 
+                checked={dataConsent}
+                onCheckedChange={(checked) => setDataConsent(checked === true)}
+                className="mt-0.5"
+              />
+              <Label 
+                htmlFor="data-consent" 
+                className="text-sm font-normal cursor-pointer leading-relaxed"
+              >
+                <span className="text-destructive">*</span> Ich stimme der Verarbeitung meiner Daten 
+                gemäß der oben beschriebenen Zwecke zu und habe die Datenschutzhinweise 
+                gelesen und verstanden.
+              </Label>
+            </div>
+
+            <div className="flex items-start space-x-3">
+              <Checkbox 
+                id="marketing-consent" 
+                checked={marketingConsent}
+                onCheckedChange={(checked) => setMarketingConsent(checked === true)}
+                className="mt-0.5"
+              />
+              <Label 
+                htmlFor="marketing-consent" 
+                className="text-sm font-normal cursor-pointer leading-relaxed text-muted-foreground"
+              >
+                Ich möchte über Produkt-Updates, neue Funktionen und Tipps zur 
+                Kompetenzentwicklung per E-Mail informiert werden. (Optional)
+              </Label>
+            </div>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex flex-col-reverse sm:flex-row gap-3">
+            <Button 
+              variant="outline" 
+              onClick={handleDecline}
+              disabled={isSubmitting}
+              className="flex-1"
+            >
+              Ablehnen & Abmelden
+            </Button>
+            <Button 
+              onClick={handleAccept}
+              disabled={isSubmitting || !dataConsent}
+              className="flex-1"
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Wird gespeichert...
+                </>
+              ) : (
+                'Zustimmen'
+              )}
+            </Button>
+          </div>
         </div>
       </DialogContent>
     </Dialog>

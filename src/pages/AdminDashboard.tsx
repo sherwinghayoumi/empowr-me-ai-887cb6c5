@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { Header } from "@/components/Header";
-import { SkillRadialChart } from "@/components/SkillRadialChart";
 import { SkillProgressBar } from "@/components/SkillProgressBar";
 import { DemandIndicator } from "@/components/DemandIndicator";
 import { EmployeeProfile } from "@/components/EmployeeProfile";
@@ -20,56 +19,117 @@ import {
   DialogContent,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { Users, TrendingUp, BookOpen } from "lucide-react";
-import {
-  employees,
-  roles,
-  teams,
-  getEmployeesByRole,
-  getRoleById,
-  roleSkillTemplates,
-  getSkillById,
-  getSkillLevel,
-  type Employee,
-} from "@/data/mockData";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Users, TrendingUp, BookOpen, Building2 } from "lucide-react";
+import { useEmployees, useTeams, useRoleProfilesPublished, useOrgStats, useQuarterlyReports } from "@/hooks/useOrgData";
+import { useAuth } from "@/contexts/AuthContext";
+import { getSkillLevel } from "@/data/mockData";
+
+// Type for employee from database
+interface DbEmployee {
+  id: string;
+  full_name: string;
+  overall_score: number | null;
+  avatar_url: string | null;
+  role_profile: {
+    id: string;
+    role_title: string;
+    role_key: string;
+  } | null;
+  team: {
+    id: string;
+    name: string;
+  } | null;
+  competencies: Array<{
+    id: string;
+    current_level: number | null;
+    demanded_level: number | null;
+    future_level: number | null;
+    gap_to_current: number | null;
+    competency: {
+      id: string;
+      name: string;
+      status: string | null;
+      cluster: {
+        name: string;
+      } | null;
+    } | null;
+  }>;
+}
 
 const AdminDashboard = () => {
-  const [selectedRoleId, setSelectedRoleId] = useState("junior-associate");
-  const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
+  const { organization } = useAuth();
+  const [selectedRoleKey, setSelectedRoleKey] = useState<string>("");
+  const [selectedEmployee, setSelectedEmployee] = useState<DbEmployee | null>(null);
 
-  // Calculate overall company skill level
-  const overallScore = Math.round(
-    employees.reduce((sum, e) => sum + e.overallScore, 0) / employees.length
-  );
+  // Load data from Supabase
+  const { data: stats, isLoading: statsLoading } = useOrgStats();
+  const { data: employees, isLoading: employeesLoading } = useEmployees();
+  const { data: teams, isLoading: teamsLoading } = useTeams();
+  const { data: roleProfiles, isLoading: rolesLoading } = useRoleProfilesPublished();
+  const { data: reports } = useQuarterlyReports();
 
-  // Get employees by selected role
-  const roleEmployees = getEmployeesByRole(selectedRoleId);
-  const selectedRole = getRoleById(selectedRoleId);
+  // Set default role when profiles load
+  const effectiveRoleKey = selectedRoleKey || roleProfiles?.[0]?.role_key || "";
 
-  // Get role skill template for "Employee of Tomorrow"
-  const roleTemplate = roleSkillTemplates[selectedRoleId] || [];
+  // Filter employees by role
+  const roleEmployees = employees?.filter(e => 
+    e.role_profile?.role_key === effectiveRoleKey
+  ) || [];
 
-  // Calculate average current and future demand for the role
-  const avgCurrentDemand = roleTemplate.length > 0
-    ? Math.round(roleTemplate.reduce((sum, t) => sum + t.currentBenchmark, 0) / roleTemplate.length)
-    : 0;
-  const avgFutureDemand = roleTemplate.length > 0
-    ? Math.round(roleTemplate.reduce((sum, t) => sum + t.futureBenchmark, 0) / roleTemplate.length)
-    : 0;
+  const selectedRole = roleProfiles?.find(r => r.role_key === effectiveRoleKey);
 
-  // Active learning paths count
-  const activeLearningPaths = employees.reduce(
-    (sum, e) => sum + e.learningPaths.filter((lp) => lp.progress < 100).length,
-    0
-  );
+  // Calculate average demands from role competencies
+  const roleCompetencies = selectedRole?.competencies || [];
+  const avgCurrentDemand = roleCompetencies.length > 0
+    ? Math.round(roleCompetencies.reduce((sum, c) => sum + (c.demand_weight || 50), 0) / roleCompetencies.length)
+    : 50;
+  const avgFutureDemand = roleCompetencies.length > 0
+    ? Math.round(roleCompetencies.reduce((sum, c) => sum + (c.future_demand_max || 70), 0) / roleCompetencies.length)
+    : 70;
+
+  // Loading state
+  if (statsLoading || employeesLoading || rolesLoading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header variant="admin" />
+        <main className="container py-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+            {[1, 2, 3].map(i => (
+              <Skeleton key={i} className="h-32 rounded-xl" />
+            ))}
+          </div>
+          <div className="grid lg:grid-cols-3 gap-6">
+            <Skeleton className="h-96 rounded-xl" />
+            <Skeleton className="h-96 rounded-xl lg:col-span-2" />
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
       <Header variant="admin" />
 
       <main className="container py-8">
+        {/* Organization Header */}
+        {organization && (
+          <ScrollReveal>
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center">
+                <Building2 className="w-5 h-5 text-primary" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-foreground">{organization.name}</h1>
+                <p className="text-sm text-muted-foreground">Admin Dashboard</p>
+              </div>
+            </div>
+          </ScrollReveal>
+        )}
+
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
           <ScrollReveal delay={0}>
             <GlassCard className="hover-lift">
               <GlassCardContent className="p-6">
@@ -77,7 +137,7 @@ const AdminDashboard = () => {
                   <div>
                     <p className="text-sm text-muted-foreground">Employees</p>
                     <p className="text-3xl font-bold text-foreground">
-                      <AnimatedCounter value={employees.length} duration={1500} />
+                      <AnimatedCounter value={stats?.employeeCount || 0} duration={1500} />
                     </p>
                   </div>
                   <div className="w-12 h-12 rounded-lg bg-primary/20 flex items-center justify-center group">
@@ -93,13 +153,13 @@ const AdminDashboard = () => {
               <GlassCardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-muted-foreground">Avg. Competency Level</p>
+                    <p className="text-sm text-muted-foreground">Teams</p>
                     <p className="text-3xl font-bold text-foreground">
-                      <AnimatedCounter value={overallScore} duration={1500} />
+                      <AnimatedCounter value={stats?.teamCount || 0} duration={1500} />
                     </p>
                   </div>
-                  <div className="w-12 h-12 rounded-lg bg-[hsl(var(--skill-very-strong))]/20 flex items-center justify-center group">
-                    <TrendingUp className="w-6 h-6 text-[hsl(var(--skill-very-strong))] transition-transform duration-300 group-hover:scale-110 group-hover:-translate-y-1" />
+                  <div className="w-12 h-12 rounded-lg bg-secondary/50 flex items-center justify-center group">
+                    <Building2 className="w-6 h-6 text-muted-foreground transition-transform duration-300 group-hover:scale-110" />
                   </div>
                 </div>
               </GlassCardContent>
@@ -111,9 +171,27 @@ const AdminDashboard = () => {
               <GlassCardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
+                    <p className="text-sm text-muted-foreground">Avg. Competency Level</p>
+                    <p className="text-3xl font-bold text-foreground">
+                      <AnimatedCounter value={stats?.avgCompetencyLevel || 0} duration={1500} />%
+                    </p>
+                  </div>
+                  <div className="w-12 h-12 rounded-lg bg-[hsl(var(--skill-very-strong))]/20 flex items-center justify-center group">
+                    <TrendingUp className="w-6 h-6 text-[hsl(var(--skill-very-strong))] transition-transform duration-300 group-hover:scale-110 group-hover:-translate-y-1" />
+                  </div>
+                </div>
+              </GlassCardContent>
+            </GlassCard>
+          </ScrollReveal>
+
+          <ScrollReveal delay={300}>
+            <GlassCard className="hover-lift">
+              <GlassCardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
                     <p className="text-sm text-muted-foreground">Learning Paths</p>
                     <p className="text-3xl font-bold text-foreground">
-                      <AnimatedCounter value={activeLearningPaths} duration={1500} delay={300} />
+                      <AnimatedCounter value={stats?.activeLearningPaths || 0} duration={1500} delay={300} />
                     </p>
                   </div>
                   <div className="w-12 h-12 rounded-lg bg-primary/20 flex items-center justify-center group">
@@ -137,14 +215,16 @@ const AdminDashboard = () => {
               <GlassCardContent>
                 <GrowthJourneyChart variant="admin" />
                 <div className="mt-4 pt-4 border-t border-border/50 space-y-2">
-                  {teams.map((team) => (
+                  {teamsLoading ? (
+                    <Skeleton className="h-20" />
+                  ) : teams?.map((team) => (
                     <div 
                       key={team.id} 
                       className="flex items-center justify-between text-sm p-2 rounded-lg hover:bg-secondary/30 transition-colors cursor-pointer group"
                     >
                       <span className="text-muted-foreground group-hover:text-foreground transition-colors">{team.name}</span>
                       <span className="font-medium text-foreground">
-                        {team.averageScore}%
+                        {Math.round(team.average_score || 0)}%
                       </span>
                     </div>
                   ))}
@@ -158,19 +238,19 @@ const AdminDashboard = () => {
             <GlassCard className="hover-glow h-full">
               <GlassCardHeader className="flex flex-row items-center justify-between">
                 <div>
-                  <GlassCardTitle className="text-foreground">{selectedRole?.name || "Role"}</GlassCardTitle>
+                  <GlassCardTitle className="text-foreground">{selectedRole?.role_title || "Select Role"}</GlassCardTitle>
                   <p className="text-sm text-muted-foreground mt-1">
                     Employee Development / Competency Gap Analysis
                   </p>
                 </div>
-                <Select value={selectedRoleId} onValueChange={setSelectedRoleId}>
+                <Select value={effectiveRoleKey} onValueChange={setSelectedRoleKey}>
                   <SelectTrigger className="w-48 glass">
-                    <SelectValue />
+                    <SelectValue placeholder="Select role..." />
                   </SelectTrigger>
                   <SelectContent className="glass">
-                    {roles.map((role) => (
-                      <SelectItem key={role.id} value={role.id}>
-                        {role.name}
+                    {roleProfiles?.map((role) => (
+                      <SelectItem key={role.id} value={role.role_key}>
+                        {role.role_title}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -192,7 +272,7 @@ const AdminDashboard = () => {
                     <span>Ø Future Demand ({avgFutureDemand}%)</span>
                   </div>
                 </div>
-                <div className="space-y-4">
+                <div className="space-y-4 max-h-[400px] overflow-y-auto">
                   {roleEmployees.length > 0 ? (
                     roleEmployees.map((employee, index) => (
                       <ScrollReveal key={employee.id} delay={index * 50} direction="left">
@@ -201,14 +281,15 @@ const AdminDashboard = () => {
                           className="w-full flex items-center gap-4 p-2 rounded-lg hover:bg-secondary/30 hover:scale-[1.01] transition-all duration-200 text-left group"
                         >
                           <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-sm font-medium text-primary transition-transform duration-200 group-hover:scale-110">
-                            {employee.name.split(" ").map(n => n[0]).join("")}
+                            {employee.full_name.split(" ").map(n => n[0]).join("")}
                           </div>
                           <div className="w-32 truncate">
-                            <span className="text-sm text-foreground">{employee.name}</span>
+                            <span className="text-sm text-foreground">{employee.full_name}</span>
+                            <p className="text-xs text-muted-foreground truncate">{employee.role_profile?.role_title}</p>
                           </div>
                           <div className="flex-1">
                             <SkillProgressBar 
-                              value={employee.overallScore} 
+                              value={Math.round(employee.overall_score || 0)} 
                               currentDemand={avgCurrentDemand}
                               futureDemand={avgFutureDemand}
                               showLabel={true} 
@@ -238,7 +319,7 @@ const AdminDashboard = () => {
                   The "Employee of Tomorrow"
                 </GlassCardTitle>
                 <p className="text-sm text-muted-foreground text-center">
-                  {selectedRole?.name || "Role"} - Required Skills
+                  {selectedRole?.role_title || "Role"} - Required Skills
                 </p>
               </GlassCardHeader>
               <GlassCardContent>
@@ -248,31 +329,36 @@ const AdminDashboard = () => {
                   </div>
                   <div className="flex-1">
                     <div className="grid grid-cols-4 gap-2 text-xs font-medium text-muted-foreground mb-3">
-                      <span className="col-span-2">Skill</span>
-                      <span className="text-center">Current Demand</span>
-                      <span className="text-center">Future Demand</span>
+                      <span className="col-span-2">Competency</span>
+                      <span className="text-center">Current</span>
+                      <span className="text-center">Future</span>
                     </div>
-                    <div className="space-y-3">
-                      {roleTemplate.map((item, index) => {
-                        const skill = getSkillById(item.skillId);
-                        const currentLevel = getSkillLevel(item.currentBenchmark);
-                        const futureLevel = getSkillLevel(item.futureBenchmark);
-                        return (
-                          <ScrollReveal key={item.skillId} delay={index * 50}>
-                            <div className="grid grid-cols-4 gap-2 items-center p-2 rounded-lg hover:bg-secondary/30 transition-colors">
-                              <span className="text-sm text-foreground truncate col-span-2">
-                                {skill?.name || item.skillId}
-                              </span>
-                              <div className="flex justify-center">
-                                <DemandIndicator level={currentLevel} showLabel={false} />
+                    <div className="space-y-3 max-h-[250px] overflow-y-auto">
+                      {roleCompetencies.length > 0 ? (
+                        roleCompetencies.map((comp, index) => {
+                          const currentLevel = getSkillLevel(comp.demand_weight || 50);
+                          const futureLevel = getSkillLevel(comp.future_demand_max || 70);
+                          return (
+                            <ScrollReveal key={comp.id} delay={index * 50}>
+                              <div className="grid grid-cols-4 gap-2 items-center p-2 rounded-lg hover:bg-secondary/30 transition-colors">
+                                <span className="text-sm text-foreground truncate col-span-2">
+                                  {comp.name}
+                                </span>
+                                <div className="flex justify-center">
+                                  <DemandIndicator level={currentLevel} showLabel={false} />
+                                </div>
+                                <div className="flex justify-center">
+                                  <DemandIndicator level={futureLevel} showLabel={false} />
+                                </div>
                               </div>
-                              <div className="flex justify-center">
-                                <DemandIndicator level={futureLevel} showLabel={false} />
-                              </div>
-                            </div>
-                          </ScrollReveal>
-                        );
-                      })}
+                            </ScrollReveal>
+                          );
+                        })
+                      ) : (
+                        <p className="text-muted-foreground text-center py-4 text-sm">
+                          No competencies defined for this role
+                        </p>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -289,18 +375,35 @@ const AdminDashboard = () => {
                 </GlassCardTitle>
               </GlassCardHeader>
               <GlassCardContent className="space-y-3">
-                <button className="w-full p-4 rounded-lg bg-primary text-primary-foreground text-left hover:bg-primary/90 hover:translate-x-1 transition-all duration-200 group">
-                  <span className="group-hover:ml-1 transition-all duration-200">Future Role-Skill-Matrix für Senior Associate</span>
-                </button>
-                <button className="w-full p-4 rounded-lg bg-secondary/50 backdrop-blur text-foreground text-left hover:bg-secondary/70 hover:translate-x-1 transition-all duration-200 group">
-                  <span className="group-hover:ml-1 transition-all duration-200">Legal Tech AI Integration - Q1 2025 Update</span>
-                </button>
-                <button className="w-full p-4 rounded-lg bg-secondary/50 backdrop-blur text-foreground text-left hover:bg-secondary/70 hover:translate-x-1 transition-all duration-200 group">
-                  <span className="group-hover:ml-1 transition-all duration-200">EU AI Act Compliance Requirements</span>
-                </button>
-                <button className="w-full p-4 rounded-lg bg-secondary/50 backdrop-blur text-foreground text-left hover:bg-secondary/70 hover:translate-x-1 transition-all duration-200 group">
-                  <span className="group-hover:ml-1 transition-all duration-200">ESG Due Diligence - New Standards 2025</span>
-                </button>
+                {reports && reports.length > 0 ? (
+                  reports.slice(0, 4).map((report, index) => (
+                    <button 
+                      key={report.id}
+                      className={`w-full p-4 rounded-lg text-left hover:translate-x-1 transition-all duration-200 group ${
+                        index === 0 
+                          ? 'bg-primary text-primary-foreground hover:bg-primary/90' 
+                          : 'bg-secondary/50 backdrop-blur text-foreground hover:bg-secondary/70'
+                      }`}
+                    >
+                      <span className="group-hover:ml-1 transition-all duration-200">{report.title}</span>
+                      <p className={`text-xs mt-1 ${index === 0 ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}>
+                        Q{report.quarter} {report.year}
+                      </p>
+                    </button>
+                  ))
+                ) : (
+                  <>
+                    <button className="w-full p-4 rounded-lg bg-primary text-primary-foreground text-left hover:bg-primary/90 hover:translate-x-1 transition-all duration-200 group">
+                      <span className="group-hover:ml-1 transition-all duration-200">Future Role-Skill-Matrix für Senior Associate</span>
+                    </button>
+                    <button className="w-full p-4 rounded-lg bg-secondary/50 backdrop-blur text-foreground text-left hover:bg-secondary/70 hover:translate-x-1 transition-all duration-200 group">
+                      <span className="group-hover:ml-1 transition-all duration-200">Legal Tech AI Integration - Q1 2025 Update</span>
+                    </button>
+                    <button className="w-full p-4 rounded-lg bg-secondary/50 backdrop-blur text-foreground text-left hover:bg-secondary/70 hover:translate-x-1 transition-all duration-200 group">
+                      <span className="group-hover:ml-1 transition-all duration-200">EU AI Act Compliance Requirements</span>
+                    </button>
+                  </>
+                )}
               </GlassCardContent>
             </GlassCard>
           </ScrollReveal>
@@ -313,47 +416,56 @@ const AdminDashboard = () => {
               <GlassCardTitle className="text-foreground">Teams Overview</GlassCardTitle>
             </GlassCardHeader>
             <GlassCardContent>
-              <div className="grid md:grid-cols-3 gap-6">
-                {teams.map((team, teamIndex) => {
-                  const teamLeader = employees.find((e) => e.id === team.leaderId);
-                  const teamMembers = employees.filter((e) => team.memberIds.includes(e.id));
-                  return (
+              {teamsLoading ? (
+                <div className="grid md:grid-cols-3 gap-6">
+                  {[1, 2, 3].map(i => (
+                    <Skeleton key={i} className="h-48 rounded-xl" />
+                  ))}
+                </div>
+              ) : teams && teams.length > 0 ? (
+                <div className="grid md:grid-cols-3 gap-6">
+                  {teams.map((team, teamIndex) => (
                     <ScrollReveal key={team.id} delay={teamIndex * 100}>
                       <div className="p-4 rounded-lg bg-secondary/30 backdrop-blur border border-border/50 hover:border-primary/30 hover:bg-secondary/50 transition-all duration-300">
                         <div className="flex items-center justify-between mb-4">
                           <h3 className="font-semibold text-foreground">{team.name}</h3>
                           <Badge variant="secondary" className="backdrop-blur">
-                            {team.averageScore}%
+                            {Math.round(team.average_score || 0)}%
                           </Badge>
                         </div>
                         <p className="text-sm text-muted-foreground mb-3">
-                          Lead: {teamLeader?.name || "N/A"}
+                          {team.member_count || 0} Members
                         </p>
                         <div className="space-y-2">
-                          {teamMembers.slice(0, 4).map((member) => (
+                          {team.members?.slice(0, 4).map((member) => (
                             <button
                               key={member.id}
-                              onClick={() => setSelectedEmployee(member)}
+                              onClick={() => {
+                                const fullEmployee = employees?.find(e => e.id === member.id);
+                                if (fullEmployee) setSelectedEmployee(fullEmployee);
+                              }}
                               className="w-full flex items-center gap-2 text-sm hover:bg-background/50 p-1 rounded transition-all duration-200 group"
                             >
                               <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center text-xs text-primary transition-transform duration-200 group-hover:scale-110">
-                                {member.name.split(" ").map(n => n[0]).join("")}
+                                {member.full_name.split(" ").map(n => n[0]).join("")}
                               </div>
-                              <span className="text-foreground flex-1 truncate text-left">{member.name}</span>
-                              <span className="text-muted-foreground">{member.overallScore}%</span>
+                              <span className="text-foreground flex-1 truncate text-left">{member.full_name}</span>
+                              <span className="text-muted-foreground">{Math.round(member.overall_score || 0)}%</span>
                             </button>
                           ))}
-                          {teamMembers.length > 4 && (
+                          {(team.members?.length || 0) > 4 && (
                             <p className="text-xs text-muted-foreground">
-                              +{teamMembers.length - 4} more
+                              +{(team.members?.length || 0) - 4} more
                             </p>
                           )}
                         </div>
                       </div>
                     </ScrollReveal>
-                  );
-                })}
-              </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-muted-foreground text-center py-8">No teams found</p>
+              )}
             </GlassCardContent>
           </GlassCard>
         </ScrollReveal>
@@ -364,7 +476,28 @@ const AdminDashboard = () => {
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto glass">
           {selectedEmployee && (
             <EmployeeProfile 
-              employee={selectedEmployee} 
+              employee={{
+                id: selectedEmployee.id,
+                name: selectedEmployee.full_name,
+                email: '',
+                roleId: selectedEmployee.role_profile?.role_key || 'employee',
+                teamId: selectedEmployee.team?.id || '',
+                age: 0,
+                education: '',
+                totalExperience: 0,
+                firmExperience: 0,
+                careerObjective: '',
+                overallScore: selectedEmployee.overall_score || 0,
+                avatar: selectedEmployee.avatar_url || undefined,
+                skills: selectedEmployee.competencies?.map(c => ({
+                  skillId: c.competency?.id || '',
+                  currentLevel: c.current_level || 0,
+                  demandedLevel: c.demanded_level || 50,
+                  futureLevel: c.future_level || 70,
+                  level: getSkillLevel(c.current_level || 0),
+                })) || [],
+                learningPaths: [],
+              }} 
               onClose={() => setSelectedEmployee(null)} 
             />
           )}

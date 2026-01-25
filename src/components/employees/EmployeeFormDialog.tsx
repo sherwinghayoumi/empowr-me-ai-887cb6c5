@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -91,23 +91,28 @@ export function EmployeeFormDialog({
     },
   });
 
-  // Reset form when dialog opens with new default values
+  // Track previous open state to detect when dialog opens
+  const prevOpenRef = useRef(open);
+
+  // Reset form only when dialog opens (not on every render)
   useEffect(() => {
-    if (open) {
+    const wasOpening = !prevOpenRef.current && open;
+    prevOpenRef.current = open;
+    
+    if (wasOpening) {
       form.reset({
-        full_name: "",
-        email: "",
-        role_profile_id: "",
-        team_id: "",
-        education: "",
-        total_experience_years: undefined,
-        firm_experience_years: undefined,
-        career_objective: "",
-        age: undefined,
-        ...defaultValues,
+        full_name: defaultValues?.full_name || "",
+        email: defaultValues?.email || "",
+        role_profile_id: defaultValues?.role_profile_id || "",
+        team_id: defaultValues?.team_id || "",
+        education: defaultValues?.education || "",
+        total_experience_years: defaultValues?.total_experience_years,
+        firm_experience_years: defaultValues?.firm_experience_years,
+        career_objective: defaultValues?.career_objective || "",
+        age: defaultValues?.age,
       });
     }
-  }, [open, defaultValues, form]);
+  }, [open, form]);
 
   const handleSubmit = async (data: EmployeeFormData) => {
     await onSubmit(data);

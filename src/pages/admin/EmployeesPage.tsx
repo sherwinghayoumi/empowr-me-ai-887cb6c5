@@ -97,6 +97,48 @@ const EmployeesPage = () => {
       throw new Error("Fehler beim Speichern des Profils");
     }
 
+    // Update employee_competencies with current_level from AI ratings
+    // First, get all competencies for this employee
+    const { data: existingCompetencies, error: fetchError } = await supabase
+      .from("employee_competencies")
+      .select("id, competency:competencies(id, name)")
+      .eq("employee_id", employeeId);
+
+    if (fetchError) {
+      console.error("Error fetching competencies:", fetchError);
+    } else if (existingCompetencies) {
+      // Build a map of competency name -> AI rating
+      const ratingMap = new Map<string, { rating: number; selfRating: number | null; managerRating: number | null }>();
+      
+      for (const cluster of profile.competencyProfile.clusters) {
+        for (const comp of cluster.competencies) {
+          // Convert 1-5 rating to 0-100 scale (1=20, 2=40, 3=60, 4=80, 5=100)
+          const rating = comp.rating === 'NB' ? 0 : (comp.rating as number) * 20;
+          const selfRating = comp.selfRating ? comp.selfRating * 20 : null;
+          const managerRating = comp.managerRating ? comp.managerRating * 20 : null;
+          ratingMap.set(comp.name.toLowerCase(), { rating, selfRating, managerRating });
+        }
+      }
+
+      // Update each employee_competency with the AI-derived current_level
+      for (const ec of existingCompetencies) {
+        const competencyName = ec.competency?.name?.toLowerCase();
+        if (competencyName && ratingMap.has(competencyName)) {
+          const ratings = ratingMap.get(competencyName)!;
+          await supabase
+            .from("employee_competencies")
+            .update({
+              current_level: ratings.rating,
+              self_rating: ratings.selfRating,
+              manager_rating: ratings.managerRating,
+              rated_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            })
+            .eq("id", ec.id);
+        }
+      }
+    }
+
     // Log audit event
     await supabase.rpc("log_audit_event", {
       p_action: "ai_profile_generated",

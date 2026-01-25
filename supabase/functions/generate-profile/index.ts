@@ -31,7 +31,87 @@ KOMPETENZ-CLUSTER:
 5. Legal Project Management (Matter Management)
 6. Soft Skills (Communication, Stakeholder Management)
 
-Antworte NUR mit validem JSON im vorgegebenen Schema. Keine Erklärungen.`;
+ANTWORTE NUR mit diesem exakten JSON-Schema (keine Erklärungen, kein Markdown, nur reines JSON):
+{
+  "extractedData": {
+    "source": {
+      "cvPresent": boolean,
+      "selfAssessmentPresent": boolean,
+      "managerAssessmentPresent": boolean,
+      "extractionQuality": "HIGH" | "MEDIUM" | "LOW"
+    },
+    "employee": {
+      "name": string | null,
+      "currentRole": string,
+      "yearsAtCompany": number,
+      "totalYearsInBusiness": number,
+      "targetRole": string,
+      "gdprConsentGiven": boolean
+    },
+    "cvHighlights": {
+      "education": string[],
+      "certifications": string[],
+      "keyExperience": string[],
+      "toolProficiency": string[],
+      "languages": string[]
+    }
+  },
+  "competencyProfile": {
+    "role": string,
+    "assessmentDate": string (ISO format YYYY-MM-DD),
+    "clusters": [
+      {
+        "clusterName": string,
+        "competencies": [
+          {
+            "name": string,
+            "rating": number (1-5) | "NB",
+            "confidence": "HIGH" | "MEDIUM" | "LOW",
+            "selfRating": number | null,
+            "managerRating": number | null,
+            "evidenceSummary": string,
+            "subskills": [
+              {
+                "name": string,
+                "rating": number (1-5) | "NB",
+                "evidence": string
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "analysis": {
+    "overallScore": number (0-100, berechne den Durchschnitt aller numerischen Ratings und multipliziere mit 20),
+    "topStrengths": [
+      {
+        "competency": string,
+        "rating": number,
+        "evidence": string
+      }
+    ],
+    "developmentAreas": [
+      {
+        "competency": string,
+        "currentRating": number | "NB",
+        "targetRating": number,
+        "gap": string (z.B. "2 Stufen"),
+        "recommendation": string
+      }
+    ],
+    "promotionReadiness": {
+      "targetRole": string,
+      "readinessPercentage": number (0-100),
+      "criticalGaps": string[],
+      "estimatedTimeline": string (z.B. "6-12 Monate")
+    }
+  },
+  "compliance": {
+    "gdprConsentVerified": boolean (true NUR wenn explizite DSGVO-Einwilligung im Self-Assessment gefunden wurde),
+    "disclaimer": string
+  }
+}`;
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -86,6 +166,10 @@ Erstelle das Kompetenzprofil als JSON.`;
 
     const data = await response.json();
     const content = data.content[0]?.text;
+
+    // Logging für Debugging
+    console.log("Claude response length:", content?.length);
+    console.log("Claude response preview:", content?.substring(0, 500));
 
     // JSON aus Antwort extrahieren
     const jsonMatch = content.match(/\{[\s\S]*\}/);

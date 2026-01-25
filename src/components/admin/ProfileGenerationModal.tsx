@@ -89,6 +89,11 @@ export function ProfileGenerationModal({
         employee.role_profile?.role_key || 'Associate'
       );
 
+      // Validate profile structure
+      if (!profile || !profile.analysis || !profile.analysis.overallScore) {
+        throw new Error('Unvollständiges Profil von der KI erhalten. Bitte versuchen Sie es erneut.');
+      }
+
       setGeneratedProfile(profile);
       setStep('result');
     } catch (error) {

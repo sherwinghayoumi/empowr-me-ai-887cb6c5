@@ -78,6 +78,8 @@ interface EmployeeFormDialogProps {
   mode?: "create" | "edit";
 }
 
+const NONE_VALUE = "__none__";
+
 export function EmployeeFormDialog({
   open,
   onOpenChange,
@@ -146,7 +148,12 @@ export function EmployeeFormDialog({
   }, [open]);
 
   const handleSubmit = async (data: EmployeeFormData) => {
-    await onSubmit(data);
+    // Convert NONE_VALUE back to empty string for team_id
+    const submitData = {
+      ...data,
+      team_id: data.team_id === NONE_VALUE ? "" : data.team_id,
+    };
+    await onSubmit(submitData);
   };
 
   return (
@@ -235,14 +242,17 @@ export function EmployeeFormDialog({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Team</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value || ""}>
+                    <Select 
+                      onValueChange={field.onChange} 
+                      value={field.value || NONE_VALUE}
+                    >
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Team wählen..." />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="">Kein Team</SelectItem>
+                        <SelectItem value={NONE_VALUE}>Kein Team</SelectItem>
                         {teams.map((team) => (
                           <SelectItem key={team.id} value={team.id}>
                             {team.name}

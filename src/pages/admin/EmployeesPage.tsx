@@ -3,6 +3,7 @@ import { Header } from "@/components/Header";
 import { EmployeeProfile } from "@/components/EmployeeProfile";
 import { EmployeeFormDialog, type EmployeeFormData } from "@/components/employees/EmployeeFormDialog";
 import { DeleteEmployeeDialog } from "@/components/employees/DeleteEmployeeDialog";
+import { ProfileGenerationModal } from "@/components/admin/ProfileGenerationModal";
 import { GlassCard, GlassCardContent } from "@/components/GlassCard";
 import { ScrollReveal } from "@/components/ScrollReveal";
 import { AnimatedCounter } from "@/components/AnimatedCounter";
@@ -17,9 +18,18 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { UserPlus, Search, MoreVertical, Pencil, Trash2, Eye } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { UserPlus, Search, MoreVertical, Pencil, Trash2, Eye, Bot } from "lucide-react";
 import { useEmployees, useTeams, useRoleProfilesPublished } from "@/hooks/useOrgData";
 import { useCreateEmployee, useUpdateEmployee, useDeleteEmployee } from "@/hooks/useEmployeeMutations";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import type { GeneratedProfile } from "@/types/profileGeneration";
 
 interface DbEmployee {
   id: string;
@@ -55,8 +65,12 @@ const EmployeesPage = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deletingEmployee, setDeletingEmployee] = useState<DbEmployee | null>(null);
 
+  // Profile generation modal state
+  const [showProfileModal, setShowProfileModal] = useState(false);
+  const [selectedEmployeeForProfile, setSelectedEmployeeForProfile] = useState<DbEmployee | null>(null);
+
   // Data hooks
-  const { data: employees, isLoading: employeesLoading } = useEmployees();
+  const { data: employees, isLoading: employeesLoading, refetch } = useEmployees();
   const { data: teams } = useTeams();
   const { data: roleProfiles } = useRoleProfilesPublished();
 
@@ -64,6 +78,43 @@ const EmployeesPage = () => {
   const createEmployee = useCreateEmployee();
   const updateEmployee = useUpdateEmployee();
   const deleteEmployee = useDeleteEmployee();
+
+  // Save generated profile to database
+  const saveProfileToDatabase = async (employeeId: string, profile: GeneratedProfile) => {
+    // Update employee overall_score and promotion_readiness
+    const { error } = await supabase
+      .from("employees")
+      .update({
+        overall_score: profile.analysis.overallScore,
+        promotion_readiness: profile.analysis.promotionReadiness.readinessPercentage,
+        gdpr_consent_given_at: profile.compliance.gdprConsentVerified ? new Date().toISOString() : null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", employeeId);
+
+    if (error) {
+      console.error("Error saving profile:", error);
+      throw new Error("Fehler beim Speichern des Profils");
+    }
+
+    // Log audit event
+    await supabase.rpc("log_audit_event", {
+      p_action: "ai_profile_generated",
+      p_entity_type: "employee",
+      p_entity_id: employeeId,
+      p_new_values: {
+        overall_score: profile.analysis.overallScore,
+        promotion_readiness: profile.analysis.promotionReadiness.readinessPercentage,
+        strengths: profile.analysis.topStrengths.map((s) => s.competency),
+        development_areas: profile.analysis.developmentAreas.map((d) => d.competency),
+      },
+    });
+  };
+
+  const openProfileModal = (employee: DbEmployee) => {
+    setSelectedEmployeeForProfile(employee);
+    setShowProfileModal(true);
+  };
 
   // Filter employees by search query
   const filteredEmployees = employees?.filter((emp) => {
@@ -192,6 +243,23 @@ const EmployeesPage = () => {
                       >
                         {Math.round(emp.overall_score || 0)}%
                       </Badge>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8"
+                              onClick={() => openProfileModal(emp)}
+                            >
+                              <Bot className="w-4 h-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>KI-Profil erstellen</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" size="icon" className="h-8 w-8">
@@ -202,6 +270,10 @@ const EmployeesPage = () => {
                           <DropdownMenuItem onClick={() => setSelectedEmployeeId(emp.id)}>
                             <Eye className="w-4 h-4 mr-2" />
                             Profil anzeigen
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => openProfileModal(emp)}>
+                            <Bot className="w-4 h-4 mr-2" />
+                            KI-Profil erstellen
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => openEditDialog(emp)}>
                             <Pencil className="w-4 h-4 mr-2" />
@@ -292,6 +364,33 @@ const EmployeesPage = () => {
         isLoading={deleteEmployee.isPending}
         employeeName={deletingEmployee?.full_name || ""}
       />
+
+      {/* Profile Generation Modal */}
+      {showProfileModal && selectedEmployeeForProfile && (
+        <ProfileGenerationModal
+          open={showProfileModal}
+          onClose={() => {
+            setShowProfileModal(false);
+            setSelectedEmployeeForProfile(null);
+          }}
+          employee={{
+            id: selectedEmployeeForProfile.id,
+            full_name: selectedEmployeeForProfile.full_name,
+            role_profile: selectedEmployeeForProfile.role_profile,
+          }}
+          onProfileGenerated={async (profile) => {
+            try {
+              await saveProfileToDatabase(selectedEmployeeForProfile.id, profile);
+              toast.success("Profil erfolgreich gespeichert!");
+              setShowProfileModal(false);
+              setSelectedEmployeeForProfile(null);
+              refetch();
+            } catch (error) {
+              toast.error(error instanceof Error ? error.message : "Fehler beim Speichern");
+            }
+          }}
+        />
+      )}
     </div>
   );
 };

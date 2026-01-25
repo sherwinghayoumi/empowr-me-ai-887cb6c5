@@ -2,7 +2,7 @@ import mammoth from 'mammoth';
 import * as pdfjsLib from 'pdfjs-dist';
 
 // PDF.js Worker Setup
-pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/5.4.530/pdf.worker.min.js';
 
 // Text aus DOCX extrahieren
 export async function extractTextFromDocx(file: File): Promise<string> {

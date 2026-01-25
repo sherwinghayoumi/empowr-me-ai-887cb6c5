@@ -7,7 +7,7 @@ import { ThemeProvider } from "@/hooks/useTheme";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { PageTransition } from "@/components/PageTransition";
 import { ParallaxBackground } from "@/components/ParallaxBackground";
-import { ProtectedRoute, AdminRoute, EmployeeRoute } from "@/components/ProtectedRoute";
+import { ProtectedRoute, AdminRoute, EmployeeRoute, SuperAdminRoute } from "@/components/ProtectedRoute";
 
 // Auth Pages
 import LoginPage from "./pages/auth/LoginPage";
@@ -17,6 +17,7 @@ import UnauthorizedPage from "./pages/auth/UnauthorizedPage";
 
 // App Pages
 import Index from "./pages/Index";
+import SuperAdminDashboard from "./pages/SuperAdminDashboard";
 import AdminDashboard from "./pages/AdminDashboard";
 import EmployeeDashboard from "./pages/EmployeeDashboard";
 import TeamsPage from "./pages/admin/TeamsPage";
@@ -45,6 +46,10 @@ function AppRoutes() {
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/unauthorized" element={<UnauthorizedPage />} />
+
+          {/* Super Admin Routes */}
+          <Route path="/super-admin" element={<SuperAdminRoute><SuperAdminDashboard /></SuperAdminRoute>} />
+          <Route path="/super-admin/*" element={<SuperAdminRoute><SuperAdminDashboard /></SuperAdminRoute>} />
 
           {/* Admin Routes */}
           <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />

@@ -1,138 +1,218 @@
-import { Header } from "@/components/Header";
-import { GlassCard, GlassCardContent, GlassCardHeader, GlassCardTitle } from "@/components/GlassCard";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { 
-  FileText, 
-  Plus, 
-  Calendar,
-  Download,
-  Eye,
-  MoreVertical
-} from "lucide-react";
+import { useState } from 'react';
+import { Plus, FileText, Search, Filter } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-
-// Mock data
-const mockReports = [
-  { 
-    id: "1", 
-    title: "Q1 2025 Competency Report",
-    quarter: "Q1",
-    year: 2025,
-    is_published: true,
-    created_at: "2025-01-15",
-    practice_group: "Corporate Law / M&A"
-  },
-  { 
-    id: "2", 
-    title: "Q4 2024 Competency Report",
-    quarter: "Q4",
-    year: 2024,
-    is_published: true,
-    created_at: "2024-10-20",
-    practice_group: "Corporate Law / M&A"
-  },
-  { 
-    id: "3", 
-    title: "Q3 2024 Competency Report",
-    quarter: "Q3",
-    year: 2024,
-    is_published: true,
-    created_at: "2024-07-15",
-    practice_group: "Corporate Law / M&A"
-  },
-];
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { GlassCard, GlassCardContent, GlassCardHeader, GlassCardTitle } from '@/components/GlassCard';
+import { ReportsList } from '@/components/reports/ReportsList';
+import { ReportFormWizard } from '@/components/reports/ReportFormWizard';
+import { ReportDetailDialog } from '@/components/reports/ReportDetailDialog';
+import { useReports, type Report, type ReportFormData, uploadReportFile } from '@/hooks/useReports';
+import { useAuth } from '@/contexts/AuthContext';
 
 const Reports = () => {
+  const { profile } = useAuth();
+  const { 
+    reports, 
+    isLoading, 
+    createReport, 
+    updateReport, 
+    deleteReport, 
+    publishReport,
+    unpublishReport,
+  } = useReports();
+
+  const [searchQuery, setSearchQuery] = useState('');
+  const [yearFilter, setYearFilter] = useState<string>('all');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  
+  const [wizardOpen, setWizardOpen] = useState(false);
+  const [editingReport, setEditingReport] = useState<Report | null>(null);
+  const [viewingReport, setViewingReport] = useState<Report | null>(null);
+  const [detailOpen, setDetailOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Filter reports
+  const filteredReports = reports?.filter(report => {
+    const matchesSearch = report.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         report.practice_group?.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesYear = yearFilter === 'all' || report.year.toString() === yearFilter;
+    const matchesStatus = statusFilter === 'all' || 
+                         (statusFilter === 'published' && report.is_published) ||
+                         (statusFilter === 'draft' && !report.is_published);
+    return matchesSearch && matchesYear && matchesStatus;
+  });
+
+  // Get unique years for filter
+  const years = [...new Set(reports?.map(r => r.year) || [])].sort((a, b) => b - a);
+
+  const handleCreateNew = () => {
+    setEditingReport(null);
+    setWizardOpen(true);
+  };
+
+  const handleEdit = (report: Report) => {
+    setEditingReport(report);
+    setWizardOpen(true);
+  };
+
+  const handleView = (report: Report) => {
+    setViewingReport(report);
+    setDetailOpen(true);
+  };
+
+  const handleDelete = (id: string) => {
+    deleteReport.mutate(id);
+  };
+
+  const handlePublish = (report: Report) => {
+    publishReport.mutate({
+      reportId: report.id,
+      quarter: report.quarter,
+      year: report.year,
+    });
+  };
+
+  const handleUnpublish = (id: string) => {
+    unpublishReport.mutate(id);
+  };
+
+  const handleFormSubmit = async (data: ReportFormData, publish: boolean) => {
+    setIsSubmitting(true);
+    try {
+      if (editingReport) {
+        // Update existing report
+        await updateReport.mutateAsync({
+          id: editingReport.id,
+          updates: {
+            ...data,
+            is_published: publish,
+            published_at: publish ? new Date().toISOString() : null,
+            version: (editingReport.version || 1) + 1,
+          },
+        });
+      } else {
+        // Create new report
+        const newReport = await createReport.mutateAsync({
+          ...data,
+          is_published: publish,
+          published_at: publish ? new Date().toISOString() : null,
+          created_by: profile?.id,
+          version: 1,
+        });
+
+        // If publishing, create changelog entry
+        if (publish && newReport) {
+          publishReport.mutate({
+            reportId: newReport.id,
+            quarter: data.quarter,
+            year: data.year,
+          });
+        }
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-background">
-      <Header variant="admin" />
-      
-      <main className="container mx-auto px-4 py-8">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
-          <div>
-            <h1 className="text-3xl font-bold text-foreground mb-2">
-              Quartalsberichte
-            </h1>
-            <p className="text-muted-foreground">
-              Verwalten Sie Kompetenz-Reports und Analysen
-            </p>
-          </div>
-          <Button className="bg-primary text-primary-foreground hover:bg-primary/90">
-            <Plus className="w-4 h-4 mr-2" />
-            Neuer Report
-          </Button>
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">Quarterly Reports</h1>
+          <p className="text-muted-foreground">
+            Verwalten Sie Kompetenz-Reports und Analysen
+          </p>
         </div>
+        <Button onClick={handleCreateNew}>
+          <Plus className="w-4 h-4 mr-2" />
+          Neuer Report
+        </Button>
+      </div>
 
-        {/* Reports List */}
-        <GlassCard>
-          <GlassCardHeader>
-            <GlassCardTitle>Alle Reports</GlassCardTitle>
-          </GlassCardHeader>
-          <GlassCardContent>
-            <div className="space-y-4">
-              {mockReports.map((report) => (
-                <div 
-                  key={report.id}
-                  className="flex items-center justify-between p-4 rounded-xl glass-subtle hover:bg-secondary/30 transition-colors"
-                >
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
-                      <FileText className="w-6 h-6 text-primary" />
-                    </div>
-                    <div>
-                      <h3 className="font-medium text-foreground">{report.title}</h3>
-                      <div className="flex items-center gap-2 mt-1">
-                        <span className="text-sm text-muted-foreground">{report.practice_group}</span>
-                        <span className="text-muted-foreground">•</span>
-                        <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                          <Calendar className="w-3 h-3" />
-                          {new Date(report.created_at).toLocaleDateString('de-DE')}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+      {/* Filters */}
+      <div className="flex flex-col sm:flex-row gap-3">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input
+            placeholder="Reports durchsuchen..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10"
+          />
+        </div>
+        <Select value={yearFilter} onValueChange={setYearFilter}>
+          <SelectTrigger className="w-full sm:w-32">
+            <SelectValue placeholder="Jahr" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Alle Jahre</SelectItem>
+            {years.map(year => (
+              <SelectItem key={year} value={year.toString()}>{year}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <SelectTrigger className="w-full sm:w-40">
+            <SelectValue placeholder="Status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Alle Status</SelectItem>
+            <SelectItem value="published">Veröffentlicht</SelectItem>
+            <SelectItem value="draft">Entwurf</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
 
-                  <div className="flex items-center gap-3">
-                    <Badge className={report.is_published 
-                      ? "bg-skill-very-strong/20 text-skill-very-strong border-skill-very-strong/30"
-                      : "bg-skill-moderate/20 text-skill-moderate border-skill-moderate/30"
-                    }>
-                      {report.is_published ? "Veröffentlicht" : "Entwurf"}
-                    </Badge>
+      {/* Reports List */}
+      <GlassCard>
+        <GlassCardHeader>
+          <GlassCardTitle className="flex items-center gap-2">
+            <FileText className="w-5 h-5" />
+            Reports ({filteredReports?.length || 0})
+          </GlassCardTitle>
+        </GlassCardHeader>
+        <GlassCardContent>
+          <ReportsList
+            reports={filteredReports}
+            isLoading={isLoading}
+            onView={handleView}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
+            onPublish={handlePublish}
+            onUnpublish={handleUnpublish}
+          />
+        </GlassCardContent>
+      </GlassCard>
 
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                          <MoreVertical className="w-4 h-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem>
-                          <Eye className="w-4 h-4 mr-2" />
-                          Anzeigen
-                        </DropdownMenuItem>
-                        <DropdownMenuItem>
-                          <Download className="w-4 h-4 mr-2" />
-                          Herunterladen
-                        </DropdownMenuItem>
-                        <DropdownMenuItem>Bearbeiten</DropdownMenuItem>
-                        <DropdownMenuItem className="text-destructive">Löschen</DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </GlassCardContent>
-        </GlassCard>
-      </main>
+      {/* Wizard Dialog */}
+      <ReportFormWizard
+        open={wizardOpen}
+        onOpenChange={setWizardOpen}
+        initialData={editingReport}
+        onSubmit={handleFormSubmit}
+        isSubmitting={isSubmitting}
+      />
+
+      {/* Detail Dialog */}
+      <ReportDetailDialog
+        open={detailOpen}
+        onOpenChange={setDetailOpen}
+        report={viewingReport}
+        onEdit={() => {
+          setDetailOpen(false);
+          if (viewingReport) {
+            handleEdit(viewingReport);
+          }
+        }}
+      />
     </div>
   );
 };

@@ -31,10 +31,27 @@ const LoginPage = () => {
     return () => window.removeEventListener("mousemove", handleMouseMove);
   }, []);
 
+  const isRouteAllowedForRole = (path: string, role: string): boolean => {
+    if (role === 'super_admin') return true;
+    if (role === 'org_admin') {
+      return path.startsWith('/admin') || path.startsWith('/employee');
+    }
+    if (role === 'employee') {
+      return path.startsWith('/employee');
+    }
+    return false;
+  };
+
   // Redirect if already authenticated
   useEffect(() => {
     if (isAuthenticated && profile && !authLoading) {
-      const redirectTo = from || getDefaultRedirect(profile.role);
+      let redirectTo = getDefaultRedirect(profile.role);
+      
+      // Only use 'from' if the route is allowed for the user's role
+      if (from && isRouteAllowedForRole(from, profile.role)) {
+        redirectTo = from;
+      }
+      
       navigate(redirectTo, { replace: true });
     }
   }, [isAuthenticated, profile, authLoading, navigate, from]);

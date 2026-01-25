@@ -1,7 +1,5 @@
 import { useState } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import { 
   Users, 
   Search, 
@@ -11,9 +9,15 @@ import {
   Shield, 
   UserCheck,
   UserX,
-  Clock
+  UserPlus,
+  LogIn,
+  Eye,
+  Pencil,
+  Key,
+  Trash2,
+  Filter,
 } from 'lucide-react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -41,36 +45,50 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { Skeleton } from '@/components/ui/skeleton';
+import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+import { useUsers, useOrganizations, startImpersonation, type UserWithOrg } from '@/hooks/useUsers';
+import { UserDetailDialog } from '@/components/users/UserDetailDialog';
+import { CreateUserDialog } from '@/components/users/CreateUserDialog';
 
 export default function SuperAdminUsers() {
+  const queryClient = useQueryClient();
+  const { profile: currentUser } = useAuth();
+  const { users, isLoading, updateUser, deleteUser } = useUsers();
+  const { data: organizations } = useOrganizations();
+
   const [searchQuery, setSearchQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState<string>('all');
+  const [orgFilter, setOrgFilter] = useState<string>('all');
 
-  const { data: users, isLoading } = useQuery({
-    queryKey: ['super-admin-users'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('user_profiles')
-        .select(`
-          *,
-          organizations (name)
-        `)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      return data;
-    },
-  });
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const [detailDialogOpen, setDetailDialogOpen] = useState(false);
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [userToDelete, setUserToDelete] = useState<UserWithOrg | null>(null);
 
   const filteredUsers = users?.filter(user => {
     const matchesSearch = 
       user.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       user.email.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesRole = roleFilter === 'all' || user.role === roleFilter;
-    return matchesSearch && matchesRole;
+    const matchesOrg = orgFilter === 'all' || user.organization_id === orgFilter;
+    return matchesSearch && matchesRole && matchesOrg;
   });
 
-  const getRoleBadge = (role: string, isSuperAdmin: boolean) => {
+  const getRoleBadge = (role: string, isSuperAdmin: boolean | null) => {
     if (isSuperAdmin) {
       return <Badge className="bg-primary/20 text-primary border-primary/30">Super Admin</Badge>;
     }
@@ -86,22 +104,77 @@ export default function SuperAdminUsers() {
 
   const stats = {
     total: users?.length || 0,
-    superAdmins: users?.filter(u => u.role === 'super_admin').length || 0,
+    superAdmins: users?.filter(u => u.is_super_admin).length || 0,
     orgAdmins: users?.filter(u => u.role === 'org_admin').length || 0,
     employees: users?.filter(u => u.role === 'employee').length || 0,
+  };
+
+  const handleViewUser = (userId: string) => {
+    setSelectedUserId(userId);
+    setDetailDialogOpen(true);
+  };
+
+  const handleUpdateUser = async (id: string, updates: Partial<UserWithOrg>) => {
+    await updateUser.mutateAsync({ id, updates });
+  };
+
+  const handleDeleteClick = (user: UserWithOrg) => {
+    setUserToDelete(user);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDelete = () => {
+    if (userToDelete) {
+      deleteUser.mutate(userToDelete.id);
+    }
+    setDeleteDialogOpen(false);
+    setUserToDelete(null);
+  };
+
+  const handleImpersonate = async (user: UserWithOrg) => {
+    if (!currentUser) return;
+    
+    try {
+      // Store original user info
+      startImpersonation(currentUser.id, currentUser.full_name || currentUser.email);
+      
+      // Sign out current user
+      await supabase.auth.signOut();
+      
+      toast.info('Impersonation gestartet', {
+        description: `Bitte loggen Sie sich jetzt als ${user.full_name || user.email} ein`,
+      });
+      
+      // Note: In a production system, you would use admin auth APIs or magic links
+      // For now, we redirect to login where they can enter the user's credentials
+      window.location.href = `/login?impersonate=${user.email}`;
+    } catch (error) {
+      console.error('Error starting impersonation:', error);
+      toast.error('Impersonation fehlgeschlagen');
+    }
+  };
+
+  const handleCreateSuccess = () => {
+    queryClient.invalidateQueries({ queryKey: ['super-admin-users'] });
   };
 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-foreground">Users</h1>
-        <p className="text-muted-foreground">Alle Benutzer im System verwalten</p>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">Users</h1>
+          <p className="text-muted-foreground">Alle Benutzer im System verwalten</p>
+        </div>
+        <Button onClick={() => setCreateDialogOpen(true)}>
+          <UserPlus className="w-4 h-4 mr-2" />
+          Neuer Benutzer
+        </Button>
       </div>
 
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className="glass">
+        <Card className="bg-muted/30">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-lg bg-primary/10">
@@ -114,7 +187,7 @@ export default function SuperAdminUsers() {
             </div>
           </CardContent>
         </Card>
-        <Card className="glass">
+        <Card className="bg-muted/30">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-lg bg-primary/10">
@@ -127,7 +200,7 @@ export default function SuperAdminUsers() {
             </div>
           </CardContent>
         </Card>
-        <Card className="glass">
+        <Card className="bg-muted/30">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-lg bg-secondary/50">
@@ -140,7 +213,7 @@ export default function SuperAdminUsers() {
             </div>
           </CardContent>
         </Card>
-        <Card className="glass">
+        <Card className="bg-muted/30">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-lg bg-muted">
@@ -156,7 +229,7 @@ export default function SuperAdminUsers() {
       </div>
 
       {/* Filters */}
-      <Card className="glass">
+      <Card className="bg-muted/30">
         <CardHeader className="pb-4">
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="relative flex-1">
@@ -170,13 +243,24 @@ export default function SuperAdminUsers() {
             </div>
             <Select value={roleFilter} onValueChange={setRoleFilter}>
               <SelectTrigger className="w-full sm:w-[180px]">
-                <SelectValue placeholder="Rolle filtern" />
+                <SelectValue placeholder="Rolle" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Alle Rollen</SelectItem>
                 <SelectItem value="super_admin">Super Admin</SelectItem>
                 <SelectItem value="org_admin">Org Admin</SelectItem>
                 <SelectItem value="employee">Employee</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={orgFilter} onValueChange={setOrgFilter}>
+              <SelectTrigger className="w-full sm:w-[200px]">
+                <SelectValue placeholder="Organisation" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Alle Organisationen</SelectItem>
+                {organizations?.map(org => (
+                  <SelectItem key={org.id} value={org.id}>{org.name}</SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
@@ -195,11 +279,24 @@ export default function SuperAdminUsers() {
             </TableHeader>
             <TableBody>
               {isLoading ? (
-                <TableRow>
-                  <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                    Lade Benutzer...
-                  </TableCell>
-                </TableRow>
+                Array.from({ length: 5 }).map((_, i) => (
+                  <TableRow key={i}>
+                    <TableCell>
+                      <div className="flex items-center gap-3">
+                        <Skeleton className="h-9 w-9 rounded-full" />
+                        <div className="space-y-1">
+                          <Skeleton className="h-4 w-32" />
+                          <Skeleton className="h-3 w-40" />
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell><Skeleton className="h-5 w-20" /></TableCell>
+                    <TableCell className="hidden md:table-cell"><Skeleton className="h-4 w-24" /></TableCell>
+                    <TableCell className="hidden lg:table-cell"><Skeleton className="h-5 w-16" /></TableCell>
+                    <TableCell className="hidden lg:table-cell"><Skeleton className="h-4 w-20" /></TableCell>
+                    <TableCell><Skeleton className="h-8 w-8" /></TableCell>
+                  </TableRow>
+                ))
               ) : filteredUsers?.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
@@ -208,7 +305,7 @@ export default function SuperAdminUsers() {
                 </TableRow>
               ) : (
                 filteredUsers?.map((user) => (
-                  <TableRow key={user.id}>
+                  <TableRow key={user.id} className="group">
                     <TableCell>
                       <div className="flex items-center gap-3">
                         <Avatar className="h-9 w-9">
@@ -224,7 +321,7 @@ export default function SuperAdminUsers() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      {getRoleBadge(user.role, user.role === 'super_admin')}
+                      {getRoleBadge(user.role, user.is_super_admin)}
                     </TableCell>
                     <TableCell className="hidden md:table-cell">
                       {user.organizations?.name || (
@@ -233,7 +330,7 @@ export default function SuperAdminUsers() {
                     </TableCell>
                     <TableCell className="hidden lg:table-cell">
                       {user.gdpr_consent_given_at ? (
-                        <Badge variant="outline" className="text-green-500 border-green-500/30">
+                        <Badge variant="outline" className="text-skill-very-strong border-skill-very-strong/30">
                           <UserCheck className="w-3 h-3 mr-1" />
                           Erteilt
                         </Badge>
@@ -245,34 +342,33 @@ export default function SuperAdminUsers() {
                       )}
                     </TableCell>
                     <TableCell className="hidden lg:table-cell text-muted-foreground text-sm">
-                      {new Date(user.created_at || '').toLocaleDateString('de-DE')}
+                      {user.created_at ? new Date(user.created_at).toLocaleDateString('de-DE') : '-'}
                     </TableCell>
                     <TableCell>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon">
+                          <Button variant="ghost" size="icon" className="opacity-0 group-hover:opacity-100">
                             <MoreHorizontal className="w-4 h-4" />
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuLabel>Aktionen</DropdownMenuLabel>
                           <DropdownMenuSeparator />
-                          <DropdownMenuItem>
-                            <Mail className="w-4 h-4 mr-2" />
-                            E-Mail senden
+                          <DropdownMenuItem onClick={() => handleViewUser(user.id)}>
+                            <Eye className="w-4 h-4 mr-2" />
+                            Details anzeigen
                           </DropdownMenuItem>
-                          <DropdownMenuItem>
-                            <Building2 className="w-4 h-4 mr-2" />
-                            Organisation ändern
-                          </DropdownMenuItem>
-                          <DropdownMenuItem>
-                            <Shield className="w-4 h-4 mr-2" />
-                            Rolle ändern
+                          <DropdownMenuItem onClick={() => handleImpersonate(user)}>
+                            <LogIn className="w-4 h-4 mr-2" />
+                            Impersonate
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
-                          <DropdownMenuItem className="text-destructive">
-                            <UserX className="w-4 h-4 mr-2" />
-                            Deaktivieren
+                          <DropdownMenuItem 
+                            className="text-destructive"
+                            onClick={() => handleDeleteClick(user)}
+                          >
+                            <Trash2 className="w-4 h-4 mr-2" />
+                            Löschen
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -284,6 +380,44 @@ export default function SuperAdminUsers() {
           </Table>
         </CardContent>
       </Card>
+
+      {/* Detail Dialog */}
+      <UserDetailDialog
+        open={detailDialogOpen}
+        onOpenChange={setDetailDialogOpen}
+        userId={selectedUserId}
+        onUpdate={handleUpdateUser}
+        onImpersonate={handleImpersonate}
+      />
+
+      {/* Create Dialog */}
+      <CreateUserDialog
+        open={createDialogOpen}
+        onOpenChange={setCreateDialogOpen}
+        onSuccess={handleCreateSuccess}
+      />
+
+      {/* Delete Confirmation */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Benutzer löschen?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Möchten Sie <strong>{userToDelete?.full_name || userToDelete?.email}</strong> wirklich löschen? 
+              Diese Aktion kann nicht rückgängig gemacht werden.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleConfirmDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Löschen
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

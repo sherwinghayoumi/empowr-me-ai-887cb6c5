@@ -153,22 +153,107 @@ export function useRoleProfile(id: string | undefined) {
   });
 }
 
-// Parse CSV text to rows
+// Detect delimiter (comma or semicolon)
+function detectDelimiter(headerLine: string): string {
+  const semicolonCount = (headerLine.match(/;/g) || []).length;
+  const commaCount = (headerLine.match(/,/g) || []).length;
+  return semicolonCount > commaCount ? ';' : ',';
+}
+
+// Parse CSV text to rows - handles both comma and semicolon delimiters
 export function parseCSV(csvText: string): RoleProfileCSVRow[] {
-  const lines = csvText.trim().split('\n');
-  if (lines.length < 2) return [];
+  // Normalize line endings and handle multi-line quoted values
+  const normalizedText = csvText.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
   
-  const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
+  // Split into records, respecting quoted values with newlines
+  const records: string[] = [];
+  let currentRecord = '';
+  let inQuotes = false;
+  
+  for (let i = 0; i < normalizedText.length; i++) {
+    const char = normalizedText[i];
+    
+    if (char === '"') {
+      inQuotes = !inQuotes;
+      currentRecord += char;
+    } else if (char === '\n' && !inQuotes) {
+      if (currentRecord.trim()) {
+        records.push(currentRecord);
+      }
+      currentRecord = '';
+    } else {
+      currentRecord += char;
+    }
+  }
+  if (currentRecord.trim()) {
+    records.push(currentRecord);
+  }
+  
+  if (records.length < 2) return [];
+  
+  const headerLine = records[0];
+  const delimiter = detectDelimiter(headerLine);
+  
+  // Parse headers - clean up column names
+  const headers = parseCSVLine(headerLine, delimiter).map(h => {
+    // Remove BOM, quotes, brackets, and normalize header names
+    let clean = h.trim()
+      .replace(/^\uFEFF/, '') // Remove BOM
+      .replace(/"/g, '')
+      .replace(/^\[current\]\s*/i, '') // Remove [current] prefix
+      .toLowerCase()
+      .replace(/\s+/g, '_');
+    
+    // Map common variations
+    if (clean.includes('q1_2026_demand') || clean.includes('q2_2026_demand')) {
+      clean = 'demand_weight';
+    }
+    if (clean === 'future_demand_q2_2026') {
+      clean = 'future_demand';
+    }
+    if (clean === 'confidence_future_demand_q2_2026') {
+      clean = 'confidence';
+    }
+    
+    return clean;
+  });
+  
   const rows: RoleProfileCSVRow[] = [];
   
-  for (let i = 1; i < lines.length; i++) {
-    const values = parseCSVLine(lines[i]);
+  // Track inherited values from previous rows (for empty cells)
+  let lastRoleTitle = '';
+  let lastPracticeGroup = '';
+  let lastMarketSegment = '';
+  let lastExperienceLevel = '';
+  let lastRegions = '';
+  let lastUpdated = '';
+  
+  for (let i = 1; i < records.length; i++) {
+    const values = parseCSVLine(records[i], delimiter);
     if (values.length === 0) continue;
     
     const row: Record<string, string> = {};
     headers.forEach((header, index) => {
-      row[header] = values[index]?.trim() || '';
+      // Clean the value - remove quotes and extra whitespace/newlines
+      let value = (values[index] || '').trim().replace(/"/g, '').replace(/\n/g, ' ').trim();
+      row[header] = value;
     });
+    
+    // Inherit values from previous row if empty (common in CSV exports)
+    if (!row.role_title && lastRoleTitle) row.role_title = lastRoleTitle;
+    if (!row.practice_group && lastPracticeGroup) row.practice_group = lastPracticeGroup;
+    if (!row.market_segment && lastMarketSegment) row.market_segment = lastMarketSegment;
+    if (!row.experience_level && lastExperienceLevel) row.experience_level = lastExperienceLevel;
+    if (!row.regions && lastRegions) row.regions = lastRegions;
+    if (!row.last_updated && lastUpdated) row.last_updated = lastUpdated;
+    
+    // Update last values
+    if (row.role_title) lastRoleTitle = row.role_title;
+    if (row.practice_group) lastPracticeGroup = row.practice_group;
+    if (row.market_segment) lastMarketSegment = row.market_segment;
+    if (row.experience_level) lastExperienceLevel = row.experience_level;
+    if (row.regions) lastRegions = row.regions;
+    if (row.last_updated) lastUpdated = row.last_updated;
     
     rows.push(row as unknown as RoleProfileCSVRow);
   }
@@ -177,7 +262,7 @@ export function parseCSV(csvText: string): RoleProfileCSVRow[] {
 }
 
 // Parse a single CSV line, handling quoted values
-function parseCSVLine(line: string): string[] {
+function parseCSVLine(line: string, delimiter: string = ','): string[] {
   const values: string[] = [];
   let current = '';
   let inQuotes = false;
@@ -186,15 +271,21 @@ function parseCSVLine(line: string): string[] {
     const char = line[i];
     
     if (char === '"') {
-      inQuotes = !inQuotes;
-    } else if (char === ',' && !inQuotes) {
-      values.push(current.trim());
+      if (inQuotes && line[i + 1] === '"') {
+        // Escaped quote
+        current += '"';
+        i++;
+      } else {
+        inQuotes = !inQuotes;
+      }
+    } else if (char === delimiter && !inQuotes) {
+      values.push(current);
       current = '';
     } else {
       current += char;
     }
   }
-  values.push(current.trim());
+  values.push(current);
   
   return values;
 }

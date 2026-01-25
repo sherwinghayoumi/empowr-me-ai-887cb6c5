@@ -3,6 +3,8 @@ import { cn } from "@/lib/utils";
 import { Menu, LogOut, Users, LayoutDashboard, FileText, Award, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "sonner";
 
 import starLogo from "@/assets/star-logo.png";
 
@@ -26,7 +28,18 @@ const employeeNavItems = [
 
 export function Header({ variant }: HeaderProps) {
   const location = useLocation();
+  const { signOut, profile } = useAuth();
   const navItems = variant === "admin" ? adminNavItems : employeeNavItems;
+
+  const handleLogout = async () => {
+    try {
+      await signOut();
+      toast.success('Erfolgreich abgemeldet');
+    } catch (error) {
+      console.error('Logout error:', error);
+      toast.error('Fehler beim Abmelden');
+    }
+  };
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/30 backdrop-blur-2xl bg-background/80">
@@ -70,12 +83,20 @@ export function Header({ variant }: HeaderProps) {
 
         {/* Actions */}
         <div className="flex items-center gap-2">
-          <Link to="/">
-            <Button variant="ghost" size="sm" className="text-muted-foreground group hover:text-primary">
-              <LogOut className="w-4 h-4 mr-2 transition-transform duration-300 group-hover:-translate-x-1" />
-              Logout
-            </Button>
-          </Link>
+          {profile && (
+            <span className="text-sm text-muted-foreground hidden sm:inline">
+              {profile.full_name || profile.email}
+            </span>
+          )}
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={handleLogout}
+            className="text-muted-foreground group hover:text-primary"
+          >
+            <LogOut className="w-4 h-4 mr-2 transition-transform duration-300 group-hover:-translate-x-1" />
+            Abmelden
+          </Button>
 
           {/* Mobile Menu */}
           <DropdownMenu>
@@ -96,6 +117,10 @@ export function Header({ variant }: HeaderProps) {
                   </DropdownMenuItem>
                 );
               })}
+              <DropdownMenuItem onClick={handleLogout} className="text-destructive">
+                <LogOut className="w-4 h-4 mr-2" />
+                Abmelden
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>

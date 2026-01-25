@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Lock, Loader2, AlertCircle, CheckCircle2 } from "lucide-react";
+import { Lock, Loader2, AlertCircle, CheckCircle2, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,6 +15,49 @@ const ResetPasswordPage = () => {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+  const [hasSession, setHasSession] = useState<boolean | null>(null);
+  const [isCheckingSession, setIsCheckingSession] = useState(true);
+
+  // Check for valid session from invite/recovery link
+  useEffect(() => {
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        setHasSession(true);
+        setIsCheckingSession(false);
+      }
+    };
+
+    // Listen for auth state changes (invite link token exchange)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log("Auth event in ResetPasswordPage:", event);
+      if (event === 'SIGNED_IN' || event === 'PASSWORD_RECOVERY') {
+        setHasSession(true);
+        setIsCheckingSession(false);
+      } else if (event === 'INITIAL_SESSION') {
+        // Check if we have a session after initial load
+        if (session) {
+          setHasSession(true);
+        } else {
+          setHasSession(false);
+        }
+        setIsCheckingSession(false);
+      }
+    });
+
+    // Initial check
+    checkSession();
+
+    // Timeout fallback - if no session after 3 seconds, show error
+    const timeout = setTimeout(() => {
+      setIsCheckingSession(false);
+    }, 3000);
+
+    return () => {
+      subscription.unsubscribe();
+      clearTimeout(timeout);
+    };
+  }, []);
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
@@ -107,7 +150,31 @@ const ResetPasswordPage = () => {
       {/* Card */}
       <div className="w-full max-w-md relative animate-fade-in-up stagger-1 opacity-0">
         <div className="glass-card p-8">
-          {success ? (
+          {/* Loading state while checking session */}
+          {isCheckingSession ? (
+            <div className="text-center">
+              <Loader2 className="w-8 h-8 animate-spin text-primary mx-auto mb-4" />
+              <p className="text-muted-foreground text-sm">Link wird verifiziert...</p>
+            </div>
+          ) : hasSession === false ? (
+            /* Invalid or expired link */
+            <div className="text-center">
+              <div className="w-16 h-16 rounded-full bg-destructive/10 flex items-center justify-center mx-auto mb-4">
+                <AlertCircle className="w-8 h-8 text-destructive" />
+              </div>
+              <h1 className="text-2xl font-semibold text-foreground mb-2">Link ungültig</h1>
+              <p className="text-muted-foreground text-sm mb-6">
+                Dieser Link ist ungültig oder abgelaufen. Bitte fordern Sie einen neuen Einladungslink bei Ihrem Administrator an.
+              </p>
+              <Button
+                onClick={() => navigate('/login')}
+                className="w-full h-11 rounded-xl font-medium"
+              >
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Zum Login
+              </Button>
+            </div>
+          ) : success ? (
             <div className="text-center">
               <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
                 <CheckCircle2 className="w-8 h-8 text-primary" />

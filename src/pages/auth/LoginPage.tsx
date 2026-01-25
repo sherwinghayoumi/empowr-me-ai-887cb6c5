@@ -42,6 +42,7 @@ const LoginPage = () => {
   const getDefaultRedirect = (role: string) => {
     switch (role) {
       case 'super_admin':
+        return '/super-admin';
       case 'org_admin':
         return '/admin';
       case 'employee':

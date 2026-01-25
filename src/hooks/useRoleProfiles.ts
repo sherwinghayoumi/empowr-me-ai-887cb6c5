@@ -351,6 +351,12 @@ export function parseCSVData(rows: RoleProfileCSVRow[]): ParsedCSVData {
         }
       }
       
+      // Normalize status to lowercase (enum expects 'active', 'emerging', 'deprecated')
+      const normalizedStatus = (row.status || 'active').toLowerCase().trim();
+      const validStatus = ['active', 'emerging', 'deprecated'].includes(normalizedStatus) 
+        ? normalizedStatus 
+        : 'active';
+
       cluster.set(compName, {
         definition: row.competency_definition || '',
         demandWeight: row.demand_weight ? parseFloat(row.demand_weight) : null,
@@ -358,7 +364,7 @@ export function parseCSVData(rows: RoleProfileCSVRow[]): ParsedCSVData {
         futureDemandMin: fdMin,
         futureDemandMax: fdMax,
         confidence: row.confidence_future_demand_Q2_2026 || row.confidence || null,
-        status: row.status || 'active',
+        status: validStatus,
         tools: row.tools?.split('|').filter(Boolean) || [],
         artifacts: row.artifacts?.split('|').filter(Boolean) || [],
         subskills: new Map(),
@@ -369,11 +375,17 @@ export function parseCSVData(rows: RoleProfileCSVRow[]): ParsedCSVData {
     if (row.subskill) {
       const comp = cluster.get(compName)!;
       if (!comp.subskills.has(row.subskill)) {
+        // Normalize status for subskills too
+        const subskillStatus = (row.status || 'active').toLowerCase().trim();
+        const validSubskillStatus = ['active', 'emerging', 'deprecated'].includes(subskillStatus) 
+          ? subskillStatus 
+          : 'active';
+
         comp.subskills.set(row.subskill, {
           demandWeight: row.demand_weight ? parseFloat(row.demand_weight) : null,
           futureDemand: row.future_demand_Q2_2026 || row.future_demand || null,
           confidence: row.confidence_future_demand_Q2_2026 || row.confidence || null,
-          status: row.status || 'active',
+          status: validSubskillStatus,
         });
         totalSubskills++;
       }

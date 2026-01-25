@@ -79,6 +79,39 @@ const EmployeesPage = () => {
   const updateEmployee = useUpdateEmployee();
   const deleteEmployee = useDeleteEmployee();
 
+  // Helper function for fuzzy name matching
+  const normalizeCompetencyName = (name: string): string => {
+    return name
+      .toLowerCase()
+      .replace(/[^a-z0-9äöüß]/g, '') // Remove special chars
+      .trim();
+  };
+
+  const findBestMatch = (aiName: string, dbCompetencies: Array<{ name: string; id: string }>): string | null => {
+    const normalized = normalizeCompetencyName(aiName);
+    
+    // Try exact match first
+    const exactMatch = dbCompetencies.find(c => normalizeCompetencyName(c.name) === normalized);
+    if (exactMatch) return exactMatch.id;
+    
+    // Try partial match (AI name contained in DB name or vice versa)
+    const partialMatch = dbCompetencies.find(c => {
+      const dbNorm = normalizeCompetencyName(c.name);
+      return dbNorm.includes(normalized) || normalized.includes(dbNorm);
+    });
+    if (partialMatch) return partialMatch.id;
+    
+    // Try word-based matching (at least 2 words in common)
+    const aiWords = aiName.toLowerCase().split(/\s+/).filter(w => w.length > 2);
+    for (const dbComp of dbCompetencies) {
+      const dbWords = dbComp.name.toLowerCase().split(/\s+/).filter(w => w.length > 2);
+      const commonWords = aiWords.filter(w => dbWords.some(dw => dw.includes(w) || w.includes(dw)));
+      if (commonWords.length >= 2) return dbComp.id;
+    }
+    
+    return null;
+  };
+
   // Save generated profile to database
   const saveProfileToDatabase = async (employeeId: string, profile: GeneratedProfile) => {
     // Update employee overall_score and promotion_readiness
@@ -97,46 +130,115 @@ const EmployeesPage = () => {
       throw new Error("Fehler beim Speichern des Profils");
     }
 
-    // Update employee_competencies with current_level from AI ratings
-    // First, get all competencies for this employee
+    // Get all competencies with their subskills for this employee
     const { data: existingCompetencies, error: fetchError } = await supabase
       .from("employee_competencies")
-      .select("id, competency:competencies(id, name)")
+      .select(`
+        id, 
+        competency_id,
+        competency:competencies(
+          id, 
+          name,
+          subskills:subskills(id, name)
+        )
+      `)
       .eq("employee_id", employeeId);
 
     if (fetchError) {
       console.error("Error fetching competencies:", fetchError);
     } else if (existingCompetencies) {
-      // Build a map of competency name -> AI rating
-      const ratingMap = new Map<string, { rating: number; selfRating: number | null; managerRating: number | null }>();
-      
+      // Build lookup table of DB competency names -> ids
+      const dbCompetencies = existingCompetencies.map(ec => ({
+        id: ec.id,
+        competencyId: ec.competency_id,
+        name: ec.competency?.name || '',
+        subskills: ec.competency?.subskills || []
+      }));
+
+      // Process AI ratings
+      let matchedCount = 0;
+      let unmatchedNames: string[] = [];
+
       for (const cluster of profile.competencyProfile.clusters) {
         for (const comp of cluster.competencies) {
-          // Convert 1-5 rating to 0-100 scale (1=20, 2=40, 3=60, 4=80, 5=100)
+          // Convert 1-5 rating to 0-100 scale
           const rating = comp.rating === 'NB' ? 0 : (comp.rating as number) * 20;
           const selfRating = comp.selfRating ? comp.selfRating * 20 : null;
           const managerRating = comp.managerRating ? comp.managerRating * 20 : null;
-          ratingMap.set(comp.name.toLowerCase(), { rating, selfRating, managerRating });
+
+          // Find matching DB competency using fuzzy matching
+          const matchedEc = dbCompetencies.find(db => {
+            const matchId = findBestMatch(comp.name, [{ name: db.name, id: db.id }]);
+            return matchId === db.id;
+          });
+
+          if (matchedEc) {
+            matchedCount++;
+            
+            // Update employee_competency
+            await supabase
+              .from("employee_competencies")
+              .update({
+                current_level: rating,
+                self_rating: selfRating,
+                manager_rating: managerRating,
+                evidence_summary: comp.evidenceSummary,
+                rating_confidence: comp.confidence,
+                rated_at: new Date().toISOString(),
+                updated_at: new Date().toISOString(),
+              })
+              .eq("id", matchedEc.id);
+
+            // Process subskills if available
+            if (comp.subskills && comp.subskills.length > 0) {
+              for (const aiSubskill of comp.subskills) {
+                const subskillRating = aiSubskill.rating === 'NB' ? 0 : (aiSubskill.rating as number) * 20;
+                
+                // Find matching DB subskill
+                const matchedSubskill = matchedEc.subskills.find(dbSub => {
+                  const normalizedAi = normalizeCompetencyName(aiSubskill.name);
+                  const normalizedDb = normalizeCompetencyName(dbSub.name);
+                  return normalizedDb.includes(normalizedAi) || normalizedAi.includes(normalizedDb);
+                });
+
+                if (matchedSubskill) {
+                  // Upsert employee_subskill
+                  const { data: existingSubskill } = await supabase
+                    .from("employee_subskills")
+                    .select("id")
+                    .eq("employee_id", employeeId)
+                    .eq("subskill_id", matchedSubskill.id)
+                    .maybeSingle();
+
+                  if (existingSubskill) {
+                    await supabase
+                      .from("employee_subskills")
+                      .update({
+                        current_level: subskillRating,
+                        evidence: aiSubskill.evidence,
+                        rated_at: new Date().toISOString(),
+                      })
+                      .eq("id", existingSubskill.id);
+                  } else {
+                    await supabase
+                      .from("employee_subskills")
+                      .insert({
+                        employee_id: employeeId,
+                        subskill_id: matchedSubskill.id,
+                        current_level: subskillRating,
+                        evidence: aiSubskill.evidence,
+                      });
+                  }
+                }
+              }
+            }
+          } else {
+            unmatchedNames.push(comp.name);
+          }
         }
       }
 
-      // Update each employee_competency with the AI-derived current_level
-      for (const ec of existingCompetencies) {
-        const competencyName = ec.competency?.name?.toLowerCase();
-        if (competencyName && ratingMap.has(competencyName)) {
-          const ratings = ratingMap.get(competencyName)!;
-          await supabase
-            .from("employee_competencies")
-            .update({
-              current_level: ratings.rating,
-              self_rating: ratings.selfRating,
-              manager_rating: ratings.managerRating,
-              rated_at: new Date().toISOString(),
-              updated_at: new Date().toISOString(),
-            })
-            .eq("id", ec.id);
-        }
-      }
+      console.log(`Matched ${matchedCount} competencies, unmatched: ${unmatchedNames.length}`, unmatchedNames);
     }
 
     // Log audit event

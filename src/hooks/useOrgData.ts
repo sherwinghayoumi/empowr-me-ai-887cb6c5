@@ -42,7 +42,8 @@ export function useEmployee(employeeId: string) {
   return useQuery({
     queryKey: ['employee', employeeId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      // Fetch employee with competencies
+      const { data: employee, error } = await supabase
         .from('employees')
         .select(`
           *,
@@ -66,7 +67,36 @@ export function useEmployee(employeeId: string) {
         .single();
       
       if (error) throw error;
-      return data;
+
+      // Fetch employee subskills separately and merge
+      const { data: employeeSubskills } = await supabase
+        .from('employee_subskills')
+        .select(`
+          id,
+          subskill_id,
+          current_level,
+          evidence,
+          rated_at
+        `)
+        .eq('employee_id', employeeId);
+
+      // Merge subskill ratings into competencies
+      if (employee?.competencies && employeeSubskills) {
+        const subskillMap = new Map(
+          employeeSubskills.map(es => [es.subskill_id, es])
+        );
+
+        for (const ec of employee.competencies) {
+          if (ec.competency?.subskills) {
+            ec.competency.subskills = ec.competency.subskills.map(subskill => ({
+              ...subskill,
+              employee_rating: subskillMap.get(subskill.id) || null
+            }));
+          }
+        }
+      }
+
+      return employee;
     },
     enabled: !!employeeId
   });

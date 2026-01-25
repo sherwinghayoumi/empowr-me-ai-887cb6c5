@@ -252,7 +252,7 @@ const MySkillsPage = () => {
         open={!!selectedCompetencyId}
         onOpenChange={(open) => !open && setSelectedCompetencyId(null)}
         competencyName={selectedCompetency?.name ?? null}
-        subskills={selectedCompetency?.subSkills?.map(s => ({ id: s.id, name: s.name, name_de: s.nameDE })) || []}
+        subskills={selectedCompetency?.subSkills?.map(s => ({ id: s.id, name: s.name, description: s.nameDE, currentLevel: null, evidence: undefined })) || []}
         competencyLevel={selectedSkill?.currentLevel ?? 0}
       />
     </div>

@@ -7,6 +7,9 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 
+// Layouts
+import { SuperAdminLayout } from "@/layouts/SuperAdminLayout";
+
 // Auth Pages
 import LoginPage from "@/pages/auth/LoginPage";
 import ForgotPasswordPage from "@/pages/auth/ForgotPasswordPage";
@@ -18,6 +21,9 @@ import SuperAdminDashboard from "@/pages/super-admin/Dashboard";
 import SuperAdminOrganizations from "@/pages/super-admin/Organizations";
 import SuperAdminReports from "@/pages/super-admin/Reports";
 import SuperAdminRoleProfiles from "@/pages/super-admin/RoleProfiles";
+import SuperAdminUsers from "@/pages/super-admin/Users";
+import SuperAdminAuditLog from "@/pages/super-admin/AuditLog";
+import SuperAdminSettings from "@/pages/super-admin/Settings";
 
 // Org Admin Pages
 import AdminDashboard from "@/pages/AdminDashboard";
@@ -46,27 +52,20 @@ function AppRoutes() {
       <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route path="/unauthorized" element={<UnauthorizedPage />} />
 
-      {/* Super Admin Routes */}
+      {/* Super Admin Routes - with Layout */}
       <Route path="/super-admin" element={
         <ProtectedRoute allowedRoles={['super_admin']}>
-          <SuperAdminDashboard />
+          <SuperAdminLayout />
         </ProtectedRoute>
-      } />
-      <Route path="/super-admin/organizations" element={
-        <ProtectedRoute allowedRoles={['super_admin']}>
-          <SuperAdminOrganizations />
-        </ProtectedRoute>
-      } />
-      <Route path="/super-admin/reports" element={
-        <ProtectedRoute allowedRoles={['super_admin']}>
-          <SuperAdminReports />
-        </ProtectedRoute>
-      } />
-      <Route path="/super-admin/role-profiles" element={
-        <ProtectedRoute allowedRoles={['super_admin']}>
-          <SuperAdminRoleProfiles />
-        </ProtectedRoute>
-      } />
+      }>
+        <Route index element={<SuperAdminDashboard />} />
+        <Route path="organizations" element={<SuperAdminOrganizations />} />
+        <Route path="reports" element={<SuperAdminReports />} />
+        <Route path="role-profiles" element={<SuperAdminRoleProfiles />} />
+        <Route path="users" element={<SuperAdminUsers />} />
+        <Route path="audit-log" element={<SuperAdminAuditLog />} />
+        <Route path="settings" element={<SuperAdminSettings />} />
+      </Route>
 
       {/* Org Admin Routes */}
       <Route path="/admin" element={

@@ -1,257 +1,199 @@
-import { useState } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
-import { 
-  ScrollText, 
-  Search, 
-  Filter,
-  User,
-  Building2,
-  Shield,
-  FileText,
-  Trash2,
-  Edit,
-  Plus,
-  Clock,
-  ChevronDown
-} from 'lucide-react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
+import { useState, useMemo } from 'react';
+import { Download, ScrollText } from 'lucide-react';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from '@/components/ui/collapsible';
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+  PaginationEllipsis,
+} from '@/components/ui/pagination';
+import { AuditLogFilters } from '@/components/audit-log/AuditLogFilters';
+import { AuditLogTable } from '@/components/audit-log/AuditLogTable';
+import { 
+  useAuditLogs, 
+  exportAuditLogsToCSV, 
+  AuditLogFilters as FiltersType 
+} from '@/hooks/useAuditLogs';
 
 export default function SuperAdminAuditLog() {
+  const [page, setPage] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
-  const [actionFilter, setActionFilter] = useState<string>('all');
-
-  const { data: auditLogs, isLoading } = useQuery({
-    queryKey: ['super-admin-audit-logs'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('audit_log')
-        .select(`
-          *,
-          user_profiles (full_name, email),
-          organizations (name)
-        `)
-        .order('created_at', { ascending: false })
-        .limit(100);
-
-      if (error) throw error;
-      return data;
-    },
+  const [filters, setFilters] = useState<FiltersType>({
+    organizationId: null,
+    userId: null,
+    action: null,
+    entityType: null,
+    dateFrom: null,
+    dateTo: null,
   });
 
-  const filteredLogs = auditLogs?.filter(log => {
-    const matchesSearch = 
-      log.action?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      log.entity_type?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      log.user_profiles?.full_name?.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesAction = actionFilter === 'all' || log.action?.includes(actionFilter);
-    return matchesSearch && matchesAction;
-  });
+  const { data, isLoading } = useAuditLogs(filters, page);
 
-  const getActionIcon = (action: string) => {
-    if (action?.includes('create') || action?.includes('insert')) return <Plus className="w-4 h-4 text-emerald-500" />;
-    if (action?.includes('update') || action?.includes('edit')) return <Edit className="w-4 h-4 text-sky-500" />;
-    if (action?.includes('delete') || action?.includes('remove')) return <Trash2 className="w-4 h-4 text-destructive" />;
-    if (action?.includes('gdpr') || action?.includes('consent')) return <Shield className="w-4 h-4 text-primary" />;
-    return <FileText className="w-4 h-4 text-muted-foreground" />;
+  // Client-side search filtering (for quick search across loaded data)
+  const filteredLogs = useMemo(() => {
+    if (!data?.logs || !searchQuery.trim()) return data?.logs ?? [];
+    
+    const query = searchQuery.toLowerCase();
+    return data.logs.filter(log => 
+      log.action?.toLowerCase().includes(query) ||
+      log.entity_type?.toLowerCase().includes(query) ||
+      log.user_profiles?.full_name?.toLowerCase().includes(query) ||
+      log.user_profiles?.email?.toLowerCase().includes(query) ||
+      log.organizations?.name?.toLowerCase().includes(query)
+    );
+  }, [data?.logs, searchQuery]);
+
+  const handleExport = () => {
+    if (filteredLogs.length > 0) {
+      exportAuditLogsToCSV(filteredLogs);
+    }
   };
 
-  const getActionBadge = (action: string) => {
-    if (action?.includes('create') || action?.includes('insert')) {
-      return <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30">CREATE</Badge>;
-    }
-    if (action?.includes('update') || action?.includes('edit')) {
-      return <Badge className="bg-sky-500/20 text-sky-400 border-sky-500/30">UPDATE</Badge>;
-    }
-    if (action?.includes('delete') || action?.includes('remove')) {
-      return <Badge className="bg-destructive/20 text-destructive border-destructive/30">DELETE</Badge>;
-    }
-    if (action?.includes('gdpr') || action?.includes('consent')) {
-      return <Badge className="bg-primary/20 text-primary border-primary/30">GDPR</Badge>;
-    }
-    return <Badge variant="outline">{action?.toUpperCase()}</Badge>;
+  const handleFiltersChange = (newFilters: FiltersType) => {
+    setFilters(newFilters);
+    setPage(0); // Reset to first page when filters change
   };
 
-  const formatTimestamp = (timestamp: string) => {
-    const date = new Date(timestamp);
-    return {
-      date: date.toLocaleDateString('de-DE'),
-      time: date.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }),
-    };
+  // Generate pagination items
+  const renderPaginationItems = () => {
+    const totalPages = data?.totalPages ?? 0;
+    const items = [];
+    
+    // Always show first page
+    items.push(
+      <PaginationItem key={0}>
+        <PaginationLink 
+          onClick={() => setPage(0)}
+          isActive={page === 0}
+        >
+          1
+        </PaginationLink>
+      </PaginationItem>
+    );
+
+    if (totalPages <= 7) {
+      // Show all pages if 7 or fewer
+      for (let i = 1; i < totalPages; i++) {
+        items.push(
+          <PaginationItem key={i}>
+            <PaginationLink 
+              onClick={() => setPage(i)}
+              isActive={page === i}
+            >
+              {i + 1}
+            </PaginationLink>
+          </PaginationItem>
+        );
+      }
+    } else {
+      // Show ellipsis pattern for many pages
+      if (page > 2) {
+        items.push(<PaginationItem key="ellipsis-start"><PaginationEllipsis /></PaginationItem>);
+      }
+
+      // Pages around current
+      const start = Math.max(1, page - 1);
+      const end = Math.min(totalPages - 2, page + 1);
+      
+      for (let i = start; i <= end; i++) {
+        items.push(
+          <PaginationItem key={i}>
+            <PaginationLink 
+              onClick={() => setPage(i)}
+              isActive={page === i}
+            >
+              {i + 1}
+            </PaginationLink>
+          </PaginationItem>
+        );
+      }
+
+      if (page < totalPages - 3) {
+        items.push(<PaginationItem key="ellipsis-end"><PaginationEllipsis /></PaginationItem>);
+      }
+
+      // Always show last page
+      if (totalPages > 1) {
+        items.push(
+          <PaginationItem key={totalPages - 1}>
+            <PaginationLink 
+              onClick={() => setPage(totalPages - 1)}
+              isActive={page === totalPages - 1}
+            >
+              {totalPages}
+            </PaginationLink>
+          </PaginationItem>
+        );
+      }
+    }
+
+    return items;
   };
 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-foreground">Audit Log</h1>
-        <p className="text-muted-foreground">Alle Systemaktivitäten überwachen</p>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
+            <ScrollText className="w-6 h-6 text-primary" />
+            Audit Log
+          </h1>
+          <p className="text-muted-foreground">
+            Alle Systemaktivitäten überwachen • {data?.totalCount ?? 0} Einträge
+          </p>
+        </div>
+        <Button 
+          onClick={handleExport} 
+          disabled={filteredLogs.length === 0}
+          className="gap-2"
+        >
+          <Download className="w-4 h-4" />
+          CSV Export
+        </Button>
       </div>
 
       {/* Filters */}
       <Card className="glass">
         <CardHeader className="pb-4">
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input
-                placeholder="Suche in Logs..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-            <Select value={actionFilter} onValueChange={setActionFilter}>
-              <SelectTrigger className="w-full sm:w-[180px]">
-                <SelectValue placeholder="Aktion filtern" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Alle Aktionen</SelectItem>
-                <SelectItem value="create">Create</SelectItem>
-                <SelectItem value="update">Update</SelectItem>
-                <SelectItem value="delete">Delete</SelectItem>
-                <SelectItem value="gdpr">GDPR</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          <AuditLogFilters
+            filters={filters}
+            onFiltersChange={handleFiltersChange}
+            searchQuery={searchQuery}
+            onSearchChange={setSearchQuery}
+          />
         </CardHeader>
         <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-[180px]">Zeitpunkt</TableHead>
-                <TableHead>Aktion</TableHead>
-                <TableHead className="hidden md:table-cell">Benutzer</TableHead>
-                <TableHead className="hidden lg:table-cell">Entity</TableHead>
-                <TableHead className="hidden xl:table-cell">Organisation</TableHead>
-                <TableHead className="w-[50px]"></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoading ? (
-                <TableRow>
-                  <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                    Lade Audit Logs...
-                  </TableCell>
-                </TableRow>
-              ) : filteredLogs?.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                    Keine Logs gefunden
-                  </TableCell>
-                </TableRow>
-              ) : (
-                filteredLogs?.map((log) => {
-                  const time = formatTimestamp(log.created_at || '');
-                  return (
-                    <Collapsible key={log.id} asChild>
-                      <>
-                        <TableRow className="group">
-                          <TableCell>
-                            <div className="flex items-center gap-2">
-                              <Clock className="w-4 h-4 text-muted-foreground" />
-                              <div>
-                                <p className="text-sm font-medium">{time.date}</p>
-                                <p className="text-xs text-muted-foreground">{time.time}</p>
-                              </div>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-2">
-                              {getActionIcon(log.action)}
-                              {getActionBadge(log.action)}
-                            </div>
-                          </TableCell>
-                          <TableCell className="hidden md:table-cell">
-                            <div className="flex items-center gap-2">
-                              <User className="w-4 h-4 text-muted-foreground" />
-                              <span className="text-sm">
-                                {log.user_profiles?.full_name || log.user_profiles?.email || 'System'}
-                              </span>
-                            </div>
-                          </TableCell>
-                          <TableCell className="hidden lg:table-cell">
-                            <Badge variant="outline" className="font-mono text-xs">
-                              {log.entity_type}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="hidden xl:table-cell">
-                            {log.organizations?.name || (
-                              <span className="text-muted-foreground">-</span>
-                            )}
-                          </TableCell>
-                          <TableCell>
-                            <CollapsibleTrigger asChild>
-                              <Button variant="ghost" size="icon" className="opacity-0 group-hover:opacity-100 transition-opacity">
-                                <ChevronDown className="w-4 h-4" />
-                              </Button>
-                            </CollapsibleTrigger>
-                          </TableCell>
-                        </TableRow>
-                        <CollapsibleContent asChild>
-                          <TableRow className="bg-muted/30">
-                            <TableCell colSpan={6} className="p-4">
-                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                {log.old_values && (
-                                  <div>
-                                    <p className="text-xs font-medium text-muted-foreground mb-2">Alte Werte:</p>
-                                    <pre className="text-xs bg-background p-3 rounded-lg overflow-auto max-h-32">
-                                      {JSON.stringify(log.old_values, null, 2)}
-                                    </pre>
-                                  </div>
-                                )}
-                                {log.new_values && (
-                                  <div>
-                                    <p className="text-xs font-medium text-muted-foreground mb-2">Neue Werte:</p>
-                                    <pre className="text-xs bg-background p-3 rounded-lg overflow-auto max-h-32">
-                                      {JSON.stringify(log.new_values, null, 2)}
-                                    </pre>
-                                  </div>
-                                )}
-                                {log.entity_id && (
-                                  <div className="md:col-span-2">
-                                    <p className="text-xs text-muted-foreground">
-                                      Entity ID: <span className="font-mono">{log.entity_id}</span>
-                                    </p>
-                                  </div>
-                                )}
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        </CollapsibleContent>
-                      </>
-                    </Collapsible>
-                  );
-                })
-              )}
-            </TableBody>
-          </Table>
+          <AuditLogTable logs={filteredLogs} isLoading={isLoading} />
         </CardContent>
       </Card>
+
+      {/* Pagination */}
+      {(data?.totalPages ?? 0) > 1 && (
+        <Pagination>
+          <PaginationContent>
+            <PaginationItem>
+              <PaginationPrevious 
+                onClick={() => setPage(p => Math.max(0, p - 1))}
+                className={page === 0 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+              />
+            </PaginationItem>
+            
+            {renderPaginationItems()}
+
+            <PaginationItem>
+              <PaginationNext 
+                onClick={() => setPage(p => Math.min((data?.totalPages ?? 1) - 1, p + 1))}
+                className={page >= (data?.totalPages ?? 1) - 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+              />
+            </PaginationItem>
+          </PaginationContent>
+        </Pagination>
+      )}
     </div>
   );
 }

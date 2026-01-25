@@ -4,8 +4,18 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { ThemeProvider } from "@/hooks/useTheme";
+import { AuthProvider } from "@/contexts/AuthContext";
 import { PageTransition } from "@/components/PageTransition";
 import { ParallaxBackground } from "@/components/ParallaxBackground";
+import { ProtectedRoute, AdminRoute, EmployeeRoute } from "@/components/ProtectedRoute";
+
+// Auth Pages
+import LoginPage from "./pages/auth/LoginPage";
+import ForgotPasswordPage from "./pages/auth/ForgotPasswordPage";
+import ResetPasswordPage from "./pages/auth/ResetPasswordPage";
+import UnauthorizedPage from "./pages/auth/UnauthorizedPage";
+
+// App Pages
 import Index from "./pages/Index";
 import AdminDashboard from "./pages/AdminDashboard";
 import EmployeeDashboard from "./pages/EmployeeDashboard";
@@ -22,23 +32,34 @@ const queryClient = new QueryClient();
 
 function AppRoutes() {
   const location = useLocation();
-  const isLoginPage = location.pathname === "/";
+  const isAuthPage = ['/login', '/forgot-password', '/reset-password', '/unauthorized', '/'].includes(location.pathname);
 
   return (
     <>
-      {!isLoginPage && <ParallaxBackground intensity="medium" />}
+      {!isAuthPage && <ParallaxBackground intensity="medium" />}
       <PageTransition>
         <Routes>
+          {/* Public Routes */}
           <Route path="/" element={<Index />} />
-          <Route path="/admin" element={<AdminDashboard />} />
-          <Route path="/admin/teams" element={<TeamsPage />} />
-          <Route path="/admin/employees" element={<EmployeesPage />} />
-          <Route path="/admin/skill-gaps" element={<SkillGapPage />} />
-          <Route path="/admin/reports" element={<ReportsPage />} />
-          <Route path="/admin/reports/future-skill-matrix" element={<FutureSkillReportPage />} />
-          <Route path="/employee" element={<EmployeeDashboard />} />
-          <Route path="/employee/skills" element={<MySkillsPage />} />
-          <Route path="/employee/learning" element={<MyLearningPage />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
+          <Route path="/unauthorized" element={<UnauthorizedPage />} />
+
+          {/* Admin Routes */}
+          <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
+          <Route path="/admin/teams" element={<AdminRoute><TeamsPage /></AdminRoute>} />
+          <Route path="/admin/employees" element={<AdminRoute><EmployeesPage /></AdminRoute>} />
+          <Route path="/admin/skill-gaps" element={<AdminRoute><SkillGapPage /></AdminRoute>} />
+          <Route path="/admin/reports" element={<AdminRoute><ReportsPage /></AdminRoute>} />
+          <Route path="/admin/reports/future-skill-matrix" element={<AdminRoute><FutureSkillReportPage /></AdminRoute>} />
+
+          {/* Employee Routes */}
+          <Route path="/employee" element={<EmployeeRoute><EmployeeDashboard /></EmployeeRoute>} />
+          <Route path="/employee/skills" element={<EmployeeRoute><MySkillsPage /></EmployeeRoute>} />
+          <Route path="/employee/learning" element={<EmployeeRoute><MyLearningPage /></EmployeeRoute>} />
+
+          {/* Fallback */}
           <Route path="*" element={<NotFound />} />
         </Routes>
       </PageTransition>
@@ -49,13 +70,15 @@ function AppRoutes() {
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <ThemeProvider>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <AppRoutes />
-        </BrowserRouter>
-      </TooltipProvider>
+      <AuthProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <AppRoutes />
+          </BrowserRouter>
+        </TooltipProvider>
+      </AuthProvider>
     </ThemeProvider>
   </QueryClientProvider>
 );

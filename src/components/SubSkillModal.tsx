@@ -7,12 +7,14 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { getSkillLevel, type SkillLevel } from "@/data/mockData";
+import { Info } from "lucide-react";
 
 interface Subskill {
   id: string;
   name: string;
-  name_de?: string;
   description?: string;
+  currentLevel: number | null;
+  evidence?: string;
 }
 
 interface SubSkillModalProps {
@@ -55,12 +57,6 @@ function getLevelBadgeVariant(level: SkillLevel): "default" | "secondary" | "des
   }
 }
 
-// Generate a pseudo-random but stable rating based on subskill index and competency level
-function generateSubskillRating(index: number, competencyLevel: number): number {
-  const variance = ((index * 17) % 30) - 15; // -15 to +14 variance
-  return Math.max(10, Math.min(100, competencyLevel + variance));
-}
-
 export function SubSkillModal({
   open,
   onOpenChange,
@@ -71,10 +67,13 @@ export function SubSkillModal({
   if (!competencyName) return null;
 
   const overallLevel = getSkillLevel(competencyLevel);
+  
+  // Count how many subskills have actual ratings
+  const ratedCount = subskills.filter(s => s.currentLevel !== null).length;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg glass">
+      <DialogContent className="sm:max-w-lg glass max-h-[80vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-3">
             <span>{competencyName}</span>
@@ -85,12 +84,21 @@ export function SubSkillModal({
         </DialogHeader>
 
         <div className="space-y-4 mt-4">
-          <h4 className="text-sm font-medium text-foreground">Subskills</h4>
+          <div className="flex items-center justify-between">
+            <h4 className="text-sm font-medium text-foreground">Subskills</h4>
+            {ratedCount > 0 && (
+              <span className="text-xs text-muted-foreground">
+                {ratedCount} von {subskills.length} bewertet
+              </span>
+            )}
+          </div>
+          
           <div className="space-y-3">
             {subskills.length > 0 ? (
-              subskills.map((subskill, index) => {
-                const ratingValue = generateSubskillRating(index, competencyLevel);
-                const level = getSkillLevel(ratingValue);
+              subskills.map((subskill) => {
+                const hasRating = subskill.currentLevel !== null;
+                const ratingValue = subskill.currentLevel ?? 0;
+                const level = hasRating ? getSkillLevel(ratingValue) : null;
 
                 return (
                   <div
@@ -100,29 +108,41 @@ export function SubSkillModal({
                     <div className="flex items-center justify-between">
                       <div className="flex-1">
                         <p className="text-sm font-medium text-foreground">{subskill.name}</p>
-                        {subskill.name_de && (
-                          <p className="text-xs text-muted-foreground">{subskill.name_de}</p>
-                        )}
                         {subskill.description && (
                           <p className="text-xs text-muted-foreground mt-1">{subskill.description}</p>
                         )}
                       </div>
-                      <Badge variant={getLevelBadgeVariant(level)} className="ml-2">
-                        {ratingValue}%
-                      </Badge>
+                      {hasRating ? (
+                        <Badge variant={getLevelBadgeVariant(level!)} className="ml-2">
+                          {ratingValue}%
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="ml-2 text-muted-foreground">
+                          Nicht bewertet
+                        </Badge>
+                      )}
                     </div>
+                    
                     <div className="relative h-2 bg-secondary rounded-full overflow-hidden">
-                      <div
-                        className={cn(
-                          "absolute h-full rounded-full transition-all duration-500 ease-out",
-                          getLevelColor(level)
-                        )}
-                        style={{ 
-                          width: `${ratingValue}%`,
-                          animationDelay: `${index * 100}ms`
-                        }}
-                      />
+                      {hasRating ? (
+                        <div
+                          className={cn(
+                            "absolute h-full rounded-full transition-all duration-500 ease-out",
+                            getLevelColor(level!)
+                          )}
+                          style={{ width: `${ratingValue}%` }}
+                        />
+                      ) : (
+                        <div className="absolute h-full w-full bg-muted/50" />
+                      )}
                     </div>
+                    
+                    {subskill.evidence && (
+                      <div className="flex items-start gap-2 mt-2 p-2 bg-secondary/20 rounded text-xs text-muted-foreground">
+                        <Info className="w-3 h-3 mt-0.5 shrink-0" />
+                        <span>{subskill.evidence}</span>
+                      </div>
+                    )}
                   </div>
                 );
               })

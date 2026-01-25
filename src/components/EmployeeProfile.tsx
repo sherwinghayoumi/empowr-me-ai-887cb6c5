@@ -18,6 +18,14 @@ interface EmployeeProfileProps {
 }
 
 // Type for mapped competency data
+interface MappedSubskill {
+  id: string;
+  name: string;
+  description?: string;
+  currentLevel: number | null;
+  evidence?: string;
+}
+
 interface MappedCompetency {
   id: string;
   name: string;
@@ -25,7 +33,7 @@ interface MappedCompetency {
   demandedLevel: number;
   futureLevel: number;
   gap: number;
-  subskills: Array<{ id: string; name: string; description?: string }>;
+  subskills: MappedSubskill[];
   clusterName: string;
 }
 
@@ -46,7 +54,13 @@ export function EmployeeProfile({ employeeId, onClose }: EmployeeProfileProps) {
       demandedLevel: ec.demanded_level || 0,
       futureLevel: ec.future_level || 0,
       gap: ec.gap_to_current || 0,
-      subskills: ec.competency?.subskills || [],
+      subskills: (ec.competency?.subskills || []).map((ss: any) => ({
+        id: ss.id,
+        name: ss.name,
+        description: ss.description,
+        currentLevel: ss.employee_rating?.current_level ?? null,
+        evidence: ss.employee_rating?.evidence
+      })),
       clusterName: ec.competency?.cluster?.name || 'Sonstige'
     }));
   }, [employee?.competencies]);

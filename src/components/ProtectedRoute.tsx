@@ -1,7 +1,9 @@
+import { useState } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import type { UserRole } from '@/types/auth';
 import { Loader2 } from 'lucide-react';
+import { GDPRConsentModal } from './GDPRConsentModal';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -16,6 +18,7 @@ export function ProtectedRoute({
 }: ProtectedRouteProps) {
   const { isAuthenticated, isLoading, profile, organization } = useAuth();
   const location = useLocation();
+  const [showGDPRModal, setShowGDPRModal] = useState(true);
 
   // Show loading spinner while checking auth
   if (isLoading) {
@@ -49,6 +52,24 @@ export function ProtectedRoute({
   // Check organization requirement
   if (requireOrganization && !organization) {
     return <Navigate to="/no-organization" replace />;
+  }
+
+  // Check GDPR consent - show modal if not given
+  const needsGDPRConsent = !profile.gdpr_consent_given_at;
+
+  if (needsGDPRConsent && showGDPRModal) {
+    return (
+      <>
+        {/* Show blurred/dimmed background */}
+        <div className="min-h-screen bg-background opacity-50 pointer-events-none">
+          {children}
+        </div>
+        <GDPRConsentModal 
+          open={true} 
+          onConsentGiven={() => setShowGDPRModal(false)} 
+        />
+      </>
+    );
   }
 
   return <>{children}</>;

@@ -233,18 +233,47 @@ const EmployeesPage = () => {
               for (const aiSubskill of comp.subskills) {
                 const subskillRating = aiSubskill.rating === 'NB' ? 0 : (aiSubskill.rating as number) * 20;
                 
-                // Find matching DB subskill with improved fuzzy matching (EN and DE names)
+                // IMPROVED MATCHING: Extract title before ":" for more accurate matching
+                const extractTitle = (name: string) => {
+                  const colonIndex = name.indexOf(':');
+                  return colonIndex > 0 ? name.substring(0, colonIndex).trim() : name.trim();
+                };
+                
+                const aiTitle = extractTitle(aiSubskill.name);
+                const aiNormalized = normalizeCompetencyName(aiTitle);
+                
+                // Try multiple matching strategies in order of precision
                 const matchedSubskill = matchedEc.subskills.find(dbSub => {
-                  const normalizedAi = normalizeCompetencyName(aiSubskill.name);
-                  const normalizedDb = normalizeCompetencyName(dbSub.name);
-                  const normalizedDbDe = dbSub.name_de ? normalizeCompetencyName(dbSub.name_de) : '';
+                  const dbTitle = extractTitle(dbSub.name);
+                  const dbNormalized = normalizeCompetencyName(dbTitle);
+                  const dbDeTitle = dbSub.name_de ? extractTitle(dbSub.name_de) : '';
+                  const dbDeNormalized = dbDeTitle ? normalizeCompetencyName(dbDeTitle) : '';
                   
-                  // Exact match first
-                  if (normalizedDb === normalizedAi || normalizedDbDe === normalizedAi) return true;
+                  // Strategy 1: Exact match on titles (before ":")
+                  if (dbNormalized === aiNormalized || dbDeNormalized === aiNormalized) return true;
                   
-                  // Partial match (one contains the other)
-                  return normalizedDb.includes(normalizedAi) || normalizedAi.includes(normalizedDb) ||
-                         normalizedDbDe.includes(normalizedAi) || normalizedAi.includes(normalizedDbDe);
+                  // Strategy 2: Match first 3 significant words (ignore common words)
+                  const getSignificantWords = (str: string) => {
+                    const commonWords = ['the', 'and', 'or', 'for', 'to', 'in', 'on', 'at', 'with', 'by'];
+                    return str.split(/\s+/)
+                      .filter(w => w.length > 2 && !commonWords.includes(w.toLowerCase()))
+                      .slice(0, 3)
+                      .join(' ');
+                  };
+                  
+                  const aiWords = getSignificantWords(aiNormalized);
+                  const dbWords = getSignificantWords(dbNormalized);
+                  const dbDeWords = dbDeNormalized ? getSignificantWords(dbDeNormalized) : '';
+                  
+                  if (aiWords && dbWords && aiWords === dbWords) return true;
+                  if (aiWords && dbDeWords && aiWords === dbDeWords) return true;
+                  
+                  // Strategy 3: One contains the other (but only if long enough to avoid false positives)
+                  if (aiNormalized.length > 15 && dbNormalized.length > 15) {
+                    if (dbNormalized.includes(aiNormalized) || aiNormalized.includes(dbNormalized)) return true;
+                  }
+                  
+                  return false;
                 });
 
                 if (matchedSubskill) {

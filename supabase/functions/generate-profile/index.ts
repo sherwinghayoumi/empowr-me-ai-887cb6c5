@@ -114,16 +114,16 @@ const COMPETENCY_SCHEMA: Record<string, Record<string, string[]>> = {
 
   "Risk, Regulation & Governance": {
     "Regulatory Clearance Coordination (FDI / Antitrust)": [
-      "Condition & Remedy Management",
-      "Filing Strategy & Sequencing",
-      "Authority / Counterparty Coordination",
-      "Information Orchestration"
+      "Condition & Remedy Management: Manage MACs, hell-or-high-water provisions, and remedy packages.",
+      "Filing Strategy & Sequencing: Plan filings, long-stop dates, and conditions; align with signing/closing mechanics.",
+      "Authority / Counterparty Coordination: Interface with regulators, opposing counsel, and antitrust advisors.",
+      "Information Orchestration: Compile and format submissions and manage information flow between stakeholders."
     ],
     "EU AI Act & Digital Compliance": [
-      "AI Categorization",
-      "Supply-Chain Alignment (CSDDD-adjacent)",
-      "Digital / Data Governance DD",
-      "Deployer Liability Assessment"
+      "AI Categorization: Identify whether target systems fall into high-risk or other regulated categories.",
+      "Supply-Chain Alignment (CSDDD-adjacent): Coordinate AI-related supplier / value-chain checks where relevant.",
+      "Digital / Data Governance DD: Translate AI/data governance findings into reps, covenants, and conditions.",
+      "Deployer Liability Assessment: Assess buyer/firm obligations and exposure as 'deployer' and define mitigations."
     ],
     "Agentic AI Governance (operational)": [
       "Escalating exceptions",
@@ -134,22 +134,22 @@ const COMPETENCY_SCHEMA: Record<string, Record<string, string[]>> = {
 
   "Tech-Enabled Legal Work": {
     "AI Output Validation": [
-      "Hallucination Spotting",
-      "Confidentiality / Privilege Guardrails",
-      "Source Verification",
-      "Prompt & Context Engineering"
+      "Hallucination Spotting: Detect fabricated facts/citations and inconsistent reasoning in AI outputs.",
+      "Confidentiality / Privilege Guardrails: Apply redaction and safe workflows to avoid leakage and privilege waiver.",
+      "Source Verification: Check AI summaries against originals; validate citations and quotes.",
+      "Prompt & Context Engineering: Provide the right context/constraints so outputs are legally usable."
     ],
     "AI-Ready VDR Architecture": [
-      "VDR taxonomies for agent consumption",
-      "Folder structures for agent consumption",
-      "Data quality for LLM ingestion",
-      "Metadata for agent consumption"
+      "Designing VDR taxonomies",
+      "Designing folder structures",
+      "Ensuring data quality for LLM ingestion",
+      "Defining metadata for agent consumption (not human search)"
     ],
     "Data Room & Closing Automation": [
-      "Automated Closing Set Generation",
-      "VDR Permissioning & Analytics",
-      "eSignature Workflow Management",
-      "Document Assembly / Comparison Automation"
+      "Automated Closing Set Generation: Generate closing sets/bibles and post-closing packages efficiently.",
+      "VDR Permissioning & Analytics: Manage access, Q&A workflows, and use analytics to support deal progress.",
+      "eSignature Workflow Management: Configure signing order, envelopes, signature pages, and audit trails.",
+      "Document Assembly / Comparison Automation: Automate compile/compare steps to reduce errors."
     ]
   },
 
@@ -162,18 +162,32 @@ const COMPETENCY_SCHEMA: Record<string, Record<string, string[]>> = {
     ]
   },
 
-  "Team Supervision & Quality Control": {
-    "Junior Associate & Paralegal Supervision": [
-      "Quality Assurance / Reviewing",
-      "Workload Balancing",
-      "Delegation & Briefing",
-      "Feedback Delivery"
+  // MLA ONLY: Stakeholder Management Cluster
+  "MLA Negotiation, Commercial Judgment & Stakeholder Management": {
+    "Stakeholder Management & Difficult Counterparties": [
+      "Conflict de-escalation",
+      "Decision-maker mapping",
+      "Escalation path management",
+      "Expectation setting & alignment",
+      "Written vs verbal negotiation tactics"
     ]
   },
 
-  "Business Development Support (Mid-market relationship building)": {
-    "Business Development Support (Mid-market relationship building)": [
-      "Business Development Support (Mid-market relationship building)"
+  // MLA-specific Commercial Fluency
+  "MLA Commercial Fluency": {
+    "Commercial Awareness & Financial Literacy": [
+      "Financial Statement Basics",
+      "Industry Analysis",
+      "Purchase Price Mechanisms"
+    ]
+  },
+
+  "Team Supervision & Quality Control": {
+    "Junior Associate & Paralegal Supervision": [
+      "Quality Assurance / Reviewing: Review junior drafts, spot gaps, and fix errors before senior review.",
+      "Workload Balancing: Monitor junior capacity and reassign work to prevent burnout and missed deadlines.",
+      "Delegation & Briefing: Frame tasks, provide context, and set realistic deadlines and quality expectations.",
+      "Feedback Delivery: Deliver actionable feedback that improves future output and speed."
     ]
   },
 

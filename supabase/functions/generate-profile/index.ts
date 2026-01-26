@@ -114,10 +114,10 @@ const COMPETENCY_SCHEMA: Record<string, Record<string, string[]>> = {
 
   "Risk, Regulation & Governance": {
     "Regulatory Clearance Coordination (FDI / Antitrust)": [
-      "Condition & Remedy Management: Manage MACs, hell-or-high-water provisions, and remedy packages.",
+      "Condition & Remedy Management: Track clearance conditions, remedies, and impact on covenants/CPs.",
       "Filing Strategy & Sequencing: Plan filings, long-stop dates, and conditions; align with signing/closing mechanics.",
-      "Authority / Counterparty Coordination: Interface with regulators, opposing counsel, and antitrust advisors.",
-      "Information Orchestration: Compile and format submissions and manage information flow between stakeholders."
+      "Authority / Counterparty Coordination: Coordinate with regulators, opposing counsel, and local counsel.",
+      "Information Orchestration: Collect inputs from client and specialists; manage data requests and drafts."
     ],
     "EU AI Act & Digital Compliance": [
       "AI Categorization: Identify whether target systems fall into high-risk or other regulated categories.",

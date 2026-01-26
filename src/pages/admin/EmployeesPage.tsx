@@ -114,6 +114,24 @@ const EmployeesPage = () => {
 
   // Save generated profile to database
   const saveProfileToDatabase = async (employeeId: string, profile: GeneratedProfile) => {
+    console.log('=== SAVE PROFILE TO DATABASE ===');
+    console.log('Employee ID:', employeeId);
+    console.log('Overall Score:', profile.analysis.overallScore);
+    console.log('Promotion Readiness:', profile.analysis.promotionReadiness.readinessPercentage);
+    console.log('GDPR Verified:', profile.compliance.gdprConsentVerified);
+    console.log('Cluster Count:', profile.competencyProfile?.clusters?.length);
+    
+    // Log all competencies being saved
+    let totalCompetencies = 0;
+    let totalSubskills = 0;
+    profile.competencyProfile?.clusters?.forEach(cluster => {
+      cluster.competencies?.forEach(comp => {
+        totalCompetencies++;
+        totalSubskills += comp.subskills?.length || 0;
+      });
+    });
+    console.log(`Total competencies: ${totalCompetencies}, Total subskills: ${totalSubskills}`);
+
     // Update employee overall_score and promotion_readiness
     const { error } = await supabase
       .from("employees")
@@ -126,7 +144,7 @@ const EmployeesPage = () => {
       .eq("id", employeeId);
 
     if (error) {
-      console.error("Error saving profile:", error);
+      console.error("Error saving employee profile:", error);
       throw new Error("Fehler beim Speichern des Profils");
     }
 
@@ -238,8 +256,17 @@ const EmployeesPage = () => {
         }
       }
 
-      console.log(`Matched ${matchedCount} competencies, unmatched: ${unmatchedNames.length}`, unmatchedNames);
+      console.log('=== COMPETENCY MATCHING RESULTS ===');
+      console.log(`✅ Matched: ${matchedCount} competencies`);
+      console.log(`❌ Unmatched: ${unmatchedNames.length} competencies`);
+      if (unmatchedNames.length > 0) {
+        console.log('Unmatched names:', unmatchedNames);
+        console.log('DB competency names:', dbCompetencies.map(c => c.name));
+      }
+      console.log('=== END MATCHING RESULTS ===');
     }
+
+    console.log('=== PROFILE SAVE COMPLETE ===');
 
     // Log audit event
     await supabase.rpc("log_audit_event", {

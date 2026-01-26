@@ -225,57 +225,59 @@ const EmployeesPage = () => {
               console.log(`✅ Successfully updated: ${comp.name} -> ${rating}%`);
             }
 
-            // Process subskills if available
+            // Process subskills with proper upsert and detailed logging
             if (comp.subskills && comp.subskills.length > 0) {
+              let subskillMatchedCount = 0;
+              const unmatchedSubskills: string[] = [];
+              
               for (const aiSubskill of comp.subskills) {
                 const subskillRating = aiSubskill.rating === 'NB' ? 0 : (aiSubskill.rating as number) * 20;
                 
-                // Find matching DB subskill (supports EN and DE names)
+                // Find matching DB subskill with improved fuzzy matching (EN and DE names)
                 const matchedSubskill = matchedEc.subskills.find(dbSub => {
                   const normalizedAi = normalizeCompetencyName(aiSubskill.name);
                   const normalizedDb = normalizeCompetencyName(dbSub.name);
                   const normalizedDbDe = dbSub.name_de ? normalizeCompetencyName(dbSub.name_de) : '';
+                  
+                  // Exact match first
+                  if (normalizedDb === normalizedAi || normalizedDbDe === normalizedAi) return true;
+                  
+                  // Partial match (one contains the other)
                   return normalizedDb.includes(normalizedAi) || normalizedAi.includes(normalizedDb) ||
                          normalizedDbDe.includes(normalizedAi) || normalizedAi.includes(normalizedDbDe);
                 });
 
                 if (matchedSubskill) {
-                  // Upsert employee_subskill
-                  const { data: existingSubskill } = await supabase
+                  subskillMatchedCount++;
+                  
+                  // Use proper UPSERT with onConflict (relies on unique constraint)
+                  const { error: upsertError } = await supabase
                     .from("employee_subskills")
-                    .select("id")
-                    .eq("employee_id", employeeId)
-                    .eq("subskill_id", matchedSubskill.id)
-                    .maybeSingle();
-
-                  if (existingSubskill) {
-                    const { error: subUpdateError } = await supabase
-                      .from("employee_subskills")
-                      .update({
-                        current_level: subskillRating,
-                        evidence: aiSubskill.evidence,
-                        rated_at: new Date().toISOString(),
-                      })
-                      .eq("id", existingSubskill.id);
-                    
-                    if (subUpdateError) {
-                      console.error(`❌ Failed to update subskill ${aiSubskill.name}:`, subUpdateError);
-                    }
+                    .upsert({
+                      employee_id: employeeId,
+                      subskill_id: matchedSubskill.id,
+                      current_level: subskillRating,
+                      evidence: aiSubskill.evidence,
+                      rated_at: new Date().toISOString(),
+                    }, {
+                      onConflict: 'employee_id,subskill_id'
+                    });
+                  
+                  if (upsertError) {
+                    console.error(`❌ Subskill upsert failed: ${aiSubskill.name} → ${matchedSubskill.name}:`, upsertError);
                   } else {
-                    const { error: subInsertError } = await supabase
-                      .from("employee_subskills")
-                      .insert({
-                        employee_id: employeeId,
-                        subskill_id: matchedSubskill.id,
-                        current_level: subskillRating,
-                        evidence: aiSubskill.evidence,
-                      });
-                    
-                    if (subInsertError) {
-                      console.error(`❌ Failed to insert subskill ${aiSubskill.name}:`, subInsertError);
-                    }
+                    console.log(`  ✅ Subskill: ${aiSubskill.name} → ${matchedSubskill.name} (${subskillRating}%)`);
                   }
+                } else {
+                  unmatchedSubskills.push(aiSubskill.name);
                 }
+              }
+              
+              // Log subskill matching summary for this competency
+              if (unmatchedSubskills.length > 0) {
+                console.warn(`  ⚠️ ${comp.name}: ${subskillMatchedCount}/${comp.subskills.length} subskills matched`);
+                console.warn(`     Unmatched: ${unmatchedSubskills.join(', ')}`);
+                console.log(`     DB subskills available: ${matchedEc.subskills.map(s => s.name).join(', ')}`);
               }
             }
           } else {

@@ -127,7 +127,7 @@ export function LearningPathGeneratorModal({
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col">
+      <DialogContent className="max-w-2xl h-[85vh] flex flex-col overflow-hidden">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Sparkles className="w-5 h-5 text-primary" />
@@ -138,7 +138,7 @@ export function LearningPathGeneratorModal({
           </DialogDescription>
         </DialogHeader>
 
-        <ScrollArea className="flex-1 pr-4">
+        <ScrollArea className="min-h-0 flex-1 pr-4">
           {/* Skill Gap Summary */}
           <div className="bg-secondary/30 rounded-lg p-4 mb-4">
             <div className="flex items-start justify-between">

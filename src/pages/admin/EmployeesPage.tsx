@@ -312,6 +312,42 @@ const EmployeesPage = () => {
                 console.warn(`     Unmatched: ${unmatchedSubskills.join(', ')}`);
                 console.log(`     DB subskills available: ${matchedEc.subskills.map(s => s.name).join(', ')}`);
               }
+              
+              // RECALCULATE competency level from subskill averages
+              // Fetch all subskill ratings for this competency and calculate average
+              const subskillIds = matchedEc.subskills.map(s => s.id);
+              if (subskillIds.length > 0) {
+                const { data: subskillRatings } = await supabase
+                  .from("employee_subskills")
+                  .select("current_level")
+                  .eq("employee_id", employeeId)
+                  .in("subskill_id", subskillIds);
+                
+                if (subskillRatings && subskillRatings.length > 0) {
+                  const validRatings = subskillRatings.filter(r => r.current_level !== null);
+                  if (validRatings.length > 0) {
+                    const avgLevel = Math.round(
+                      validRatings.reduce((sum, r) => sum + (r.current_level || 0), 0) / validRatings.length
+                    );
+                    
+                    // Update competency current_level with calculated average
+                    const { error: avgUpdateError } = await supabase
+                      .from("employee_competencies")
+                      .update({ 
+                        current_level: avgLevel,
+                        updated_at: new Date().toISOString()
+                      })
+                      .eq("employee_id", employeeId)
+                      .eq("competency_id", matchedEc.competencyId);
+                    
+                    if (avgUpdateError) {
+                      console.error(`❌ Failed to update competency avg for ${comp.name}:`, avgUpdateError);
+                    } else {
+                      console.log(`📊 Recalculated ${comp.name} level: ${avgLevel}% (from ${validRatings.length} subskills)`);
+                    }
+                  }
+                }
+              }
             }
           } else {
             unmatchedNames.push(comp.name);

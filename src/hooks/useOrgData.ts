@@ -80,7 +80,7 @@ export function useEmployee(employeeId: string) {
         `)
         .eq('employee_id', employeeId);
 
-      // Merge subskill ratings into competencies
+      // Merge subskill ratings into competencies AND calculate competency level from subskills
       if (employee?.competencies && employeeSubskills) {
         const subskillMap = new Map(
           employeeSubskills.map(es => [es.subskill_id, es])
@@ -88,6 +88,22 @@ export function useEmployee(employeeId: string) {
 
         for (const ec of employee.competencies) {
           if (ec.competency?.subskills) {
+            // Get subskill IDs for this competency to calculate average
+            const competencySubskillIds = ec.competency.subskills.map(s => s.id);
+            
+            // Calculate competency level from subskills if not set or is 0
+            const subskillRatings = competencySubskillIds
+              .map(id => subskillMap.get(id)?.current_level)
+              .filter((level): level is number => level !== null && level !== undefined);
+            
+            if (subskillRatings.length > 0 && (!ec.current_level || ec.current_level === 0)) {
+              const avgLevel = Math.round(
+                subskillRatings.reduce((sum, level) => sum + level, 0) / subskillRatings.length
+              );
+              ec.current_level = avgLevel;
+            }
+            
+            // Merge subskill ratings into subskills array
             ec.competency.subskills = ec.competency.subskills.map(subskill => ({
               ...subskill,
               employee_rating: subskillMap.get(subskill.id) || null

@@ -89,8 +89,30 @@ export function ProfileGenerationModal({
         employee.role_profile?.role_key || 'Associate'
       );
 
+      // === PROFILE GENERATION DEBUG ===
+      console.log('=== PROFILE GENERATION DEBUG ===');
+      console.log('Raw Profile:', profile);
+      console.log('Clusters:', profile.competencyProfile?.clusters);
+      console.log('Overall Score:', profile.analysis?.overallScore);
+      console.log('GDPR Verified:', profile.compliance?.gdprConsentVerified);
+      
+      // Zeige alle Kompetenz-Namen:
+      profile.competencyProfile?.clusters?.forEach((cluster: { clusterName: string; competencies?: Array<{ name: string; rating: number | string }> }) => {
+        console.log(`Cluster: ${cluster.clusterName}`);
+        cluster.competencies?.forEach((comp) => {
+          console.log(`  - ${comp.name}: ${comp.rating}`);
+        });
+      });
+      console.log('=== END DEBUG ===');
+
       // Validate profile structure
-      if (!profile || !profile.analysis || !profile.analysis.overallScore) {
+      if (!profile || !profile.analysis || typeof profile.analysis.overallScore !== 'number') {
+        console.error('Profile validation failed:', {
+          hasProfile: !!profile,
+          hasAnalysis: !!profile?.analysis,
+          overallScore: profile?.analysis?.overallScore,
+          overallScoreType: typeof profile?.analysis?.overallScore
+        });
         throw new Error('Unvollständiges Profil von der KI erhalten. Bitte versuchen Sie es erneut.');
       }
 

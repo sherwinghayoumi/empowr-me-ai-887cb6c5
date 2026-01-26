@@ -11,6 +11,10 @@ export interface LearningRecommendation {
   format: LearningFormat;
   reason: string;
   sortOrder: number;
+  // New fields for URL verification
+  verifiedUrl: string | null;
+  isUrlVerified: boolean;
+  searchFallbackUrl: string;
 }
 
 export interface GeneratedLearningPath {

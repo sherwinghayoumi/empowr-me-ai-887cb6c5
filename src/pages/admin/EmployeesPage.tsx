@@ -203,8 +203,12 @@ const EmployeesPage = () => {
           if (matchedEc) {
             matchedCount++;
             
-            // Update employee_competency
-            await supabase
+            console.log(`📝 Updating competency: ${comp.name}`);
+            console.log(`   - DB ID: ${matchedEc.id}`);
+            console.log(`   - Rating: ${rating}% (raw: ${comp.rating})`);
+            
+            // Update employee_competency with error handling
+            const { error: updateError } = await supabase
               .from("employee_competencies")
               .update({
                 current_level: rating,
@@ -216,6 +220,12 @@ const EmployeesPage = () => {
                 updated_at: new Date().toISOString(),
               })
               .eq("id", matchedEc.id);
+
+            if (updateError) {
+              console.error(`❌ Failed to update competency ${comp.name}:`, updateError);
+            } else {
+              console.log(`✅ Successfully updated: ${comp.name} -> ${rating}%`);
+            }
 
             // Process subskills if available
             if (comp.subskills && comp.subskills.length > 0) {
@@ -241,7 +251,7 @@ const EmployeesPage = () => {
                     .maybeSingle();
 
                   if (existingSubskill) {
-                    await supabase
+                    const { error: subUpdateError } = await supabase
                       .from("employee_subskills")
                       .update({
                         current_level: subskillRating,
@@ -249,8 +259,12 @@ const EmployeesPage = () => {
                         rated_at: new Date().toISOString(),
                       })
                       .eq("id", existingSubskill.id);
+                    
+                    if (subUpdateError) {
+                      console.error(`❌ Failed to update subskill ${aiSubskill.name}:`, subUpdateError);
+                    }
                   } else {
-                    await supabase
+                    const { error: subInsertError } = await supabase
                       .from("employee_subskills")
                       .insert({
                         employee_id: employeeId,
@@ -258,6 +272,10 @@ const EmployeesPage = () => {
                         current_level: subskillRating,
                         evidence: aiSubskill.evidence,
                       });
+                    
+                    if (subInsertError) {
+                      console.error(`❌ Failed to insert subskill ${aiSubskill.name}:`, subInsertError);
+                    }
                   }
                 }
               }

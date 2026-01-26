@@ -202,13 +202,15 @@ const EmployeesPage = () => {
             matchedCount++;
             
             console.log(`📝 Updating competency: ${comp.name}`);
-            console.log(`   - DB ID: ${matchedEc.id}`);
+            console.log(`   - Competency ID: ${matchedEc.competencyId}`);
             console.log(`   - Rating: ${rating}% (raw: ${comp.rating})`);
             
-            // Update employee_competency with error handling
+            // Use UPSERT via employee_id + competency_id (leverages unique constraint)
             const { error: updateError } = await supabase
               .from("employee_competencies")
-              .update({
+              .upsert({
+                employee_id: employeeId,
+                competency_id: matchedEc.competencyId,
                 current_level: rating,
                 self_rating: selfRating,
                 manager_rating: managerRating,
@@ -216,8 +218,9 @@ const EmployeesPage = () => {
                 rating_confidence: comp.confidence,
                 rated_at: new Date().toISOString(),
                 updated_at: new Date().toISOString(),
-              })
-              .eq("id", matchedEc.id);
+              }, {
+                onConflict: 'employee_id,competency_id'
+              });
 
             if (updateError) {
               console.error(`❌ Failed to update competency ${comp.name}:`, updateError);

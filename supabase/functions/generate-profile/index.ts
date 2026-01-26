@@ -463,7 +463,7 @@ const ROLE_CLUSTERS: Record<string, string[]> = {
     "Professionalism & Soft Skills"
   ],
   
-  // Mid-Level Associate: MLA-specific clusters only (NOT including JA clusters)
+  // Mid-Level Associate: MLA-specific clusters (including Commercial Fluency & Stakeholder Management)
   "mid-level_associate_(mla)": [
     "Deal Execution & Project Control",
     "Corporate/M&A Technical Lawyering",
@@ -471,7 +471,8 @@ const ROLE_CLUSTERS: Record<string, string[]> = {
     "Tech-Enabled Legal Work",
     "Commercial Judgment & Negotiation",
     "Team Supervision & Quality Control",
-    "Business Development Support (Mid-market relationship building)"
+    "MLA Commercial Fluency",
+    "MLA Negotiation, Commercial Judgment & Stakeholder Management"
   ],
   
   // Senior Associate: SA-specific clusters only

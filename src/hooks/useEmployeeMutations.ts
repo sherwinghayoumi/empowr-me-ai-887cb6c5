@@ -4,13 +4,17 @@ import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import type { EmployeeFormData } from "@/components/employees/EmployeeFormDialog";
 
-// Initialize employee competencies based on role profile
+// Initialize employee competencies based on role profile (ONLY active, non-deprecated)
 async function initializeEmployeeCompetencies(employeeId: string, roleProfileId: string) {
-  // Get all competencies for this role profile
+  console.log(`🔄 Initializing competencies for employee ${employeeId} with role profile ${roleProfileId}`);
+  
+  // Get ONLY active competencies for this role profile (exclude deprecated)
   const { data: competencies, error: compError } = await supabase
     .from("competencies")
-    .select("id, demand_weight, future_demand_max")
-    .eq("role_profile_id", roleProfileId);
+    .select("id, name, demand_weight, future_demand_max, status")
+    .eq("role_profile_id", roleProfileId)
+    .neq("status", "deprecated") // Exclude deprecated competencies
+    .eq("status", "active");     // Only active competencies
 
   if (compError) {
     console.error("Error fetching competencies:", compError);
@@ -18,26 +22,65 @@ async function initializeEmployeeCompetencies(employeeId: string, roleProfileId:
   }
 
   if (!competencies || competencies.length === 0) {
-    console.log("No competencies found for role profile:", roleProfileId);
+    console.log("No active competencies found for role profile:", roleProfileId);
     return;
   }
 
-  // Create employee_competencies with current_level = 0
-  const inserts = competencies.map((comp) => ({
-    employee_id: employeeId,
-    competency_id: comp.id,
-    current_level: 0, // Will be filled by assessment
-    demanded_level: comp.demand_weight || 50,
-    future_level: comp.future_demand_max || comp.demand_weight || 70,
-    gap_to_current: comp.demand_weight || 50, // Maximum gap at start
-    gap_to_future: comp.future_demand_max || comp.demand_weight || 70,
-  }));
+  console.log(`📋 Found ${competencies.length} active competencies to assign:`, competencies.map(c => c.name));
 
-  const { error: insertError } = await supabase.from("employee_competencies").insert(inserts);
+  // Create employee_competencies with current_level = 0 using UPSERT to prevent duplicates
+  for (const comp of competencies) {
+    const { error: insertError } = await supabase
+      .from("employee_competencies")
+      .upsert({
+        employee_id: employeeId,
+        competency_id: comp.id,
+        current_level: 0, // Will be filled by AI assessment
+        demanded_level: comp.demand_weight || 50,
+        future_level: comp.future_demand_max || comp.demand_weight || 70,
+        gap_to_current: comp.demand_weight || 50, // Maximum gap at start
+        gap_to_future: comp.future_demand_max || comp.demand_weight || 70,
+      }, {
+        onConflict: 'employee_id,competency_id'
+      });
 
-  if (insertError) {
-    console.error("Error initializing competencies:", insertError);
+    if (insertError) {
+      console.error(`Error initializing competency ${comp.name}:`, insertError);
+    }
   }
+
+  // Also initialize subskills for each competency
+  const { data: subskills, error: subError } = await supabase
+    .from("subskills")
+    .select("id, name, competency_id")
+    .in("competency_id", competencies.map(c => c.id));
+
+  if (subError) {
+    console.error("Error fetching subskills:", subError);
+    return;
+  }
+
+  if (subskills && subskills.length > 0) {
+    console.log(`📋 Initializing ${subskills.length} subskills`);
+    
+    for (const sub of subskills) {
+      const { error: subInsertError } = await supabase
+        .from("employee_subskills")
+        .upsert({
+          employee_id: employeeId,
+          subskill_id: sub.id,
+          current_level: 0, // Will be filled by AI assessment
+        }, {
+          onConflict: 'employee_id,subskill_id'
+        });
+
+      if (subInsertError) {
+        console.error(`Error initializing subskill ${sub.name}:`, subInsertError);
+      }
+    }
+  }
+
+  console.log(`✅ Employee competency initialization complete`);
 }
 
 export function useCreateEmployee() {

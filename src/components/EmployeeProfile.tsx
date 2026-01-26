@@ -467,6 +467,7 @@ export function EmployeeProfile({ employeeId, onClose }: EmployeeProfileProps) {
                       currentLevel={comp.currentLevel}
                       demandedLevel={comp.demandedLevel}
                       futureLevel={comp.futureLevel}
+                      employeeId={employeeId}
                       employeeName={employee.full_name}
                       delay={index * 100}
                     />

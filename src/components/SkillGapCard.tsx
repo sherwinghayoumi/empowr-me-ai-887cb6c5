@@ -2,11 +2,11 @@ import { useState } from "react";
 import { GlassCard, GlassCardContent, GlassCardHeader, GlassCardTitle } from "@/components/GlassCard";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Employee, getSkillById } from "@/data/mockData";
+import { Employee, getSkillById, getRoleById } from "@/data/mockData";
 import { getCompetencyById, generateSubSkillRatings } from "@/data/competenciesData";
 import { CertificationModal } from "./CertificationModal";
-import { AlertTriangle, TrendingDown, GraduationCap, ChevronRight } from "lucide-react";
-
+import { LearningPathGeneratorModal } from "./LearningPathGeneratorModal";
+import { AlertTriangle, TrendingDown, GraduationCap, ChevronRight, Sparkles } from "lucide-react";
 interface SkillGapCardProps {
   employee: Employee;
   competencyId: string;
@@ -55,6 +55,7 @@ function getSeverityStyles(severity: GapSeverity) {
 
 export function SkillGapCard({ employee, competencyId, delay = 0 }: SkillGapCardProps) {
   const [showCertModal, setShowCertModal] = useState(false);
+  const [showAIModal, setShowAIModal] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
   
   // Animate in
@@ -183,17 +184,29 @@ export function SkillGapCard({ employee, competencyId, delay = 0 }: SkillGapCard
             </div>
           )}
 
-          {/* Recommendation Button */}
-          <Button
-            variant="outline"
-            size="sm"
-            className="w-full group"
-            onClick={() => setShowCertModal(true)}
-          >
-            <GraduationCap className="w-4 h-4 mr-2" />
-            Learning Recommendations
-            <ChevronRight className="w-4 h-4 ml-auto transition-transform group-hover:translate-x-1" />
-          </Button>
+          {/* Action Buttons */}
+          <div className="space-y-2">
+            <Button
+              variant="default"
+              size="sm"
+              className="w-full group"
+              onClick={() => setShowAIModal(true)}
+            >
+              <Sparkles className="w-4 h-4 mr-2" />
+              AI Lernpfad generieren
+              <ChevronRight className="w-4 h-4 ml-auto transition-transform group-hover:translate-x-1" />
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full group"
+              onClick={() => setShowCertModal(true)}
+            >
+              <GraduationCap className="w-4 h-4 mr-2" />
+              Manuelle Empfehlungen
+              <ChevronRight className="w-4 h-4 ml-auto transition-transform group-hover:translate-x-1" />
+            </Button>
+          </div>
         </GlassCardContent>
       </GlassCard>
 
@@ -203,6 +216,25 @@ export function SkillGapCard({ employee, competencyId, delay = 0 }: SkillGapCard
         competencyId={competencyId}
         employeeName={employee.name}
         gapPercentage={Math.max(currentGap, futureGap)}
+      />
+
+      <LearningPathGeneratorModal
+        open={showAIModal}
+        onOpenChange={setShowAIModal}
+        skillGapInput={{
+          competencyId,
+          competencyName: skill.name,
+          competencyDefinition: competency.primaryCompetency,
+          subskills: problematicSubSkills.map(ss => ({ 
+            name: ss.name, 
+            currentLevel: ss.rating 
+          })),
+          currentLevel,
+          targetLevel: Math.max(demandedLevel, futureLevel),
+          employeeId: employee.id,
+          employeeName: employee.name,
+          employeeRole: getRoleById(employee.roleId)?.name,
+        }}
       />
     </>
   );

@@ -189,7 +189,7 @@ export function useUpdateEmployee() {
   });
 }
 
-export function useDeleteEmployee() {
+export function useArchiveEmployee() {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -206,7 +206,7 @@ export function useDeleteEmployee() {
 
       // Log audit event
       await supabase.rpc("log_audit_event", {
-        p_action: "delete",
+        p_action: "archive",
         p_entity_type: "employee",
         p_entity_id: id,
         p_new_values: JSON.parse(JSON.stringify({ is_active: false, deleted_at: new Date().toISOString() })),
@@ -218,8 +218,86 @@ export function useDeleteEmployee() {
       toast.success("Mitarbeiter archiviert");
     },
     onError: (error) => {
-      console.error("Delete employee error:", error);
+      console.error("Archive employee error:", error);
       toast.error("Fehler beim Archivieren des Mitarbeiters");
+    },
+  });
+}
+
+export function usePermanentDeleteEmployee() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      // Delete in order to respect foreign key constraints:
+      // 1. Delete employee_subskills
+      const { error: subskillError } = await supabase
+        .from("employee_subskills")
+        .delete()
+        .eq("employee_id", id);
+
+      if (subskillError) {
+        console.error("Error deleting employee subskills:", subskillError);
+        throw subskillError;
+      }
+
+      // 2. Delete employee_competencies
+      const { error: compError } = await supabase
+        .from("employee_competencies")
+        .delete()
+        .eq("employee_id", id);
+
+      if (compError) {
+        console.error("Error deleting employee competencies:", compError);
+        throw compError;
+      }
+
+      // 3. Delete certifications
+      const { error: certError } = await supabase
+        .from("certifications")
+        .delete()
+        .eq("employee_id", id);
+
+      if (certError) {
+        console.error("Error deleting certifications:", certError);
+        throw certError;
+      }
+
+      // 4. Delete learning_paths (and their modules via cascade)
+      const { error: pathError } = await supabase
+        .from("learning_paths")
+        .delete()
+        .eq("employee_id", id);
+
+      if (pathError) {
+        console.error("Error deleting learning paths:", pathError);
+        throw pathError;
+      }
+
+      // 5. Finally delete the employee
+      const { error: empError } = await supabase
+        .from("employees")
+        .delete()
+        .eq("id", id);
+
+      if (empError) throw empError;
+
+      // Log audit event (permanent delete)
+      await supabase.rpc("log_audit_event", {
+        p_action: "delete",
+        p_entity_type: "employee",
+        p_entity_id: id,
+        p_new_values: { permanent: true },
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["employees"] });
+      queryClient.invalidateQueries({ queryKey: ["org-stats"] });
+      toast.success("Mitarbeiter endgültig gelöscht");
+    },
+    onError: (error) => {
+      console.error("Permanent delete employee error:", error);
+      toast.error("Fehler beim Löschen des Mitarbeiters");
     },
   });
 }

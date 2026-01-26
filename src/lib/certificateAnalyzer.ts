@@ -63,3 +63,35 @@ export async function analyzeCertificateImage(
 
   return data as CertificateUpdateResult;
 }
+
+/**
+ * Converts a File to a base64 string (without the data URL prefix).
+ */
+export function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => {
+      const result = reader.result as string;
+      // Entferne den "data:image/png;base64," Prefix
+      const base64 = result.split(',')[1];
+      resolve(base64);
+    };
+    reader.onerror = reject;
+  });
+}
+
+/**
+ * Gets the MIME type from a File, with fallback based on extension.
+ */
+export function getMimeType(file: File): string {
+  if (file.type) return file.type;
+  const ext = file.name.toLowerCase().split('.').pop();
+  const mimeTypes: Record<string, string> = {
+    'png': 'image/png',
+    'jpg': 'image/jpeg',
+    'jpeg': 'image/jpeg',
+    'pdf': 'application/pdf'
+  };
+  return mimeTypes[ext || ''] || 'application/octet-stream';
+}

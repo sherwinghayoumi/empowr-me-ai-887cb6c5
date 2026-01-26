@@ -79,7 +79,7 @@ const EmployeesPage = () => {
   const updateEmployee = useUpdateEmployee();
   const deleteEmployee = useDeleteEmployee();
 
-  // Helper function for fuzzy name matching (supports EN and DE names)
+  // Helper function for fuzzy name matching
   const normalizeCompetencyName = (name: string): string => {
     return name
       .toLowerCase()
@@ -87,25 +87,23 @@ const EmployeesPage = () => {
       .trim();
   };
 
+  // FIXED: Removed name_de references - competencies table doesn't have this field
   const findBestMatch = (
     aiName: string, 
-    dbCompetencies: Array<{ name: string; id: string; name_de?: string | null }>
+    dbCompetencies: Array<{ name: string; id: string }>
   ): string | null => {
     const normalized = normalizeCompetencyName(aiName);
     
-    // Try exact match first (both EN and DE)
+    // Try exact match first
     const exactMatch = dbCompetencies.find(c => 
-      normalizeCompetencyName(c.name) === normalized ||
-      (c.name_de && normalizeCompetencyName(c.name_de) === normalized)
+      normalizeCompetencyName(c.name) === normalized
     );
     if (exactMatch) return exactMatch.id;
     
-    // Try partial match (AI name contained in DB name or vice versa) - EN and DE
+    // Try partial match (AI name contained in DB name or vice versa)
     const partialMatch = dbCompetencies.find(c => {
       const dbNorm = normalizeCompetencyName(c.name);
-      const dbNormDe = c.name_de ? normalizeCompetencyName(c.name_de) : '';
-      return dbNorm.includes(normalized) || normalized.includes(dbNorm) ||
-             dbNormDe.includes(normalized) || normalized.includes(dbNormDe);
+      return dbNorm.includes(normalized) || normalized.includes(dbNorm);
     });
     if (partialMatch) return partialMatch.id;
     
@@ -113,9 +111,7 @@ const EmployeesPage = () => {
     const aiWords = aiName.toLowerCase().split(/\s+/).filter(w => w.length > 2);
     for (const dbComp of dbCompetencies) {
       const dbWords = dbComp.name.toLowerCase().split(/\s+/).filter(w => w.length > 2);
-      const dbWordsDe = dbComp.name_de ? dbComp.name_de.toLowerCase().split(/\s+/).filter(w => w.length > 2) : [];
-      const allDbWords = [...dbWords, ...dbWordsDe];
-      const commonWords = aiWords.filter(w => allDbWords.some(dw => dw.includes(w) || w.includes(dw)));
+      const commonWords = aiWords.filter(w => dbWords.some(dw => dw.includes(w) || w.includes(dw)));
       if (commonWords.length >= 2) return dbComp.id;
     }
     

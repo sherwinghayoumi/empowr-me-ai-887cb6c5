@@ -274,7 +274,43 @@ export function ProfileGenerationModal({
               )}
             </div>
 
-            {/* Strengths & Development Areas */}
+            {/* Competency Overview - NEW */}
+            <div className="p-4 rounded-lg bg-muted/30 border border-border/50">
+              <h4 className="font-semibold mb-3 flex items-center gap-2">
+                <span>📊</span>
+                Bewertete Kompetenzen ({generatedProfile.competencyProfile?.clusters?.reduce((acc, c) => acc + (c.competencies?.length || 0), 0) || 0})
+              </h4>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-48 overflow-y-auto">
+                {generatedProfile.competencyProfile?.clusters?.flatMap(cluster => 
+                  cluster.competencies?.map(comp => (
+                    <div 
+                      key={`${cluster.clusterName}-${comp.name}`}
+                      className="flex items-center justify-between p-2 rounded bg-background/50 text-sm"
+                    >
+                      <span className="truncate flex-1 mr-2" title={comp.name}>
+                        {comp.name.length > 25 ? comp.name.slice(0, 25) + '...' : comp.name}
+                      </span>
+                      <Badge 
+                        variant="outline" 
+                        className={cn(
+                          "shrink-0",
+                          comp.rating === 'NB' 
+                            ? "bg-muted text-muted-foreground" 
+                            : (comp.rating as number) >= 4 
+                              ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/30"
+                              : (comp.rating as number) >= 3
+                                ? "bg-primary/20 text-primary border-primary/30"
+                                : "bg-amber-500/20 text-amber-400 border-amber-500/30"
+                        )}
+                      >
+                        {comp.rating === 'NB' ? 'NB' : `${comp.rating}/5`}
+                      </Badge>
+                    </div>
+                  )) || []
+                )}
+              </div>
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Top Strengths */}
               <div className="p-4 rounded-lg bg-muted/30 border border-border/50">

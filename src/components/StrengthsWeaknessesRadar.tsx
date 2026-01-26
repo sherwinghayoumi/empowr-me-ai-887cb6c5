@@ -8,6 +8,7 @@ import {
   ResponsiveContainer,
   Legend,
 } from "recharts";
+import { capLevel } from "@/lib/utils";
 
 interface SkillData {
   skillId: string;
@@ -37,8 +38,8 @@ export function StrengthsWeaknessesRadar({
       return {
         subject: shortName,
         fullName: name,
-        current: skill.currentLevel,
-        demanded: skill.demandedLevel,
+        current: capLevel(skill.currentLevel),
+        demanded: capLevel(skill.demandedLevel),
       };
     });
   }, [skills]);

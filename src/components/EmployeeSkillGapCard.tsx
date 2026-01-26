@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { CertificationModal } from "./CertificationModal";
 import { AlertTriangle, GraduationCap, ChevronRight } from "lucide-react";
+import { capLevel } from "@/lib/utils";
 
 interface EmployeeSkillGapCardProps {
   skillId: string;
@@ -58,14 +59,19 @@ function getSeverityStyles(severity: GapSeverity) {
 export function EmployeeSkillGapCard({ 
   skillId,
   skillName,
-  currentLevel, 
-  demandedLevel, 
-  futureLevel, 
+  currentLevel: rawCurrentLevel, 
+  demandedLevel: rawDemandedLevel, 
+  futureLevel: rawFutureLevel, 
   employeeName,
   delay = 0 
 }: EmployeeSkillGapCardProps) {
   const [showCertModal, setShowCertModal] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
+  
+  // Cap all levels at 100% for display
+  const currentLevel = capLevel(rawCurrentLevel);
+  const demandedLevel = capLevel(rawDemandedLevel);
+  const futureLevel = capLevel(rawFutureLevel);
   
   useEffect(() => {
     const timer = setTimeout(() => setIsVisible(true), delay);

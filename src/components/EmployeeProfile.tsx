@@ -11,6 +11,7 @@ import { ScrollReveal } from "@/components/ScrollReveal";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { X, Target, GraduationCap, Briefcase, AlertTriangle, Maximize2, ChevronDown, ChevronUp } from "lucide-react";
+import { capLevel } from "@/lib/utils";
 
 interface EmployeeProfileProps {
   employeeId: string;
@@ -50,10 +51,10 @@ export function EmployeeProfile({ employeeId, onClose }: EmployeeProfileProps) {
     return employee.competencies.map((ec) => ({
       id: ec.competency?.id || ec.competency_id,
       name: ec.competency?.name || 'Unknown',
-      currentLevel: ec.current_level || 0,
-      demandedLevel: ec.demanded_level || 0,
-      futureLevel: ec.future_level || 0,
-      gap: ec.gap_to_current || 0,
+      currentLevel: capLevel(ec.current_level),
+      demandedLevel: capLevel(ec.demanded_level),
+      futureLevel: capLevel(ec.future_level),
+      gap: Math.max(0, capLevel(ec.demanded_level) - capLevel(ec.current_level)),
       subskills: (ec.competency?.subskills || []).map((ss: any) => ({
         id: ss.id,
         name: ss.name,

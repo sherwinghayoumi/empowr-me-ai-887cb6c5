@@ -66,6 +66,8 @@ export function EmployeeLearningPathsTab({ learningPaths, employeeName, employee
   const queryClient = useQueryClient();
   const [deletePathId, setDeletePathId] = useState<string | null>(null);
   const [deletePathTitle, setDeletePathTitle] = useState<string>("");
+  const [showCertificateHint, setShowCertificateHint] = useState(false);
+  const [completedPathTitle, setCompletedPathTitle] = useState<string>("");
 
   const deleteMutation = useMutation({
     mutationFn: async (pathId: string) => {
@@ -103,9 +105,57 @@ export function EmployeeLearningPathsTab({ learningPaths, employeeName, employee
     }
   });
 
+  const completeMutation = useMutation({
+    mutationFn: async (pathId: string) => {
+      // Mark all modules as completed
+      const { error: modulesError } = await supabase
+        .from('learning_modules')
+        .update({ 
+          is_completed: true, 
+          completed_at: new Date().toISOString() 
+        })
+        .eq('learning_path_id', pathId);
+      
+      if (modulesError) throw modulesError;
+
+      // Mark the learning path as completed
+      const { error: pathError } = await supabase
+        .from('learning_paths')
+        .update({ 
+          completed_at: new Date().toISOString(),
+          progress_percent: 100
+        })
+        .eq('id', pathId);
+      
+      if (pathError) throw pathError;
+
+      // Log audit event
+      await supabase.rpc('log_audit_event', {
+        p_action: 'update',
+        p_entity_type: 'learning_path',
+        p_entity_id: pathId,
+        p_new_values: { status: 'completed' }
+      });
+    },
+    onSuccess: () => {
+      toast.success("Lernpfad als abgeschlossen markiert");
+      queryClient.invalidateQueries({ queryKey: ['employee', employeeId] });
+      setShowCertificateHint(true);
+    },
+    onError: (error) => {
+      console.error('Complete error:', error);
+      toast.error("Fehler beim Abschließen des Lernpfads");
+    }
+  });
+
   const handleDeleteClick = (pathId: string, pathTitle: string) => {
     setDeletePathId(pathId);
     setDeletePathTitle(pathTitle);
+  };
+
+  const handleCompleteClick = (pathId: string, pathTitle: string) => {
+    setCompletedPathTitle(pathTitle);
+    completeMutation.mutate(pathId);
   };
 
   const confirmDelete = () => {
@@ -194,7 +244,9 @@ export function EmployeeLearningPathsTab({ learningPaths, employeeName, employee
             <LearningPathCard 
               path={path} 
               onDelete={() => handleDeleteClick(path.id, path.title)}
+              onComplete={() => handleCompleteClick(path.id, path.title)}
               isDeleting={deleteMutation.isPending && deletePathId === path.id}
+              isCompleting={completeMutation.isPending}
             />
           </ScrollReveal>
         ))}
@@ -221,6 +273,35 @@ export function EmployeeLearningPathsTab({ learningPaths, employeeName, employee
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Certificate Upload Hint Dialog */}
+      <AlertDialog open={showCertificateHint} onOpenChange={setShowCertificateHint}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+              Lernpfad abgeschlossen!
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-3">
+              <p>
+                Herzlichen Glückwunsch! Der Lernpfad "{completedPathTitle}" wurde erfolgreich abgeschlossen.
+              </p>
+              <p>
+                Falls Sie ein Zertifikat oder Teilnahmebestätigung erhalten haben, können Sie dieses 
+                über den <strong>"Zertifikat hochladen"</strong>-Button im Mitarbeiterprofil hochladen.
+              </p>
+              <p className="text-sm">
+                Das Zertifikat wird analysiert und kann zur automatischen Aktualisierung der Kompetenzwerte verwendet werden.
+              </p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={() => setShowCertificateHint(false)}>
+              Verstanden
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
@@ -228,10 +309,12 @@ export function EmployeeLearningPathsTab({ learningPaths, employeeName, employee
 interface LearningPathCardProps {
   path: LearningPath;
   onDelete: () => void;
+  onComplete: () => void;
   isDeleting: boolean;
+  isCompleting: boolean;
 }
 
-function LearningPathCard({ path, onDelete, isDeleting }: LearningPathCardProps) {
+function LearningPathCard({ path, onDelete, onComplete, isDeleting, isCompleting }: LearningPathCardProps) {
   const completedModules = path.modules?.filter(m => m.is_completed).length || 0;
   const totalModules = path.modules?.length || 0;
   const progress = totalModules > 0 ? Math.round((completedModules / totalModules) * 100) : 0;
@@ -275,6 +358,18 @@ function LearningPathCard({ path, onDelete, isDeleting }: LearningPathCardProps)
                 </div>
               )}
             </div>
+            {!isCompleted && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onComplete}
+                disabled={isCompleting}
+                className="gap-1 text-emerald-600 dark:text-emerald-400 border-emerald-600/30 hover:bg-emerald-500/10"
+              >
+                <CheckCircle2 className="w-4 h-4" />
+                {isCompleting ? "..." : "Abschließen"}
+              </Button>
+            )}
             <Button
               variant="ghost"
               size="icon"

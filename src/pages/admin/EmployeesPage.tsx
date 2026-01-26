@@ -26,7 +26,7 @@ import {
 } from "@/components/ui/tooltip";
 import { UserPlus, Search, MoreVertical, Pencil, Trash2, Eye, Bot } from "lucide-react";
 import { useEmployees, useTeams, useRoleProfilesPublished } from "@/hooks/useOrgData";
-import { useCreateEmployee, useUpdateEmployee, useDeleteEmployee } from "@/hooks/useEmployeeMutations";
+import { useCreateEmployee, useUpdateEmployee, useArchiveEmployee, usePermanentDeleteEmployee } from "@/hooks/useEmployeeMutations";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import type { GeneratedProfile } from "@/types/profileGeneration";
@@ -77,7 +77,8 @@ const EmployeesPage = () => {
   // Mutations
   const createEmployee = useCreateEmployee();
   const updateEmployee = useUpdateEmployee();
-  const deleteEmployee = useDeleteEmployee();
+  const archiveEmployee = useArchiveEmployee();
+  const permanentDeleteEmployee = usePermanentDeleteEmployee();
 
   // Helper function for fuzzy name matching (supports EN and DE names)
   const normalizeCompetencyName = (name: string): string => {
@@ -393,9 +394,16 @@ const EmployeesPage = () => {
     setFormDialogOpen(false);
   };
 
-  const handleDeleteEmployee = async () => {
+  const handleArchiveEmployee = async () => {
     if (!deletingEmployee) return;
-    await deleteEmployee.mutateAsync(deletingEmployee.id);
+    await archiveEmployee.mutateAsync(deletingEmployee.id);
+    setDeletingEmployee(null);
+    setDeleteDialogOpen(false);
+  };
+
+  const handlePermanentDeleteEmployee = async () => {
+    if (!deletingEmployee) return;
+    await permanentDeleteEmployee.mutateAsync(deletingEmployee.id);
     setDeletingEmployee(null);
     setDeleteDialogOpen(false);
   };
@@ -600,8 +608,9 @@ const EmployeesPage = () => {
           setDeleteDialogOpen(open);
           if (!open) setDeletingEmployee(null);
         }}
-        onConfirm={handleDeleteEmployee}
-        isLoading={deleteEmployee.isPending}
+        onArchive={handleArchiveEmployee}
+        onPermanentDelete={handlePermanentDeleteEmployee}
+        isLoading={archiveEmployee.isPending || permanentDeleteEmployee.isPending}
         employeeName={deletingEmployee?.full_name || ""}
       />
 

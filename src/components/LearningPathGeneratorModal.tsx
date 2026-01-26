@@ -165,17 +165,6 @@ export function LearningPathGeneratorModal({
             </div>
           </div>
 
-          {/* Cost Warning */}
-          {!hasGenerated && (
-            <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3 mb-4 flex items-start gap-2">
-              <AlertTriangle className="w-4 h-4 text-amber-400 mt-0.5 shrink-0" />
-              <p className="text-sm text-amber-200">
-                Diese AI-Generierung kostet ca. <strong>0.05€</strong>. 
-                Der generierte Lernpfad kann vor dem Speichern bearbeitet werden.
-              </p>
-            </div>
-          )}
-
           {/* Generate Button or Results */}
           {!hasGenerated ? (
             <div className="flex justify-center py-8">

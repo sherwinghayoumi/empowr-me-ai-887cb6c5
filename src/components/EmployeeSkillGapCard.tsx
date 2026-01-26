@@ -2,9 +2,9 @@ import { useState, useEffect } from "react";
 import { GlassCard, GlassCardContent, GlassCardHeader, GlassCardTitle } from "@/components/GlassCard";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { CertificationModal } from "./CertificationModal";
 import { LearningPathGeneratorModal } from "./LearningPathGeneratorModal";
-import { AlertTriangle, GraduationCap, ChevronRight, Sparkles } from "lucide-react";
+import { AdminNotesModal } from "./AdminNotesModal";
+import { AlertTriangle, ChevronRight, Sparkles, StickyNote } from "lucide-react";
 import { capLevel } from "@/lib/utils";
 
 interface EmployeeSkillGapCardProps {
@@ -68,7 +68,7 @@ export function EmployeeSkillGapCard({
   employeeName,
   delay = 0 
 }: EmployeeSkillGapCardProps) {
-  const [showCertModal, setShowCertModal] = useState(false);
+  const [showNotesModal, setShowNotesModal] = useState(false);
   const [showAIModal, setShowAIModal] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
   
@@ -176,24 +176,15 @@ export function EmployeeSkillGapCard({
               variant="outline"
               size="sm"
               className="w-full group"
-              onClick={() => setShowCertModal(true)}
+              onClick={() => setShowNotesModal(true)}
             >
-              <GraduationCap className="w-4 h-4 mr-2" />
-              Manuelle Empfehlungen
+              <StickyNote className="w-4 h-4 mr-2" />
+              Admin Notizen
               <ChevronRight className="w-4 h-4 ml-auto transition-transform group-hover:translate-x-1" />
             </Button>
           </div>
         </GlassCardContent>
       </GlassCard>
-
-      <CertificationModal
-        open={showCertModal}
-        onOpenChange={setShowCertModal}
-        competencyId={skillId}
-        competencyName={displayName}
-        employeeName={employeeName}
-        gapPercentage={Math.max(currentGap, futureGap)}
-      />
 
       <LearningPathGeneratorModal
         open={showAIModal}
@@ -206,6 +197,15 @@ export function EmployeeSkillGapCard({
           employeeId,
           employeeName,
         }}
+      />
+
+      <AdminNotesModal
+        open={showNotesModal}
+        onOpenChange={setShowNotesModal}
+        competencyName={displayName}
+        employeeName={employeeName}
+        employeeId={employeeId}
+        competencyId={skillId}
       />
     </>
   );

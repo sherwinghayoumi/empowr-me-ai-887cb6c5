@@ -4,9 +4,10 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Employee, getSkillById, getRoleById } from "@/data/mockData";
 import { getCompetencyById, generateSubSkillRatings } from "@/data/competenciesData";
-import { CertificationModal } from "./CertificationModal";
 import { LearningPathGeneratorModal } from "./LearningPathGeneratorModal";
-import { AlertTriangle, TrendingDown, GraduationCap, ChevronRight, Sparkles } from "lucide-react";
+import { AdminNotesModal } from "./AdminNotesModal";
+import { AlertTriangle, TrendingDown, ChevronRight, Sparkles, StickyNote } from "lucide-react";
+
 interface SkillGapCardProps {
   employee: Employee;
   competencyId: string;
@@ -54,8 +55,8 @@ function getSeverityStyles(severity: GapSeverity) {
 }
 
 export function SkillGapCard({ employee, competencyId, delay = 0 }: SkillGapCardProps) {
-  const [showCertModal, setShowCertModal] = useState(false);
   const [showAIModal, setShowAIModal] = useState(false);
+  const [showNotesModal, setShowNotesModal] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
   
   // Animate in
@@ -200,23 +201,15 @@ export function SkillGapCard({ employee, competencyId, delay = 0 }: SkillGapCard
               variant="outline"
               size="sm"
               className="w-full group"
-              onClick={() => setShowCertModal(true)}
+              onClick={() => setShowNotesModal(true)}
             >
-              <GraduationCap className="w-4 h-4 mr-2" />
-              Manuelle Empfehlungen
+              <StickyNote className="w-4 h-4 mr-2" />
+              Admin Notizen
               <ChevronRight className="w-4 h-4 ml-auto transition-transform group-hover:translate-x-1" />
             </Button>
           </div>
         </GlassCardContent>
       </GlassCard>
-
-      <CertificationModal
-        open={showCertModal}
-        onOpenChange={setShowCertModal}
-        competencyId={competencyId}
-        employeeName={employee.name}
-        gapPercentage={Math.max(currentGap, futureGap)}
-      />
 
       <LearningPathGeneratorModal
         open={showAIModal}
@@ -235,6 +228,15 @@ export function SkillGapCard({ employee, competencyId, delay = 0 }: SkillGapCard
           employeeName: employee.name,
           employeeRole: getRoleById(employee.roleId)?.name,
         }}
+      />
+
+      <AdminNotesModal
+        open={showNotesModal}
+        onOpenChange={setShowNotesModal}
+        competencyName={skill.name}
+        employeeName={employee.name}
+        employeeId={employee.id}
+        competencyId={competencyId}
       />
     </>
   );

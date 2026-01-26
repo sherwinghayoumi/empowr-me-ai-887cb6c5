@@ -162,25 +162,9 @@ const COMPETENCY_SCHEMA: Record<string, Record<string, string[]>> = {
     ]
   },
 
-  // MLA ONLY: Stakeholder Management Cluster
-  "MLA Negotiation, Commercial Judgment & Stakeholder Management": {
-    "Stakeholder Management & Difficult Counterparties": [
-      "Conflict de-escalation",
-      "Decision-maker mapping",
-      "Escalation path management",
-      "Expectation setting & alignment",
-      "Written vs verbal negotiation tactics"
-    ]
-  },
-
-  // MLA-specific Commercial Fluency
-  "MLA Commercial Fluency": {
-    "Commercial Awareness & Financial Literacy": [
-      "Financial Statement Basics",
-      "Industry Analysis",
-      "Purchase Price Mechanisms"
-    ]
-  },
+  // NOTE: MLA uses the same cluster names as DB (no MLA- prefix)
+  // "Commercial Fluency" and "Negotiation, Commercial Judgment & Stakeholder Management" 
+  // are defined above and reused for MLA role mapping
 
   "Team Supervision & Quality Control": {
     "Junior Associate & Paralegal Supervision": [
@@ -463,7 +447,7 @@ const ROLE_CLUSTERS: Record<string, string[]> = {
     "Professionalism & Soft Skills"
   ],
   
-  // Mid-Level Associate: MLA-specific clusters (including Commercial Fluency & Stakeholder Management)
+  // Mid-Level Associate: MLA-specific clusters (using DB-matching names without MLA- prefix)
   "mid-level_associate_(mla)": [
     "Deal Execution & Project Control",
     "Corporate/M&A Technical Lawyering",
@@ -471,8 +455,8 @@ const ROLE_CLUSTERS: Record<string, string[]> = {
     "Tech-Enabled Legal Work",
     "Commercial Judgment & Negotiation",
     "Team Supervision & Quality Control",
-    "MLA Commercial Fluency",
-    "MLA Negotiation, Commercial Judgment & Stakeholder Management"
+    "Commercial Fluency",
+    "Negotiation, Commercial Judgment & Stakeholder Management"
   ],
   
   // Senior Associate: SA-specific clusters only

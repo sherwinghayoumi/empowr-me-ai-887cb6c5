@@ -194,11 +194,9 @@ const EmployeesPage = () => {
           const selfRating = comp.selfRating ? comp.selfRating * 20 : null;
           const managerRating = comp.managerRating ? comp.managerRating * 20 : null;
 
-          // Find matching DB competency using fuzzy matching
-          const matchedEc = dbCompetencies.find(db => {
-            const matchId = findBestMatch(comp.name, [{ name: db.name, id: db.id }]);
-            return matchId === db.id;
-          });
+          // Find matching DB competency using fuzzy matching (pass ALL competencies for correct matching)
+          const matchId = findBestMatch(comp.name, dbCompetencies);
+          const matchedEc = matchId ? dbCompetencies.find(db => db.id === matchId) : null;
 
           if (matchedEc) {
             matchedCount++;

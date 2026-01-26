@@ -79,7 +79,7 @@ const EmployeesPage = () => {
   const updateEmployee = useUpdateEmployee();
   const deleteEmployee = useDeleteEmployee();
 
-  // Helper function for fuzzy name matching
+  // Helper function for fuzzy name matching (supports EN and DE names)
   const normalizeCompetencyName = (name: string): string => {
     return name
       .toLowerCase()
@@ -87,17 +87,25 @@ const EmployeesPage = () => {
       .trim();
   };
 
-  const findBestMatch = (aiName: string, dbCompetencies: Array<{ name: string; id: string }>): string | null => {
+  const findBestMatch = (
+    aiName: string, 
+    dbCompetencies: Array<{ name: string; id: string; name_de?: string | null }>
+  ): string | null => {
     const normalized = normalizeCompetencyName(aiName);
     
-    // Try exact match first
-    const exactMatch = dbCompetencies.find(c => normalizeCompetencyName(c.name) === normalized);
+    // Try exact match first (both EN and DE)
+    const exactMatch = dbCompetencies.find(c => 
+      normalizeCompetencyName(c.name) === normalized ||
+      (c.name_de && normalizeCompetencyName(c.name_de) === normalized)
+    );
     if (exactMatch) return exactMatch.id;
     
-    // Try partial match (AI name contained in DB name or vice versa)
+    // Try partial match (AI name contained in DB name or vice versa) - EN and DE
     const partialMatch = dbCompetencies.find(c => {
       const dbNorm = normalizeCompetencyName(c.name);
-      return dbNorm.includes(normalized) || normalized.includes(dbNorm);
+      const dbNormDe = c.name_de ? normalizeCompetencyName(c.name_de) : '';
+      return dbNorm.includes(normalized) || normalized.includes(dbNorm) ||
+             dbNormDe.includes(normalized) || normalized.includes(dbNormDe);
     });
     if (partialMatch) return partialMatch.id;
     
@@ -105,15 +113,17 @@ const EmployeesPage = () => {
     const aiWords = aiName.toLowerCase().split(/\s+/).filter(w => w.length > 2);
     for (const dbComp of dbCompetencies) {
       const dbWords = dbComp.name.toLowerCase().split(/\s+/).filter(w => w.length > 2);
-      const commonWords = aiWords.filter(w => dbWords.some(dw => dw.includes(w) || w.includes(dw)));
+      const dbWordsDe = dbComp.name_de ? dbComp.name_de.toLowerCase().split(/\s+/).filter(w => w.length > 2) : [];
+      const allDbWords = [...dbWords, ...dbWordsDe];
+      const commonWords = aiWords.filter(w => allDbWords.some(dw => dw.includes(w) || w.includes(dw)));
       if (commonWords.length >= 2) return dbComp.id;
     }
     
     return null;
   };
 
-  // Save generated profile to database
-  const saveProfileToDatabase = async (employeeId: string, profile: GeneratedProfile) => {
+  // Save generated profile to database - returns matching statistics
+  const saveProfileToDatabase = async (employeeId: string, profile: GeneratedProfile): Promise<{ matched: number; unmatched: string[] }> => {
     console.log('=== SAVE PROFILE TO DATABASE ===');
     console.log('Employee ID:', employeeId);
     console.log('Overall Score:', profile.analysis.overallScore);
@@ -148,7 +158,7 @@ const EmployeesPage = () => {
       throw new Error("Fehler beim Speichern des Profils");
     }
 
-    // Get all competencies with their subskills for this employee
+    // Get all competencies with their subskills for this employee (including name_de for subskills)
     const { data: existingCompetencies, error: fetchError } = await supabase
       .from("employee_competencies")
       .select(`
@@ -157,7 +167,7 @@ const EmployeesPage = () => {
         competency:competencies(
           id, 
           name,
-          subskills:subskills(id, name)
+          subskills:subskills(id, name, name_de)
         )
       `)
       .eq("employee_id", employeeId);
@@ -170,7 +180,7 @@ const EmployeesPage = () => {
         id: ec.id,
         competencyId: ec.competency_id,
         name: ec.competency?.name || '',
-        subskills: ec.competency?.subskills || []
+        subskills: (ec.competency?.subskills || []) as Array<{ id: string; name: string; name_de?: string | null }>
       }));
 
       // Process AI ratings
@@ -212,11 +222,13 @@ const EmployeesPage = () => {
               for (const aiSubskill of comp.subskills) {
                 const subskillRating = aiSubskill.rating === 'NB' ? 0 : (aiSubskill.rating as number) * 20;
                 
-                // Find matching DB subskill
+                // Find matching DB subskill (supports EN and DE names)
                 const matchedSubskill = matchedEc.subskills.find(dbSub => {
                   const normalizedAi = normalizeCompetencyName(aiSubskill.name);
                   const normalizedDb = normalizeCompetencyName(dbSub.name);
-                  return normalizedDb.includes(normalizedAi) || normalizedAi.includes(normalizedDb);
+                  const normalizedDbDe = dbSub.name_de ? normalizeCompetencyName(dbSub.name_de) : '';
+                  return normalizedDb.includes(normalizedAi) || normalizedAi.includes(normalizedDb) ||
+                         normalizedDbDe.includes(normalizedAi) || normalizedAi.includes(normalizedDbDe);
                 });
 
                 if (matchedSubskill) {
@@ -264,11 +276,30 @@ const EmployeesPage = () => {
         console.log('DB competency names:', dbCompetencies.map(c => c.name));
       }
       console.log('=== END MATCHING RESULTS ===');
+
+      console.log('=== PROFILE SAVE COMPLETE ===');
+
+      // Log audit event
+      await supabase.rpc("log_audit_event", {
+        p_action: "ai_profile_generated",
+        p_entity_type: "employee",
+        p_entity_id: employeeId,
+        p_new_values: {
+          overall_score: profile.analysis.overallScore,
+          promotion_readiness: profile.analysis.promotionReadiness.readinessPercentage,
+          strengths: profile.analysis.topStrengths.map((s) => s.competency),
+          development_areas: profile.analysis.developmentAreas.map((d) => d.competency),
+          matched_competencies: matchedCount,
+          unmatched_competencies: unmatchedNames.length,
+        },
+      });
+
+      return { matched: matchedCount, unmatched: unmatchedNames };
     }
 
-    console.log('=== PROFILE SAVE COMPLETE ===');
+    console.log('=== PROFILE SAVE COMPLETE (no competencies to match) ===');
 
-    // Log audit event
+    // Log audit event even if no competencies matched
     await supabase.rpc("log_audit_event", {
       p_action: "ai_profile_generated",
       p_entity_type: "employee",
@@ -280,6 +311,8 @@ const EmployeesPage = () => {
         development_areas: profile.analysis.developmentAreas.map((d) => d.competency),
       },
     });
+
+    return { matched: 0, unmatched: [] };
   };
 
   const openProfileModal = (employee: DbEmployee) => {
@@ -537,8 +570,18 @@ const EmployeesPage = () => {
           }}
           onProfileGenerated={async (profile) => {
             try {
-              await saveProfileToDatabase(selectedEmployeeForProfile.id, profile);
-              toast.success("Profil erfolgreich gespeichert!");
+              const result = await saveProfileToDatabase(selectedEmployeeForProfile.id, profile);
+              
+              // Show success with matching info
+              if (result.unmatched.length > 0) {
+                toast.warning(
+                  `Profil gespeichert! ${result.matched} Kompetenzen aktualisiert, ${result.unmatched.length} konnten nicht zugeordnet werden.`,
+                  { duration: 5000 }
+                );
+              } else {
+                toast.success(`Profil erfolgreich gespeichert! ${result.matched} Kompetenzen aktualisiert.`);
+              }
+              
               setShowProfileModal(false);
               setSelectedEmployeeForProfile(null);
               refetch();

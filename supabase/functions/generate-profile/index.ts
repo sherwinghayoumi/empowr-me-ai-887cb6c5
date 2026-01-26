@@ -434,11 +434,84 @@ const COMPETENCY_SCHEMA: Record<string, Record<string, string[]>> = {
   }
 };
 
-// Generiert den Kompetenz-Teil für den System Prompt
-function getCompetencySchemaForPrompt(): string {
+// ═══════════════════════════════════════════════════════════════════════════════
+// ROLE-BASED CLUSTER MAPPING
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const ROLE_CLUSTERS: Record<string, string[]> = {
+  // Junior Associate: Only JA clusters
+  "junior_associate": [
+    "Commercial Fluency",
+    "M&A Fundamentals & Deal Hygiene",
+    "Tech-Enhanced Due Diligence",
+    "Regulatory & AI Governance",
+    "Legal Project Management",
+    "Professionalism & Soft Skills"
+  ],
+  
+  // Mid-Level Associate: MLA-specific clusters only (NOT including JA clusters)
+  "mid-level_associate_(mla)": [
+    "Deal Execution & Project Control",
+    "Corporate/M&A Technical Lawyering",
+    "Risk, Regulation & Governance",
+    "Tech-Enabled Legal Work",
+    "Commercial Judgment & Negotiation",
+    "Team Supervision & Quality Control",
+    "Business Development Support (Mid-market relationship building)"
+  ],
+  
+  // Senior Associate: SA-specific clusters only
+  "senior_associate_(sa)": [
+    "Negotiation, Commercial Judgment & Stakeholder Management",
+    "Deal Leadership, Strategy & Project Control",
+    "M&A Technical Mastery (Structure + Drafting Strategy)",
+    "Risk Allocation, Governance & Regulatory Awareness",
+    "Tech-Enabled Legal Delivery (AI workflows + QA + automation)",
+    "Client Advisory & Communication (Value + Risk Transparency)",
+    "Knowledge Systems, Precedents & Quality Management",
+    "Team Leadership, Coaching & Delegation"
+  ]
+};
+
+// Alias mappings for different role key formats
+const ROLE_KEY_ALIASES: Record<string, string> = {
+  "junior_associate": "junior_associate",
+  "ja": "junior_associate",
+  "junior associate": "junior_associate",
+  "mid-level_associate_(mla)": "mid-level_associate_(mla)",
+  "mla": "mid-level_associate_(mla)",
+  "mid-level associate": "mid-level_associate_(mla)",
+  "midlevel associate": "mid-level_associate_(mla)",
+  "senior_associate_(sa)": "senior_associate_(sa)",
+  "sa": "senior_associate_(sa)",
+  "senior associate": "senior_associate_(sa)",
+  "counsel": "senior_associate_(sa)"
+};
+
+function normalizeRoleKey(roleTitle: string): string {
+  const normalized = roleTitle.toLowerCase().trim();
+  return ROLE_KEY_ALIASES[normalized] || "mid-level_associate_(mla)";
+}
+
+function getClustersForRole(roleKey: string): string[] {
+  const normalizedRole = normalizeRoleKey(roleKey);
+  return ROLE_CLUSTERS[normalizedRole] || ROLE_CLUSTERS["mid-level_associate_(mla)"];
+}
+
+// Generiert den Kompetenz-Teil für den System Prompt - NUR für die angegebene Rolle
+function getCompetencySchemaForPrompt(roleKey: string): string {
+  const allowedClusters = getClustersForRole(roleKey);
   let output = "";
 
+  console.log(`Generating schema for role: ${roleKey}`);
+  console.log(`Allowed clusters: ${allowedClusters.join(", ")}`);
+
   for (const [cluster, competencies] of Object.entries(COMPETENCY_SCHEMA)) {
+    // Skip clusters not relevant for this role
+    if (!allowedClusters.includes(cluster)) {
+      continue;
+    }
+
     output += `\n═══════════════════════════════════════════════════════════════════════════════\n`;
     output += `CLUSTER: "${cluster}"\n`;
     output += `═══════════════════════════════════════════════════════════════════════════════\n`;
@@ -455,7 +528,12 @@ function getCompetencySchemaForPrompt(): string {
   return output;
 }
 
-const SYSTEM_PROMPT = `Du bist ein HR-Analytics-Assistent für eine Wirtschaftskanzlei im Bereich Corporate Law / M&A.
+// Generates the system prompt with role-specific competencies only
+function getSystemPrompt(roleKey: string): string {
+  const normalizedRole = normalizeRoleKey(roleKey);
+  const allowedClusters = getClustersForRole(roleKey);
+  
+  return `Du bist ein HR-Analytics-Assistent für eine Wirtschaftskanzlei im Bereich Corporate Law / M&A.
 
 Du erhältst 3 Dokumente: CV, Self-Assessment, Manager-Assessment.
 
@@ -474,46 +552,18 @@ RATING-SKALA:
 - NB = Nicht bewertbar (keine Evidence)
 
 ═══════════════════════════════════════════════════════════════════════════════
-KRITISCH: VERWENDE NUR DIE FOLGENDEN EXAKTEN KOMPETENZ- UND SUBSKILL-NAMEN!
+KRITISCH: Du bewertest einen ${roleKey} (normalisiert: ${normalizedRole})
+═══════════════════════════════════════════════════════════════════════════════
+
+Bewerte NUR die folgenden ${allowedClusters.length} Cluster für diese Rolle:
+${allowedClusters.map((c, i) => `${i + 1}. ${c}`).join("\n")}
+
+═══════════════════════════════════════════════════════════════════════════════
+EXAKTE KOMPETENZ- UND SUBSKILL-NAMEN FÜR DIESE ROLLE
 Keine Abweichungen, keine Umformulierungen, keine Abkürzungen!
 ═══════════════════════════════════════════════════════════════════════════════
 
-${getCompetencySchemaForPrompt()}
-
-═══════════════════════════════════════════════════════════════════════════════
-ROLLEN-ZUORDNUNG
-═══════════════════════════════════════════════════════════════════════════════
-
-Bewerte nur die Kompetenzen, die zur angegebenen Rolle passen:
-
-JUNIOR ASSOCIATE (JA):
-- Commercial Fluency
-- M&A Fundamentals & Deal Hygiene
-- Tech-Enhanced Due Diligence
-- Regulatory & AI Governance
-- Legal Project Management
-- Professionalism & Soft Skills
-
-MID-LEVEL ASSOCIATE (MLA):
-- Alle JA-Cluster PLUS:
-- Deal Execution & Project Control
-- Corporate/M&A Technical Lawyering
-- Risk, Regulation & Governance
-- Tech-Enabled Legal Work
-- Commercial Judgment & Negotiation
-- Team Supervision & Quality Control
-- Business Development Support (Mid-market relationship building)
-
-SENIOR ASSOCIATE / COUNSEL (SA):
-- Alle MLA-Cluster PLUS:
-- Deal Leadership, Strategy & Project Control
-- M&A Technical Mastery (Structure + Drafting Strategy)
-- Risk Allocation, Governance & Regulatory Awareness
-- Tech-Enabled Legal Delivery (AI workflows + QA + automation)
-- Client Advisory & Communication (Value + Risk Transparency)
-- Knowledge Systems, Precedents & Quality Management
-- Team Leadership, Coaching & Delegation
-- Negotiation, Commercial Judgment & Stakeholder Management
+${getCompetencySchemaForPrompt(roleKey)}
 
 ═══════════════════════════════════════════════════════════════════════════════
 ANTWORT-FORMAT
@@ -604,10 +654,11 @@ Antworte NUR mit validem JSON im folgenden Schema:
 
 WICHTIGE REGELN:
 1. Verwende NUR die oben definierten Cluster-, Kompetenz- und Subskill-Namen!
-2. Bewerte nur Kompetenzen, die zur Rolle passen
+2. Bewerte ALLE Kompetenzen in ALLEN oben aufgelisteten Clustern für diese Rolle!
 3. Bei fehlender Evidence: "NB" (Nicht bewertbar)
 4. Overall Score = gewichteter Durchschnitt aller bewerteten Kompetenzen (Rating 1=20%, 2=40%, 3=60%, 4=80%, 5=100%)
 5. Antworte NUR mit JSON - keine Erklärungen davor oder danach!`;
+}
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -636,8 +687,14 @@ ${managerText}
 
 Erstelle das Kompetenzprofil als JSON. Verwende NUR die im System definierten Kompetenz-Namen!`;
 
+    // Generate role-specific system prompt
+    const systemPrompt = getSystemPrompt(roleTitle);
+    const allowedClusters = getClustersForRole(roleTitle);
+
     console.log("Calling Anthropic API with role:", roleTitle);
-    console.log("System prompt length:", SYSTEM_PROMPT.length);
+    console.log("Normalized role:", normalizeRoleKey(roleTitle));
+    console.log("Allowed clusters:", allowedClusters);
+    console.log("System prompt length:", systemPrompt.length);
 
     const response = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
@@ -649,7 +706,7 @@ Erstelle das Kompetenzprofil als JSON. Verwende NUR die im System definierten Ko
       body: JSON.stringify({
         model: "claude-sonnet-4-20250514",
         max_tokens: 16000,
-        system: SYSTEM_PROMPT,
+        system: systemPrompt,
         messages: [{ role: "user", content: userPrompt }],
       }),
     });

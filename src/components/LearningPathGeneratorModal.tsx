@@ -12,15 +12,22 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { 
   Sparkles, 
   Clock, 
   GraduationCap, 
   ExternalLink, 
-  Trash2, 
   AlertTriangle,
   BookOpen,
-  Building2
+  Building2,
+  CheckCircle2,
+  Search
 } from "lucide-react";
 import { useGenerateLearningPath, useSaveLearningPath } from "@/hooks/useGenerateLearningPath";
 import { GeneratedLearningPath, LearningRecommendation, SkillGapInput } from "@/types/learningPath";
@@ -47,6 +54,62 @@ function getLevelColor(level: string): string {
     case 'Expert': return 'bg-orange-500/20 text-orange-400 border-orange-500/30';
     default: return 'bg-secondary text-secondary-foreground';
   }
+}
+
+function ModuleUrlLink({ module }: { module: LearningRecommendation }) {
+  const url = module.verifiedUrl || module.contentUrl || module.searchFallbackUrl;
+  const isVerified = module.isUrlVerified;
+  
+  if (!url) return null;
+  
+  return (
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <a 
+            href={url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={`inline-flex items-center gap-1.5 text-xs mt-2 transition-colors ${
+              isVerified 
+                ? 'text-emerald-500 hover:text-emerald-400' 
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            {isVerified ? (
+              <>
+                <CheckCircle2 className="w-3.5 h-3.5" />
+                <span>Kurs öffnen</span>
+                <ExternalLink className="w-3 h-3" />
+              </>
+            ) : (
+              <>
+                <Search className="w-3.5 h-3.5" />
+                <span>Auf {module.provider} suchen</span>
+                <ExternalLink className="w-3 h-3" />
+              </>
+            )}
+          </a>
+        </TooltipTrigger>
+        <TooltipContent side="bottom" className="max-w-xs">
+          {isVerified ? (
+            <p className="text-xs">
+              <span className="text-emerald-400 font-medium">✓ Verifizierte URL</span>
+              <br />
+              Dieser Link führt direkt zur offiziellen Kursseite.
+            </p>
+          ) : (
+            <p className="text-xs">
+              <span className="text-muted-foreground font-medium">Suchlink</span>
+              <br />
+              Die exakte Kurs-URL konnte nicht verifiziert werden. 
+              Dieser Link öffnet eine Suche bei {module.provider}.
+            </p>
+          )}
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
 }
 
 export function LearningPathGeneratorModal({ 
@@ -124,6 +187,10 @@ export function LearningPathGeneratorModal({
   };
 
   const gap = skillGapInput.targetLevel - skillGapInput.currentLevel;
+  
+  // Count verified URLs
+  const verifiedCount = generatedPath?.modules.filter(m => m.isUrlVerified).length ?? 0;
+  const totalModules = generatedPath?.modules.length ?? 0;
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
@@ -209,6 +276,12 @@ export function LearningPathGeneratorModal({
                     <BookOpen className="w-4 h-4" />
                     {generatedPath.modules.length} Module
                   </span>
+                  {verifiedCount > 0 && (
+                    <span className="flex items-center gap-1 text-emerald-500">
+                      <CheckCircle2 className="w-4 h-4" />
+                      {verifiedCount}/{totalModules} verifiziert
+                    </span>
+                  )}
                 </div>
               </div>
 
@@ -236,7 +309,21 @@ export function LearningPathGeneratorModal({
                       <div className="flex-1 min-w-0">
                         <div className="flex items-start justify-between gap-2">
                           <div className="flex-1">
-                            <h4 className="font-medium text-foreground">{module.title}</h4>
+                            <div className="flex items-center gap-2">
+                              <h4 className="font-medium text-foreground">{module.title}</h4>
+                              {module.isUrlVerified && (
+                                <TooltipProvider>
+                                  <Tooltip>
+                                    <TooltipTrigger>
+                                      <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                      <p className="text-xs">URL verifiziert</p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
+                              )}
+                            </div>
                             <div className="flex items-center gap-2 mt-1">
                               <Badge variant="outline" className="text-xs">
                                 <Building2 className="w-3 h-3 mr-1" />
@@ -263,17 +350,7 @@ export function LearningPathGeneratorModal({
                           💡 {module.reason}
                         </p>
 
-                        {module.contentUrl && (
-                          <a 
-                            href={module.contentUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 text-xs text-primary hover:underline mt-2"
-                          >
-                            <ExternalLink className="w-3 h-3" />
-                            Kurs öffnen
-                          </a>
-                        )}
+                        <ModuleUrlLink module={module} />
                       </div>
                     </div>
                   </div>

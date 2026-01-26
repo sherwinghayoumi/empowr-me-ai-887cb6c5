@@ -530,7 +530,8 @@ export function EmployeeProfile({ employeeId, onClose }: EmployeeProfileProps) {
         <TabsContent value="learning" className="mt-6">
           <EmployeeLearningPathsTab 
             learningPaths={employee.learning_paths} 
-            employeeName={employee.full_name} 
+            employeeName={employee.full_name}
+            employeeId={employeeId}
           />
         </TabsContent>
       </Tabs>

@@ -1,7 +1,19 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { GlassCard, GlassCardContent, GlassCardHeader, GlassCardTitle } from "@/components/GlassCard";
 import { ScrollReveal } from "@/components/ScrollReveal";
 import { 
@@ -12,10 +24,12 @@ import {
   ExternalLink,
   Sparkles,
   Target,
-  Calendar
+  Calendar,
+  Trash2
 } from "lucide-react";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
+import { toast } from "sonner";
 
 interface LearningModule {
   id: string;
@@ -45,13 +59,64 @@ interface LearningPath {
 interface EmployeeLearningPathsTabProps {
   learningPaths: LearningPath[] | null | undefined;
   employeeName: string;
+  employeeId: string;
 }
 
-export function EmployeeLearningPathsTab({ learningPaths, employeeName }: EmployeeLearningPathsTabProps) {
+export function EmployeeLearningPathsTab({ learningPaths, employeeName, employeeId }: EmployeeLearningPathsTabProps) {
+  const queryClient = useQueryClient();
+  const [deletePathId, setDeletePathId] = useState<string | null>(null);
+  const [deletePathTitle, setDeletePathTitle] = useState<string>("");
+
+  const deleteMutation = useMutation({
+    mutationFn: async (pathId: string) => {
+      // First delete all modules
+      const { error: modulesError } = await supabase
+        .from('learning_modules')
+        .delete()
+        .eq('learning_path_id', pathId);
+      
+      if (modulesError) throw modulesError;
+
+      // Then delete the learning path
+      const { error: pathError } = await supabase
+        .from('learning_paths')
+        .delete()
+        .eq('id', pathId);
+      
+      if (pathError) throw pathError;
+
+      // Log audit event
+      await supabase.rpc('log_audit_event', {
+        p_action: 'delete',
+        p_entity_type: 'learning_path',
+        p_entity_id: pathId
+      });
+    },
+    onSuccess: () => {
+      toast.success("Lernpfad gelöscht");
+      queryClient.invalidateQueries({ queryKey: ['employee', employeeId] });
+      setDeletePathId(null);
+    },
+    onError: (error) => {
+      console.error('Delete error:', error);
+      toast.error("Fehler beim Löschen des Lernpfads");
+    }
+  });
+
+  const handleDeleteClick = (pathId: string, pathTitle: string) => {
+    setDeletePathId(pathId);
+    setDeletePathTitle(pathTitle);
+  };
+
+  const confirmDelete = () => {
+    if (deletePathId) {
+      deleteMutation.mutate(deletePathId);
+    }
+  };
+
   const sortedPaths = useMemo(() => {
     if (!learningPaths) return [];
     return [...learningPaths].sort((a, b) => {
-      // Active paths first (not completed), then by created_at desc
       const aCompleted = a.completed_at ? 1 : 0;
       const bCompleted = b.completed_at ? 1 : 0;
       if (aCompleted !== bCompleted) return aCompleted - bCompleted;
@@ -126,15 +191,47 @@ export function EmployeeLearningPathsTab({ learningPaths, employeeName }: Employ
       <div className="space-y-4">
         {sortedPaths.map((path, index) => (
           <ScrollReveal key={path.id} delay={index * 100}>
-            <LearningPathCard path={path} />
+            <LearningPathCard 
+              path={path} 
+              onDelete={() => handleDeleteClick(path.id, path.title)}
+              isDeleting={deleteMutation.isPending && deletePathId === path.id}
+            />
           </ScrollReveal>
         ))}
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={!!deletePathId} onOpenChange={(open) => !open && setDeletePathId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Lernpfad löschen?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Möchten Sie den Lernpfad "{deletePathTitle}" wirklich löschen? 
+              Diese Aktion kann nicht rückgängig gemacht werden. Alle zugehörigen Module werden ebenfalls gelöscht.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={confirmDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleteMutation.isPending ? "Wird gelöscht..." : "Löschen"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
 
-function LearningPathCard({ path }: { path: LearningPath }) {
+interface LearningPathCardProps {
+  path: LearningPath;
+  onDelete: () => void;
+  isDeleting: boolean;
+}
+
+function LearningPathCard({ path, onDelete, isDeleting }: LearningPathCardProps) {
   const completedModules = path.modules?.filter(m => m.is_completed).length || 0;
   const totalModules = path.modules?.length || 0;
   const progress = totalModules > 0 ? Math.round((completedModules / totalModules) * 100) : 0;
@@ -165,17 +262,28 @@ function LearningPathCard({ path }: { path: LearningPath }) {
               <p className="text-sm text-muted-foreground line-clamp-2">{path.description}</p>
             )}
           </div>
-          <div className="text-right shrink-0">
-            <div className="flex items-center gap-1 text-sm text-muted-foreground">
-              <Clock className="w-4 h-4" />
-              {Math.round(totalDuration / 60)}h {totalDuration % 60}min
-            </div>
-            {path.target_level && (
-              <div className="flex items-center gap-1 text-sm text-muted-foreground mt-1">
-                <Target className="w-4 h-4" />
-                Ziel: {path.target_level}%
+          <div className="flex items-start gap-3 shrink-0">
+            <div className="text-right">
+              <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                <Clock className="w-4 h-4" />
+                {Math.round(totalDuration / 60)}h {totalDuration % 60}min
               </div>
-            )}
+              {path.target_level && (
+                <div className="flex items-center gap-1 text-sm text-muted-foreground mt-1">
+                  <Target className="w-4 h-4" />
+                  Ziel: {path.target_level}%
+                </div>
+              )}
+            </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onDelete}
+              disabled={isDeleting}
+              className="text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+            >
+              <Trash2 className="w-4 h-4" />
+            </Button>
           </div>
         </div>
       </GlassCardHeader>

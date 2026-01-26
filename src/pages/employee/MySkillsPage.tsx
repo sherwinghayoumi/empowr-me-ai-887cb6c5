@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Header } from "@/components/Header";
 import { CompetencyBar } from "@/components/CompetencyBar";
 import { SubSkillModal } from "@/components/SubSkillModal";
+import { SelfAssessmentModal } from "@/components/SelfAssessmentModal";
 import { GlassCard, GlassCardContent, GlassCardHeader, GlassCardTitle } from "@/components/GlassCard";
 import { ScrollReveal } from "@/components/ScrollReveal";
 import { AnimatedCounter } from "@/components/AnimatedCounter";
@@ -9,7 +10,8 @@ import { ParallaxBackground } from "@/components/ParallaxBackground";
 import { GrowthJourneyChart } from "@/components/GrowthJourneyChart";
 import { StrengthsWeaknessesRadar } from "@/components/StrengthsWeaknessesRadar";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Target, TrendingUp, AlertTriangle, BookOpen } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Target, TrendingUp, AlertTriangle, BookOpen, ClipboardEdit } from "lucide-react";
 import { 
   useEmployeeSkills, 
   groupByCluster, 
@@ -24,6 +26,7 @@ const MySkillsPage = () => {
     level: number;
     subskills: { id: string; name: string; description: string | null; currentLevel: number | null; evidence?: string }[];
   } | null>(null);
+  const [showSelfAssessment, setShowSelfAssessment] = useState(false);
 
   // Show loading state
   if (isLoading) {
@@ -153,11 +156,20 @@ const MySkillsPage = () => {
 
       <main className="container py-8 relative">
         <ScrollReveal>
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-foreground">Meine Kompetenzen</h1>
-            <p className="text-muted-foreground mt-1">
-              {employee.role_profile?.role_title || "Rolle"} • Detaillierte Kompetenzanalyse
-            </p>
+          <div className="mb-8 flex items-start justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-foreground">Meine Kompetenzen</h1>
+              <p className="text-muted-foreground mt-1">
+                {employee.role_profile?.role_title || "Rolle"} • Detaillierte Kompetenzanalyse
+              </p>
+            </div>
+            <Button 
+              onClick={() => setShowSelfAssessment(true)}
+              className="gap-2"
+            >
+              <ClipboardEdit className="w-4 h-4" />
+              Self-Assessment
+            </Button>
           </div>
         </ScrollReveal>
 
@@ -288,6 +300,12 @@ const MySkillsPage = () => {
         competencyName={selectedCompetency?.name ?? null}
         subskills={selectedCompetency?.subskills || []}
         competencyLevel={selectedCompetency?.level ?? 0}
+      />
+
+      {/* Self-Assessment Modal */}
+      <SelfAssessmentModal
+        open={showSelfAssessment}
+        onClose={() => setShowSelfAssessment(false)}
       />
     </div>
   );

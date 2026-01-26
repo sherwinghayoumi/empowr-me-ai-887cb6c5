@@ -83,10 +83,13 @@ export function ProfileGenerationModal({
 
       setProcessingPhase('generating');
 
-      // Generate profile
+      // Generate profile with proper role key fallback
+      const roleKey = employee.role_profile?.role_key || 'mid-level_associate_(mla)';
+      console.log('Using role key for profile generation:', roleKey);
+      
       const profile = await generateProfile(
         parsedDocs,
-        employee.role_profile?.role_key || 'Associate'
+        roleKey
       );
 
       // === PROFILE GENERATION DEBUG ===

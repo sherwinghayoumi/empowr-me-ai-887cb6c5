@@ -6,10 +6,11 @@ const corsHeaders = {
 };
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// KOMPETENZ-SCHEMA - EXAKT wie in competencySchema.ts
+// KOMPETENZ-SCHEMA - EXAKT synchron mit Supabase-Datenbank
 // ═══════════════════════════════════════════════════════════════════════════════
 
 const COMPETENCY_SCHEMA: Record<string, Record<string, string[]>> = {
+  // JUNIOR ASSOCIATE (JA) CLUSTERS
   "Commercial Fluency": {
     "Commercial Awareness & Financial Literacy": [
       "Financial Statement Basics",
@@ -21,100 +22,53 @@ const COMPETENCY_SCHEMA: Record<string, Record<string, string[]>> = {
   "M&A Fundamentals & Deal Hygiene": {
     "Deal Lifecycle Management": [
       "CP Tracking",
-      "Closing Mechanics",
       "Signature Coordination",
+      "Closing Mechanics",
       "VDR Management"
     ],
     "Ancillary Document Drafting": [
-      "Corporate Governance",
+      "Template Adaptation",
       "Cross-referencing",
       "Error-spotting",
-      "Template Adaptation"
+      "Corporate Governance"
     ]
   },
 
   "Tech-Enhanced Due Diligence": {
     "AI-Assisted Risk Review": [
-      "Hallucination Checking",
-      "Prompt Engineering",
       "Risk Grading",
-      "Synthesis"
+      "Synthesis",
+      "Prompt Engineering",
+      "Hallucination Checking"
     ],
     "Data Hygiene & VDR Architecture": [
       "File Naming",
-      "OCR QC",
+      "Taxonomy Design",
       "Redaction",
-      "Taxonomy Design"
-    ],
-    "AI-Ready VDR Architecture": [
-      "Data quality for LLM ingestion",
-      "Folder structures for agent consumption",
-      "Metadata for agent consumption",
-      "VDR taxonomies for agent consumption"
+      "OCR QC"
     ]
   },
 
   "Regulatory & AI Governance": {
     "EU AI Act & Digital Compliance": [
-      "AI System Classification",
-      "GDPR Overlap",
       "Prohibited Use Spotting",
-      "Provider Assessment"
+      "GDPR Overlap",
+      "Provider Assessment",
+      "AI System Classification"
     ],
     "ESG & Supply Chain Due Diligence": [
-      "Greenwashing ID",
       "Regulatory Mapping",
+      "Greenwashing ID",
       "Supply Chain Auditing"
-    ]
-  },
-
-  "Risk, Regulation & Governance": {
-    "Regulatory Clearance Coordination (FDI / Antitrust)": [
-      "Filing Strategy & Sequencing",
-      "Information Orchestration",
-      "Authority / Counterparty Coordination",
-      "Condition & Remedy Management"
-    ],
-    "EU AI Act & Digital Compliance": [
-      "AI Categorization",
-      "Deployer Liability Assessment",
-      "Digital / Data Governance DD",
-      "Supply-Chain Alignment (CSDDD-adjacent)"
-    ],
-    "Agentic AI Governance (operational)": [
-      "Escalating exceptions",
-      "Operating within agent-orchestrated workflows",
-      "Validating agent outputs"
-    ]
-  },
-
-  "Tech-Enabled Legal Work": {
-    "AI Output Validation": [
-      "Hallucination Spotting",
-      "Source Verification",
-      "Prompt & Context Engineering",
-      "Confidentiality / Privilege Guardrails"
-    ],
-    "AI-Ready VDR Architecture": [
-      "Designing VDR taxonomies",
-      "Designing folder structures",
-      "Defining metadata for agent consumption",
-      "Ensuring data quality for LLM ingestion"
-    ],
-    "Data Room & Closing Automation": [
-      "eSignature Workflow Management",
-      "Automated Closing Set Generation",
-      "VDR Permissioning & Analytics",
-      "Document Assembly / Comparison Automation"
     ]
   },
 
   "Legal Project Management": {
     "Matter Management & Efficiency": [
       "Scoping",
-      "Resource Allocation",
       "Timeline Management",
-      "Status Reporting"
+      "Status Reporting",
+      "Resource Allocation"
     ]
   },
 
@@ -122,84 +76,133 @@ const COMPETENCY_SCHEMA: Record<string, Record<string, string[]>> = {
     "Stakeholder Communication & EQ": [
       "Active Listening",
       "Plain English",
-      "Crisis De-escalation",
-      "Managing Up"
+      "Managing Up",
+      "Crisis De-escalation"
     ]
   },
 
+  // MID-LEVEL ASSOCIATE (MLA) CLUSTERS
   "Deal Execution & Project Control": {
     "M&A Project Management": [
-      "Critical Path Management",
-      "Resource Allocation",
-      "Fee Management",
-      "Cross-functional Coordination"
+      "Fee Management: Track burn vs cap; flag scope changes early; align effort with budget.",
+      "Critical Path Management: Identify blockers, sequence dependencies, and unblock timeline-critical items.",
+      "Cross-functional Coordination: Coordinate tax/IP/employment/antitrust inputs and integrate into the deal plan.",
+      "Resource Allocation: Staff and re-balance juniors/paralegals across DD, drafting, CPs, and admin work."
     ],
     "Fee & Scope Discipline": [
-      "Budget Tracking",
-      "Scope Creep Identification",
-      "Efficient Delegation",
-      "ALSP / Vendor Utilization"
+      "Efficient Delegation: Route work to the cheapest-competent resource (junior, paralegal, ALSP, tool).",
+      "ALSP / Vendor Utilization: Decide when to outsource commoditized tasks and manage vendor costs.",
+      "Scope Creep Identification: Spot out-of-scope requests and document change requests early.",
+      "Budget Tracking: Maintain budget-to-actual tracking and forecasts for the matter."
     ]
   },
 
   "Corporate/M&A Technical Lawyering": {
     "Definitive Agreement Drafting (SPA/APA)": [
-      "Purchase Price Mechanics",
-      "Warranties & Indemnities",
-      "Conditions Precedent & Closing Mechanics",
-      "Definitions & Cross-References"
+      "Purchase Price Mechanics: Draft working capital / locked-box / completion accounts mechanics and related definitions.",
+      "Definitions & Cross-References: Maintain consistency across the document; prevent internal contradictions.",
+      "Warranties & Indemnities: Tailor protections and limitations based on risk allocation and DD findings.",
+      "Conditions Precedent & Closing Mechanics: Structure CPs, sign/close gap, and deliverables to control execution risk."
     ],
     "Disclosure Schedule Management": [
-      "Fact-Gathering",
-      "Warranty Mapping",
-      "Risk Assessment",
-      "Defensive Drafting"
+      "Fact-Gathering: Run disclosure calls and interrogate management to surface exceptions to warranties.",
+      "Warranty Mapping: Map facts to the exact warranty language and required disclosure format.",
+      "Risk Assessment: Decide materiality and what must be disclosed vs managed contractually.",
+      "Defensive Drafting: Draft clear, specific disclosures that withstand challenge and align with VDR evidence."
+    ]
+  },
+
+  "Risk, Regulation & Governance": {
+    "Regulatory Clearance Coordination (FDI / Antitrust)": [
+      "Condition & Remedy Management",
+      "Filing Strategy & Sequencing",
+      "Authority / Counterparty Coordination",
+      "Information Orchestration"
+    ],
+    "EU AI Act & Digital Compliance": [
+      "AI Categorization",
+      "Supply-Chain Alignment (CSDDD-adjacent)",
+      "Digital / Data Governance DD",
+      "Deployer Liability Assessment"
+    ],
+    "Agentic AI Governance (operational)": [
+      "Escalating exceptions",
+      "Validating agent outputs",
+      "Operating within agent-orchestrated workflows"
+    ]
+  },
+
+  "Tech-Enabled Legal Work": {
+    "AI Output Validation": [
+      "Hallucination Spotting",
+      "Confidentiality / Privilege Guardrails",
+      "Source Verification",
+      "Prompt & Context Engineering"
+    ],
+    "AI-Ready VDR Architecture": [
+      "VDR taxonomies for agent consumption",
+      "Folder structures for agent consumption",
+      "Data quality for LLM ingestion",
+      "Metadata for agent consumption"
+    ],
+    "Data Room & Closing Automation": [
+      "Automated Closing Set Generation",
+      "VDR Permissioning & Analytics",
+      "eSignature Workflow Management",
+      "Document Assembly / Comparison Automation"
     ]
   },
 
   "Commercial Judgment & Negotiation": {
     "Negotiating Mid-Market Deal Points": [
-      "Market Standard Knowledge",
-      "Drafting Compromises",
-      "Issue Prioritization",
-      "Stakeholder Management"
+      "Issue Prioritization: Separate 'must have' vs 'nice to have' under time/budget pressure.",
+      "Drafting Compromises: Translate negotiation outcomes into clean, enforceable drafting.",
+      "Market Standard Knowledge: Know 'what's market' for common mid-market positions (size, industry, jurisdiction).",
+      "Stakeholder Management: Run wording turns with opposing counsel and keep client aligned."
     ]
   },
 
   "Team Supervision & Quality Control": {
     "Junior Associate & Paralegal Supervision": [
-      "Delegation & Briefing",
       "Quality Assurance / Reviewing",
-      "Feedback Delivery",
-      "Workload Balancing"
+      "Workload Balancing",
+      "Delegation & Briefing",
+      "Feedback Delivery"
     ]
   },
 
+  "Business Development Support (Mid-market relationship building)": {
+    "Business Development Support (Mid-market relationship building)": [
+      "Business Development Support (Mid-market relationship building)"
+    ]
+  },
+
+  // SENIOR ASSOCIATE / COUNSEL (SA) CLUSTERS
   "Negotiation, Commercial Judgment & Stakeholder Management": {
     "Stakeholder Management & Difficult Counterparties": [
-      "Expectation setting & alignment",
       "Conflict de-escalation",
       "Decision-maker mapping",
       "Escalation path management",
-      "Written vs verbal negotiation tactics"
+      "Written vs verbal negotiation tactics",
+      "Expectation setting & alignment"
     ],
     "Strategic Negotiation & Gap Bridging": [
       "Integrative bargaining & trade-offs",
-      "Earn-out/rollover negotiation",
       "W&I insurance integration",
+      "Earn-out/rollover negotiation",
       "Dispute-resolution design",
       "Negotiation narrative & leverage mapping"
     ],
     "Risk Allocation: Indemnities, Caps, Baskets & Survival": [
-      "Cap/basket design",
       "Materiality scrape logic",
       "Survival periods calibration",
-      "Special indemnities drafting",
-      "Claims process & escrow mechanics"
+      "Cap/basket design",
+      "Claims process & escrow mechanics",
+      "Special indemnities drafting"
     ],
     "Warranty & Indemnity (W&I) Insurance Negotiation": [
-      "Insurer Q&A management",
       "Underwriting pack curation",
+      "Insurer Q&A management",
       "Policy exclusion negotiation",
       "SPA-insurance alignment",
       "Claims readiness planning"
@@ -209,38 +212,38 @@ const COMPETENCY_SCHEMA: Record<string, Record<string, string[]>> = {
   "Deal Leadership, Strategy & Project Control": {
     "Legal Project Management (LPM) & AFA Engineering": [
       "Scope definition & assumptions lists",
-      "Budget-to-actual tracking & forecasting",
-      "Resource allocation (AI vs junior vs specialist)",
+      "Post-matter profitability review",
       "Scope-change control & client alignment",
-      "Post-matter profitability review"
+      "Budget-to-actual tracking & forecasting",
+      "Resource allocation (AI vs junior vs specialist)"
     ],
     "Deal Architecture & Structuring": [
-      "Structure options analysis",
-      "Locked box vs completion accounts selection",
-      "Pre-closing reorg planning",
       "Funds flow & step plan drafting",
-      "Cross-border execution sequencing"
+      "Cross-border execution sequencing",
+      "Locked box vs completion accounts selection",
+      "Structure options analysis",
+      "Pre-closing reorg planning"
     ],
     "Workstream Leadership & Specialist Integration": [
-      "Issue triage & prioritization",
-      "Tax/antitrust/employment/data integration",
+      "Sign/close readiness gating",
       "Dependency management across workstreams",
       "Escalation management",
-      "Sign/close readiness gating"
+      "Issue triage & prioritization",
+      "Tax/antitrust/employment/data integration"
     ],
     "Signing/Closing Orchestration & Deal Hygiene": [
       "CP tracking & satisfaction strategy",
-      "Signature package coordination",
       "Closing agenda & call leadership",
       "Funds flow coordination",
+      "Signature package coordination",
       "Post-closing deliverables management"
     ],
     "Matter Risk Governance & Quality Gates": [
-      "Senior review checklists",
+      "Error prevention (closing mechanics)",
       "Redline rationale articulation",
       "Version control & audit trails",
-      "Privilege/confidentiality controls",
-      "Error prevention (closing mechanics)"
+      "Senior review checklists",
+      "Privilege/confidentiality controls"
     ]
   },
 
@@ -248,209 +251,185 @@ const COMPETENCY_SCHEMA: Record<string, Record<string, string[]>> = {
     "SPA/SHA Drafting Strategy & Market Standards": [
       "Market standard benchmarking",
       "Clause architecture & fallback positions",
-      "Schedule strategy & disclosure design",
       "Definitions/interpretation engineering",
+      "Schedule strategy & disclosure design",
       "Precedent selection & customization"
     ],
     "Representations & Warranties Architecture": [
-      "Materiality/knowledge qualifiers",
-      "Disclosure approach & updates",
       "Bring-down mechanics",
-      "Fundamental vs business reps",
-      "AI/data/IP reps tailoring"
+      "AI/data/IP reps tailoring",
+      "Disclosure approach & updates",
+      "Materiality/knowledge qualifiers",
+      "Fundamental vs business reps"
     ],
     "Covenants, Interim Operations & Conduct of Business": [
-      "Interim ops limitations",
       "Consent rights design",
-      "Ordinary course definitions",
+      "Pre-closing leakage controls",
       "Information rights",
-      "Pre-closing leakage controls"
+      "Ordinary course definitions",
+      "Interim ops limitations"
     ],
     "Conditions Precedent, MAC & Closing Conditions": [
-      "Regulatory CP drafting (FDI/antitrust)",
+      "Long-stop & termination triggers",
+      "Third-party consent strategy",
       "MAC clause tailoring",
       "Bring-down & officer cert mechanics",
-      "Third-party consent strategy",
-      "Long-stop & termination triggers"
+      "Regulatory CP drafting (FDI/antitrust)"
     ],
     "Purchase Price Mechanics & Adjustments": [
       "Locked box protections & leakage",
-      "Working capital adjustment design",
       "Earn-out metrics & governance",
-      "True-up dispute resolution",
-      "Equity rollover documentation"
+      "Equity rollover documentation",
+      "Working capital adjustment design",
+      "True-up dispute resolution"
     ],
     "Ancillary Documents & Corporate Housekeeping (Senior-Level)": [
-      "Board/shareholder resolutions drafting oversight",
+      "Corporate registry filings planning",
       "Disclosure letter coordination",
+      "Board/shareholder resolutions drafting oversight",
       "Equity incentive plan impacts",
-      "Officer exculpation/charter amendments",
-      "Corporate registry filings planning"
+      "Officer exculpation/charter amendments"
     ]
   },
 
   "Risk Allocation, Governance & Regulatory Awareness": {
     "EU AI Act Due Diligence (EU Focus)": [
-      "AI system classification & inventory review",
-      "Conformity assessment/documentation checks",
       "Data governance & training-data risk",
+      "AI system classification & inventory review",
+      "AI reps/indemnities design",
       "AI governance & AI literacy evaluation",
-      "AI reps/indemnities design"
+      "Conformity assessment/documentation checks"
     ],
     "Privacy, Cybersecurity & Data Transfers in M&A": [
       "GDPR assessment & DPIA signals",
-      "Data breach history evaluation",
-      "Cross-border transfer mechanisms (SCCs)",
       "Security controls review (ISO/SOC2)",
-      "Data-related reps/covenants"
+      "Cross-border transfer mechanisms (SCCs)",
+      "Data-related reps/covenants",
+      "Data breach history evaluation"
     ],
     "Sanctions, Export Controls & Trade Compliance": [
-      "Sanctions screening & exposure mapping",
-      "Export-control classification (EAR/ITAR proxies)",
       "Contractual protections design",
-      "OFAC/EU list monitoring",
-      "Closing conditions & termination triggers"
+      "Export-control classification (EAR/ITAR proxies)",
+      "Sanctions screening & exposure mapping",
+      "Closing conditions & termination triggers",
+      "OFAC/EU list monitoring"
     ],
     "FDI Screening & National Security Review": [
-      "FDI/CFIUS applicability screening",
+      "Information control/clean team setup",
       "Filing package coordination",
       "Timeline & long-stop calibration",
       "Mitigation measures negotiation",
-      "Information control/clean team setup"
+      "FDI/CFIUS applicability screening"
     ],
     "US Corporate Governance, Caremark & Officer Duties (US Focus)": [
-      "Caremark 'red flags' analysis",
-      "Officer duty/exculpation amendments",
-      "Board minutes risk-proofing",
+      "ESG governance backlash navigation",
       "Reincorporation analysis (DE/NV/TX)",
-      "ESG governance backlash navigation"
+      "Board minutes risk-proofing",
+      "Caremark 'red flags' analysis",
+      "Officer duty/exculpation amendments"
     ],
     "Antitrust/Competition Law Deal Readiness (Senior Interface)": [
-      "Competition risk spotting from overlaps",
-      "Information exchange/clean team rules",
-      "CP drafting around approvals",
+      "Gun-jumping avoidance",
       "Remedy package coordination",
-      "Gun-jumping avoidance"
-    ],
-    "Agentic AI Governance & Agent Supervisor": [
-      "Designing multi-agent deal workflows",
-      "Staffing teams around agentic systems",
-      "Managing agent performance & exceptions"
-    ],
-    "AI Compliance & Regulatory Alignment": [
-      "New contract language",
-      "Liability frameworks",
-      "IP ownership for agents' outputs"
+      "Competition risk spotting from overlaps",
+      "CP drafting around approvals",
+      "Information exchange/clean team rules"
     ]
   },
 
   "Tech-Enabled Legal Delivery (AI workflows + QA + automation)": {
     "Legal Prompt Engineering & Context Priming": [
-      "Context priming with precedents",
-      "Structured-output prompting (tables/JSON)",
-      "Defensive prompting & redaction",
       "Iterative refinement loops",
-      "Prompt library governance"
+      "Prompt library governance",
+      "Context priming with precedents",
+      "Defensive prompting & redaction",
+      "Structured-output prompting (tables/JSON)"
     ],
     "AI Output Validation & Human-in-the-Loop Auditing": [
-      "Citation & authority verification",
-      "Sampling-based doc checks",
-      "Hallucination detection",
       "Bias/omission detection",
-      "Feedback loops & guardrails"
+      "Hallucination detection",
+      "Sampling-based doc checks",
+      "Feedback loops & guardrails",
+      "Citation & authority verification"
     ],
     "AI-Assisted Diligence Orchestration": [
       "Diligence scope design for AI",
+      "Issue clustering & narrative synthesis",
       "Red flag criteria definition",
       "Clause extraction workflows",
-      "Issue clustering & narrative synthesis",
       "Privilege-aware data handling"
     ],
     "Contract Analytics & Portfolio Review": [
       "Change-of-control extraction",
+      "Output normalization for drafting",
       "Assignment/consent mapping",
       "Revenue/termination risk flags",
-      "Template vs bespoke clause detection",
-      "Output normalization for drafting"
-    ],
-    "Workflow Automation & Standardization (Agentic-ready)": [
-      "SOP design for recurring tasks",
-      "Automation mapping (intake→draft→review)",
-      "Template parameterization",
-      "Data capture for KM",
-      "Role-based task assignment"
+      "Template vs bespoke clause detection"
     ]
   },
 
   "Client Advisory & Communication (Value + Risk Transparency)": {
     "Executive Risk Summarization & Recommendation": [
-      "Risk ranking & materiality calls",
       "Commercial impact framing",
-      "Options & recommendation drafting",
       "Client-ready writing",
-      "Escalation timing"
+      "Options & recommendation drafting",
+      "Escalation timing",
+      "Risk ranking & materiality calls"
     ],
     "Client Relationship Management (Delivery-Led)": [
       "Proactive communication cadence",
-      "Managing client anxiety & deadlines",
       "Coordinating internal team responses",
-      "Setting service-level expectations",
-      "Documenting advice for defensibility"
+      "Documenting advice for defensibility",
+      "Managing client anxiety & deadlines",
+      "Setting service-level expectations"
     ],
     "Value Communication & Fee Narrative": [
       "Budget narrative drafting",
       "Value framing for deliverables",
-      "AFA scope boundary communication",
       "Write-off prevention conversations",
+      "AFA scope boundary communication",
       "Post-matter value recap"
     ]
   },
 
   "Knowledge Systems, Precedents & Quality Management": {
     "Knowledge Architecture & Precedent Modernization": [
+      "AI training-data hygiene",
       "Clause library curation & tagging",
-      "Market standard monitoring",
       "Precedent versioning",
       "Post-deal data capture",
-      "AI training-data hygiene"
+      "Market standard monitoring"
     ],
     "Playbook Creation & Training Materials": [
-      "Playbook structuring",
-      "Scenario-based guidance",
       "Checklist design",
       "Training delivery & feedback",
-      "Updating materials from live deals"
-    ],
-    "Document Automation / CLM Interface (Supervision)": [
-      "Template governance",
-      "Clause fallback logic",
-      "Data field validation",
-      "Exception handling",
-      "Integration with DMS/KM"
+      "Playbook structuring",
+      "Updating materials from live deals",
+      "Scenario-based guidance"
     ]
   },
 
   "Team Leadership, Coaching & Delegation": {
     "Delegation, Coaching & Feedback Loops": [
-      "Task scoping & briefing",
-      "Review & feedback routines",
-      "Coaching on drafting/negotiation",
+      "Knowledge transfer",
       "Performance calibration",
-      "Knowledge transfer"
+      "Coaching on drafting/negotiation",
+      "Review & feedback routines",
+      "Task scoping & briefing"
     ],
     "Resource Planning & Utilization Management": [
-      "Capacity planning",
-      "Leverage model design",
-      "Specialist scheduling",
       "Crunch-time triage",
-      "Burnout risk management"
+      "Burnout risk management",
+      "Specialist scheduling",
+      "Capacity planning",
+      "Leverage model design"
     ],
     "Mentoring on Professional Responsibility & Privilege": [
-      "Privilege protocol design",
-      "Confidentiality & clean team rules",
+      "Incident response",
       "AI acceptable-use enforcement",
       "Recordkeeping & audit trails",
-      "Incident response"
+      "Privilege protocol design",
+      "Confidentiality & clean team rules"
     ]
   }
 };
@@ -523,7 +502,7 @@ MID-LEVEL ASSOCIATE (MLA):
 - Tech-Enabled Legal Work
 - Commercial Judgment & Negotiation
 - Team Supervision & Quality Control
-- Negotiation, Commercial Judgment & Stakeholder Management
+- Business Development Support (Mid-market relationship building)
 
 SENIOR ASSOCIATE / COUNSEL (SA):
 - Alle MLA-Cluster PLUS:
@@ -534,6 +513,7 @@ SENIOR ASSOCIATE / COUNSEL (SA):
 - Client Advisory & Communication (Value + Risk Transparency)
 - Knowledge Systems, Precedents & Quality Management
 - Team Leadership, Coaching & Delegation
+- Negotiation, Commercial Judgment & Stakeholder Management
 
 ═══════════════════════════════════════════════════════════════════════════════
 ANTWORT-FORMAT

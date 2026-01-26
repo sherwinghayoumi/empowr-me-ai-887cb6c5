@@ -1,88 +1,56 @@
-import { useMemo } from "react";
 import { Header } from "@/components/Header";
 import { GlassCard, GlassCardContent, GlassCardHeader, GlassCardTitle } from "@/components/GlassCard";
 import { ScrollReveal } from "@/components/ScrollReveal";
-import { AnimatedCounter } from "@/components/AnimatedCounter";
 import { ParallaxBackground } from "@/components/ParallaxBackground";
-import { EmployeeSkillGapCard } from "@/components/EmployeeSkillGapCard";
-import {
-  employees,
-  DEFAULT_EMPLOYEE_ID,
-  getEmployeeById,
-  getSkillById,
-} from "@/data/mockData";
-import {
-  AlertTriangle,
-  Target,
-  TrendingUp,
-  AlertCircle,
+import { Skeleton } from "@/components/ui/skeleton";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Progress } from "@/components/ui/progress";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { 
+  BookOpen, 
+  Target, 
+  Clock, 
+  ExternalLink, 
+  Sparkles,
+  CheckCircle2,
+  GraduationCap
 } from "lucide-react";
-
-interface SkillGapData {
-  skillId: string;
-  currentLevel: number;
-  demandedLevel: number;
-  futureLevel: number;
-  category: string;
-  currentGap: number;
-  futureGap: number;
-  weightedGap: number;
-}
+import { useMyLearningPaths, useUpdateModuleProgress } from "@/hooks/useEmployeeData";
+import { cn } from "@/lib/utils";
 
 const MyLearningPage = () => {
-  const employee = getEmployeeById(DEFAULT_EMPLOYEE_ID) || employees[0];
+  const { data: learningPaths, isLoading } = useMyLearningPaths();
+  const updateModule = useUpdateModuleProgress();
 
-  // Calculate skill gaps
-  const skillGaps = useMemo(() => {
-    const gaps: SkillGapData[] = [];
-    
-    employee.skills.forEach((skill) => {
-      const skillInfo = getSkillById(skill.skillId);
-      const currentGap = skill.demandedLevel - skill.currentLevel;
-      const futureGap = skill.futureLevel - skill.currentLevel;
-      
-      // Only include skills with gaps
-      if (currentGap > 0 || futureGap > 0) {
-        gaps.push({
-          skillId: skill.skillId,
-          currentLevel: skill.currentLevel,
-          demandedLevel: skill.demandedLevel,
-          futureLevel: skill.futureLevel,
-          category: skillInfo?.category || "Other",
-          currentGap,
-          futureGap,
-          weightedGap: currentGap * 0.4 + futureGap * 0.6,
-        });
-      }
-    });
-    
-    // Sort by weighted gap (most severe first)
-    return gaps.sort((a, b) => b.weightedGap - a.weightedGap);
-  }, [employee]);
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background relative">
+        <ParallaxBackground intensity="subtle" />
+        <Header variant="employee" />
+        <main className="container py-8 relative">
+          <div className="mb-8">
+            <Skeleton className="h-10 w-64 mb-2" />
+            <Skeleton className="h-5 w-48" />
+          </div>
+          <div className="space-y-6">
+            {[1, 2].map((i) => (
+              <Skeleton key={i} className="h-64 w-full" />
+            ))}
+          </div>
+        </main>
+      </div>
+    );
+  }
 
-  // Group by category
-  const gapsByCategory = useMemo(() => {
-    const grouped: Record<string, SkillGapData[]> = {};
-    
-    skillGaps.forEach((gap) => {
-      if (!grouped[gap.category]) {
-        grouped[gap.category] = [];
-      }
-      grouped[gap.category].push(gap);
-    });
-    
-    return grouped;
-  }, [skillGaps]);
-
-  // Stats
-  const criticalGaps = skillGaps.filter((g) => g.weightedGap >= 30).length;
-  const highGaps = skillGaps.filter((g) => g.weightedGap >= 15 && g.weightedGap < 30).length;
-  const moderateGaps = skillGaps.filter((g) => g.weightedGap < 15).length;
-  const avgGap = skillGaps.length > 0 
-    ? Math.round(skillGaps.reduce((sum, g) => sum + g.weightedGap, 0) / skillGaps.length) 
-    : 0;
-
-  const categories = Object.keys(gapsByCategory);
+  // Calculate total stats
+  const totalModules = learningPaths?.reduce((sum, lp) => sum + (lp.modules?.length || 0), 0) || 0;
+  const completedModules = learningPaths?.reduce(
+    (sum, lp) => sum + (lp.modules?.filter(m => m.is_completed).length || 0), 
+    0
+  ) || 0;
+  const activePaths = learningPaths?.filter(lp => !lp.completed_at).length || 0;
 
   return (
     <div className="min-h-screen bg-background relative">
@@ -92,132 +60,235 @@ const MyLearningPage = () => {
       <main className="container py-8 relative">
         <ScrollReveal>
           <div className="mb-8">
-            <h1 className="text-3xl font-bold text-foreground">My Skill Gaps</h1>
+            <h1 className="text-3xl font-bold text-foreground">Meine Lernpfade</h1>
             <p className="text-muted-foreground mt-1">
-              Identify areas for improvement and get personalized learning recommendations
+              Personalisierte Entwicklungspfade für deine Karriere
             </p>
           </div>
         </ScrollReveal>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-          <ScrollReveal delay={0}>
-            <GlassCard className="hover-lift">
-              <GlassCardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Avg. Gap</p>
-                    <p className="text-3xl font-bold text-foreground">
-                      <AnimatedCounter value={avgGap} suffix="%" duration={1500} />
-                    </p>
+        {learningPaths && learningPaths.length > 0 && (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+            <ScrollReveal delay={0}>
+              <GlassCard className="hover-lift">
+                <GlassCardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Aktive Lernpfade</p>
+                      <p className="text-3xl font-bold text-foreground">{activePaths}</p>
+                    </div>
+                    <div className="w-12 h-12 rounded-lg bg-primary/20 flex items-center justify-center">
+                      <Target className="w-6 h-6 text-primary" />
+                    </div>
                   </div>
-                  <div className="w-12 h-12 rounded-lg bg-primary/20 flex items-center justify-center group">
-                    <Target className="w-6 h-6 text-primary transition-transform duration-300 group-hover:scale-110" />
-                  </div>
-                </div>
-              </GlassCardContent>
-            </GlassCard>
-          </ScrollReveal>
+                </GlassCardContent>
+              </GlassCard>
+            </ScrollReveal>
 
-          <ScrollReveal delay={100}>
-            <GlassCard className="hover-lift">
-              <GlassCardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Critical</p>
-                    <p className="text-3xl font-bold text-destructive">
-                      <AnimatedCounter value={criticalGaps} duration={1500} delay={100} />
-                    </p>
+            <ScrollReveal delay={100}>
+              <GlassCard className="hover-lift">
+                <GlassCardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Module abgeschlossen</p>
+                      <p className="text-3xl font-bold text-[hsl(var(--skill-very-strong))]">
+                        {completedModules}/{totalModules}
+                      </p>
+                    </div>
+                    <div className="w-12 h-12 rounded-lg bg-[hsl(var(--skill-very-strong))]/20 flex items-center justify-center">
+                      <CheckCircle2 className="w-6 h-6 text-[hsl(var(--skill-very-strong))]" />
+                    </div>
                   </div>
-                  <div className="w-12 h-12 rounded-lg bg-destructive/20 flex items-center justify-center group">
-                    <AlertTriangle className="w-6 h-6 text-destructive transition-transform duration-300 group-hover:scale-110" />
-                  </div>
-                </div>
-              </GlassCardContent>
-            </GlassCard>
-          </ScrollReveal>
+                </GlassCardContent>
+              </GlassCard>
+            </ScrollReveal>
 
-          <ScrollReveal delay={200}>
-            <GlassCard className="hover-lift">
-              <GlassCardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground">High Priority</p>
-                    <p className="text-3xl font-bold text-orange-400">
-                      <AnimatedCounter value={highGaps} duration={1500} delay={200} />
-                    </p>
+            <ScrollReveal delay={200}>
+              <GlassCard className="hover-lift">
+                <GlassCardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Gesamtfortschritt</p>
+                      <p className="text-3xl font-bold text-foreground">
+                        {totalModules > 0 ? Math.round((completedModules / totalModules) * 100) : 0}%
+                      </p>
+                    </div>
+                    <div className="w-12 h-12 rounded-lg bg-primary/20 flex items-center justify-center">
+                      <GraduationCap className="w-6 h-6 text-primary" />
+                    </div>
                   </div>
-                  <div className="w-12 h-12 rounded-lg bg-orange-500/20 flex items-center justify-center group">
-                    <AlertCircle className="w-6 h-6 text-orange-400 transition-transform duration-300 group-hover:scale-110" />
-                  </div>
-                </div>
-              </GlassCardContent>
-            </GlassCard>
-          </ScrollReveal>
-
-          <ScrollReveal delay={300}>
-            <GlassCard className="hover-lift">
-              <GlassCardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground">On Track</p>
-                    <p className="text-3xl font-bold text-[hsl(var(--skill-very-strong))]">
-                      <AnimatedCounter value={employee.skills.length - skillGaps.length} duration={1500} delay={300} />
-                    </p>
-                  </div>
-                  <div className="w-12 h-12 rounded-lg bg-[hsl(var(--skill-very-strong))]/20 flex items-center justify-center group">
-                    <TrendingUp className="w-6 h-6 text-[hsl(var(--skill-very-strong))] transition-transform duration-300 group-hover:scale-110" />
-                  </div>
-                </div>
-              </GlassCardContent>
-            </GlassCard>
-          </ScrollReveal>
-        </div>
-
-        {/* Skill Gaps by Category */}
-        {skillGaps.length > 0 ? (
-          <div className="space-y-8">
-            {categories.map((category, catIndex) => (
-              <ScrollReveal key={category} delay={catIndex * 100}>
-                <div>
-                  <h2 className="text-xl font-semibold text-foreground mb-4 flex items-center gap-2">
-                    <AlertTriangle className="w-5 h-5 text-muted-foreground" />
-                    {category}
-                    <span className="text-sm font-normal text-muted-foreground">
-                      ({gapsByCategory[category].length} gap{gapsByCategory[category].length !== 1 ? 's' : ''})
-                    </span>
-                  </h2>
-                  <div className="grid md:grid-cols-2 gap-4">
-                    {gapsByCategory[category].map((gap, index) => (
-                      <EmployeeSkillGapCard
-                        key={gap.skillId}
-                        skillId={gap.skillId}
-                        currentLevel={gap.currentLevel}
-                        demandedLevel={gap.demandedLevel}
-                        futureLevel={gap.futureLevel}
-                        employeeName={employee.name}
-                        delay={index * 100}
-                      />
-                    ))}
-                  </div>
-                </div>
-              </ScrollReveal>
-            ))}
+                </GlassCardContent>
+              </GlassCard>
+            </ScrollReveal>
           </div>
-        ) : (
+        )}
+
+        {/* Learning Paths */}
+        {!learningPaths || learningPaths.length === 0 ? (
           <ScrollReveal>
-            <GlassCard>
+            <GlassCard className="max-w-2xl mx-auto">
               <GlassCardContent className="p-12 text-center">
-                <TrendingUp className="w-12 h-12 text-[hsl(var(--skill-very-strong))] mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-foreground mb-2">
-                  Excellent! No Skill Gaps Detected
-                </h3>
-                <p className="text-muted-foreground">
-                  Your competencies meet or exceed the current and future demands for your role.
+                <div className="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center mx-auto mb-6">
+                  <BookOpen className="w-8 h-8 text-primary" />
+                </div>
+                <h2 className="text-xl font-semibold text-foreground mb-2">
+                  Noch keine Lernpfade zugewiesen
+                </h2>
+                <p className="text-muted-foreground max-w-md mx-auto">
+                  Sobald dir Lernpfade zugewiesen werden, siehst du hier deine 
+                  personalisierten Entwicklungsmodule und kannst deinen Fortschritt verfolgen.
                 </p>
               </GlassCardContent>
             </GlassCard>
           </ScrollReveal>
+        ) : (
+          <div className="space-y-6">
+            {learningPaths.map((lp, lpIndex) => {
+              const moduleCount = lp.modules?.length || 0;
+              const completedCount = lp.modules?.filter(m => m.is_completed).length || 0;
+              const progressPercent = moduleCount > 0 
+                ? Math.round((completedCount / moduleCount) * 100) 
+                : (lp.progress_percent || 0);
+
+              return (
+                <ScrollReveal key={lp.id} delay={lpIndex * 100}>
+                  <GlassCard className="hover-glow">
+                    <GlassCardHeader>
+                      <div className="flex items-start justify-between">
+                        <div className="space-y-1">
+                          <GlassCardTitle className="flex items-center gap-2">
+                            {lp.title}
+                            {lp.is_ai_generated && (
+                              <Badge variant="secondary" className="gap-1">
+                                <Sparkles className="w-3 h-3" />
+                                KI-generiert
+                              </Badge>
+                            )}
+                            {lp.completed_at && (
+                              <Badge className="bg-[hsl(var(--skill-very-strong))] text-white gap-1">
+                                <CheckCircle2 className="w-3 h-3" />
+                                Abgeschlossen
+                              </Badge>
+                            )}
+                          </GlassCardTitle>
+                          {lp.target_competency && (
+                            <p className="text-sm text-muted-foreground flex items-center gap-1">
+                              <Target className="w-4 h-4" />
+                              Ziel: {lp.target_competency.name}
+                              {lp.target_level && ` (Level ${lp.target_level}%)`}
+                            </p>
+                          )}
+                          {lp.description && (
+                            <p className="text-sm text-muted-foreground mt-2">
+                              {lp.description}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </GlassCardHeader>
+                    <GlassCardContent className="space-y-4">
+                      {/* Progress Bar */}
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-muted-foreground">Fortschritt</span>
+                          <span className="font-medium text-foreground">
+                            {progressPercent}% ({completedCount}/{moduleCount} Module)
+                          </span>
+                        </div>
+                        <Progress value={progressPercent} className="h-2" />
+                      </div>
+
+                      {/* AI Recommendation */}
+                      {lp.ai_recommendation_reason && (
+                        <div className="bg-primary/5 border border-primary/20 rounded-lg p-3 flex gap-2">
+                          <Sparkles className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+                          <p className="text-sm text-muted-foreground">
+                            {lp.ai_recommendation_reason}
+                          </p>
+                        </div>
+                      )}
+
+                      {/* Modules */}
+                      {lp.modules && lp.modules.length > 0 && (
+                        <div className="space-y-2 pt-2">
+                          <h4 className="text-sm font-medium text-foreground">Module</h4>
+                          <div className="space-y-2">
+                            {lp.modules
+                              .sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0))
+                              .map((module) => (
+                                <div
+                                  key={module.id}
+                                  className={cn(
+                                    "flex items-center gap-3 p-3 rounded-lg border transition-colors",
+                                    module.is_completed 
+                                      ? "bg-[hsl(var(--skill-very-strong))]/5 border-[hsl(var(--skill-very-strong))]/20" 
+                                      : "bg-secondary/30 border-border hover:bg-secondary/50"
+                                  )}
+                                >
+                                  <Checkbox
+                                    id={module.id}
+                                    checked={module.is_completed || false}
+                                    onCheckedChange={(checked) =>
+                                      updateModule.mutate({ 
+                                        moduleId: module.id, 
+                                        completed: !!checked 
+                                      })
+                                    }
+                                    disabled={updateModule.isPending}
+                                  />
+                                  <div className="flex-1 min-w-0">
+                                    <label
+                                      htmlFor={module.id}
+                                      className={cn(
+                                        "text-sm font-medium cursor-pointer",
+                                        module.is_completed && "line-through text-muted-foreground"
+                                      )}
+                                    >
+                                      {module.title}
+                                    </label>
+                                    {module.description && (
+                                      <p className="text-xs text-muted-foreground line-clamp-1">
+                                        {module.description}
+                                      </p>
+                                    )}
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    {module.duration_minutes && (
+                                      <span className="text-xs text-muted-foreground flex items-center gap-1">
+                                        <Clock className="w-3 h-3" />
+                                        ~{module.duration_minutes} Min.
+                                      </span>
+                                    )}
+                                    {module.content_url && (
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="h-7 px-2"
+                                        asChild
+                                      >
+                                        <a
+                                          href={module.content_url}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                        >
+                                          <ExternalLink className="w-3 h-3 mr-1" />
+                                          Öffnen
+                                        </a>
+                                      </Button>
+                                    )}
+                                  </div>
+                                </div>
+                              ))}
+                          </div>
+                        </div>
+                      )}
+                    </GlassCardContent>
+                  </GlassCard>
+                </ScrollReveal>
+              );
+            })}
+          </div>
         )}
       </main>
     </div>

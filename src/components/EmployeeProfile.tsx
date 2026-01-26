@@ -7,12 +7,14 @@ import { StrengthsWeaknessesRadar } from "./StrengthsWeaknessesRadar";
 import { RadarChartModal } from "./RadarChartModal";
 import { EmployeeSkillGapCard } from "./EmployeeSkillGapCard";
 import { CertificateUploadModal } from "./CertificateUploadModal";
+import { EmployeeLearningPathsTab } from "./EmployeeLearningPathsTab";
 import { GlassCard, GlassCardContent, GlassCardHeader, GlassCardTitle } from "@/components/GlassCard";
 import { AnimatedCounter } from "@/components/AnimatedCounter";
 import { ScrollReveal } from "@/components/ScrollReveal";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { X, Target, GraduationCap, Briefcase, AlertTriangle, Maximize2, ChevronDown, ChevronUp, FileUp } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { X, Target, GraduationCap, Briefcase, AlertTriangle, Maximize2, ChevronDown, ChevronUp, FileUp, BookOpen, BarChart3 } from "lucide-react";
 import { capLevel } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
@@ -269,6 +271,8 @@ export function EmployeeProfile({ employeeId, onClose }: EmployeeProfileProps) {
     );
   }
 
+  const learningPathCount = employee.learning_paths?.length || 0;
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -344,6 +348,26 @@ export function EmployeeProfile({ employeeId, onClose }: EmployeeProfileProps) {
           </GlassCard>
         </ScrollReveal>
       </div>
+
+      {/* Tabs */}
+      <Tabs defaultValue="competencies" className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="competencies" className="gap-2">
+            <BarChart3 className="w-4 h-4" />
+            Kompetenzen
+          </TabsTrigger>
+          <TabsTrigger value="learning" className="gap-2">
+            <BookOpen className="w-4 h-4" />
+            Lernpfade
+            {learningPathCount > 0 && (
+              <span className="ml-1 rounded-full bg-primary/20 px-2 py-0.5 text-xs font-medium text-primary">
+                {learningPathCount}
+              </span>
+            )}
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="competencies" className="mt-6 space-y-6">
 
       {/* Education & Career */}
       {(employee.education || employee.career_objective) && (
@@ -501,6 +525,15 @@ export function EmployeeProfile({ employeeId, onClose }: EmployeeProfileProps) {
           </ScrollReveal>
         );
       })()}
+        </TabsContent>
+
+        <TabsContent value="learning" className="mt-6">
+          <EmployeeLearningPathsTab 
+            learningPaths={employee.learning_paths} 
+            employeeName={employee.full_name} 
+          />
+        </TabsContent>
+      </Tabs>
 
       {/* Sub-Skill Modal */}
       <SubSkillModal

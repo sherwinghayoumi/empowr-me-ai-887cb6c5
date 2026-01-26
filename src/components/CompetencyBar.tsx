@@ -1,4 +1,4 @@
-import { cn } from "@/lib/utils";
+import { cn, capLevel } from "@/lib/utils";
 import { useEffect, useState } from "react";
 import { ChevronRight } from "lucide-react";
 
@@ -14,13 +14,18 @@ interface CompetencyBarProps {
 
 export function CompetencyBar({
   competencyName,
-  currentLevel,
-  demandedLevel,
-  futureLevel,
+  currentLevel: rawCurrentLevel,
+  demandedLevel: rawDemandedLevel,
+  futureLevel: rawFutureLevel,
   className,
   delay = 0,
   onClick,
 }: CompetencyBarProps) {
+  // Cap all levels at 100% for display
+  const currentLevel = capLevel(rawCurrentLevel);
+  const demandedLevel = capLevel(rawDemandedLevel);
+  const futureLevel = capLevel(rawFutureLevel);
+  
   const [animatedLevel, setAnimatedLevel] = useState(0);
   const [showMarkers, setShowMarkers] = useState(false);
 

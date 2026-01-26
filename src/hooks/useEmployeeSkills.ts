@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { capLevel } from "@/lib/utils";
 
 export interface EmployeeSubskill {
   id: string;
@@ -172,9 +173,9 @@ export function groupByCluster(
     group.competencies.push({
       competencyId: ec.competency.id,
       competencyName: ec.competency.name,
-      currentLevel: ec.current_level ?? 0,
-      demandedLevel: ec.demanded_level ?? 70,
-      futureLevel: ec.future_level ?? 80,
+      currentLevel: capLevel(ec.current_level),
+      demandedLevel: capLevel(ec.demanded_level, 100) || 70,
+      futureLevel: capLevel(ec.future_level, 100) || 80,
       subskills: subskillsWithRatings,
     });
   });
@@ -197,8 +198,8 @@ export function transformForRadar(
   return employeeCompetencies.map((ec) => ({
     skillId: ec.competency?.id || ec.id,
     skillName: ec.competency?.name || "Unknown",
-    currentLevel: ec.current_level ?? 0,
-    demandedLevel: ec.demanded_level ?? 70,
-    futureLevel: ec.future_level,
+    currentLevel: capLevel(ec.current_level),
+    demandedLevel: capLevel(ec.demanded_level, 100) || 70,
+    futureLevel: capLevel(ec.future_level),
   }));
 }

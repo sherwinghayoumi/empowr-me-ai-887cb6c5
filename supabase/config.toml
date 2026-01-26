@@ -1,1 +1,4 @@
 project_id = "pgbsbvwqjoxqpexoorff"
+
+[functions.generate-learning-path]
+verify_jwt = false

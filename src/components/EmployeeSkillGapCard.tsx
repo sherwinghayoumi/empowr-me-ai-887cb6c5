@@ -3,7 +3,8 @@ import { GlassCard, GlassCardContent, GlassCardHeader, GlassCardTitle } from "@/
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { CertificationModal } from "./CertificationModal";
-import { AlertTriangle, GraduationCap, ChevronRight } from "lucide-react";
+import { LearningPathGeneratorModal } from "./LearningPathGeneratorModal";
+import { AlertTriangle, GraduationCap, ChevronRight, Sparkles } from "lucide-react";
 import { capLevel } from "@/lib/utils";
 
 interface EmployeeSkillGapCardProps {
@@ -12,6 +13,7 @@ interface EmployeeSkillGapCardProps {
   currentLevel: number;
   demandedLevel: number;
   futureLevel: number;
+  employeeId: string;
   employeeName: string;
   delay?: number;
 }
@@ -62,10 +64,12 @@ export function EmployeeSkillGapCard({
   currentLevel: rawCurrentLevel, 
   demandedLevel: rawDemandedLevel, 
   futureLevel: rawFutureLevel, 
+  employeeId,
   employeeName,
   delay = 0 
 }: EmployeeSkillGapCardProps) {
   const [showCertModal, setShowCertModal] = useState(false);
+  const [showAIModal, setShowAIModal] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
   
   // Cap all levels at 100% for display
@@ -156,17 +160,29 @@ export function EmployeeSkillGapCard({
             </div>
           </div>
 
-          {/* Recommendation Button */}
-          <Button
-            variant="default"
-            size="sm"
-            className="w-full group"
-            onClick={() => setShowCertModal(true)}
-          >
-            <GraduationCap className="w-4 h-4 mr-2" />
-            Lernempfehlungen anzeigen
-            <ChevronRight className="w-4 h-4 ml-auto transition-transform group-hover:translate-x-1" />
-          </Button>
+          {/* Action Buttons */}
+          <div className="space-y-2">
+            <Button
+              variant="default"
+              size="sm"
+              className="w-full group"
+              onClick={() => setShowAIModal(true)}
+            >
+              <Sparkles className="w-4 h-4 mr-2" />
+              AI Lernpfad generieren
+              <ChevronRight className="w-4 h-4 ml-auto transition-transform group-hover:translate-x-1" />
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full group"
+              onClick={() => setShowCertModal(true)}
+            >
+              <GraduationCap className="w-4 h-4 mr-2" />
+              Manuelle Empfehlungen
+              <ChevronRight className="w-4 h-4 ml-auto transition-transform group-hover:translate-x-1" />
+            </Button>
+          </div>
         </GlassCardContent>
       </GlassCard>
 
@@ -177,6 +193,19 @@ export function EmployeeSkillGapCard({
         competencyName={displayName}
         employeeName={employeeName}
         gapPercentage={Math.max(currentGap, futureGap)}
+      />
+
+      <LearningPathGeneratorModal
+        open={showAIModal}
+        onOpenChange={setShowAIModal}
+        skillGapInput={{
+          competencyId: skillId,
+          competencyName: displayName,
+          currentLevel,
+          targetLevel: Math.max(demandedLevel, futureLevel),
+          employeeId,
+          employeeName,
+        }}
       />
     </>
   );

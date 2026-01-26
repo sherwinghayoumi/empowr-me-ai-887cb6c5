@@ -1,17 +1,23 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useCallback } from "react";
 import { useEmployee } from "@/hooks/useOrgData";
+import { useQueryClient } from "@tanstack/react-query";
 import { CompetencyBar } from "./CompetencyBar";
 import { SubSkillModal } from "./SubSkillModal";
 import { StrengthsWeaknessesRadar } from "./StrengthsWeaknessesRadar";
 import { RadarChartModal } from "./RadarChartModal";
 import { EmployeeSkillGapCard } from "./EmployeeSkillGapCard";
+import { CertificateUploadModal } from "./CertificateUploadModal";
 import { GlassCard, GlassCardContent, GlassCardHeader, GlassCardTitle } from "@/components/GlassCard";
 import { AnimatedCounter } from "@/components/AnimatedCounter";
 import { ScrollReveal } from "@/components/ScrollReveal";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { X, Target, GraduationCap, Briefcase, AlertTriangle, Maximize2, ChevronDown, ChevronUp } from "lucide-react";
+import { X, Target, GraduationCap, Briefcase, AlertTriangle, Maximize2, ChevronDown, ChevronUp, FileUp } from "lucide-react";
 import { capLevel } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
+import { GeneratedProfile } from "@/types/profileGeneration";
+import { CertificateUpdateResult } from "@/types/certificateUpdate";
 
 interface EmployeeProfileProps {
   employeeId: string;
@@ -40,9 +46,157 @@ interface MappedCompetency {
 
 export function EmployeeProfile({ employeeId, onClose }: EmployeeProfileProps) {
   const { data: employee, isLoading } = useEmployee(employeeId);
+  const queryClient = useQueryClient();
   const [selectedCompetencyId, setSelectedCompetencyId] = useState<string | null>(null);
   const [isRadarModalOpen, setIsRadarModalOpen] = useState(false);
   const [showAllGaps, setShowAllGaps] = useState(false);
+  const [showCertModal, setShowCertModal] = useState(false);
+
+  // Build a GeneratedProfile from current employee data for certificate analysis
+  const currentProfile = useMemo<GeneratedProfile | null>(() => {
+    if (!employee?.competencies) return null;
+
+    // Group competencies by cluster
+    const clusterMap = new Map<string, { clusterName: string; competencies: any[] }>();
+    
+    for (const ec of employee.competencies) {
+      const clusterName = ec.competency?.cluster?.name || 'Sonstige';
+      if (!clusterMap.has(clusterName)) {
+        clusterMap.set(clusterName, { clusterName, competencies: [] });
+      }
+      
+      clusterMap.get(clusterName)!.competencies.push({
+        name: ec.competency?.name || 'Unknown',
+        rating: (ec.current_level || 0) / 20, // Convert 0-100 back to 1-5
+        confidence: 'HIGH' as const,
+        selfRating: ec.self_rating ? ec.self_rating / 20 : null,
+        managerRating: ec.manager_rating ? ec.manager_rating / 20 : null,
+        evidenceSummary: ec.evidence_summary || '',
+        subskills: (ec.competency?.subskills || []).map((ss: any) => ({
+          name: ss.name,
+          rating: ss.employee_rating?.current_level ? ss.employee_rating.current_level / 20 : 'NB',
+          evidence: ss.employee_rating?.evidence || ''
+        }))
+      });
+    }
+
+    return {
+      extractedData: {
+        source: {
+          cvPresent: true,
+          selfAssessmentPresent: true,
+          managerAssessmentPresent: true,
+          extractionQuality: 'HIGH'
+        },
+        employee: {
+          name: employee.full_name,
+          currentRole: employee.role_profile?.role_title || '',
+          yearsAtCompany: employee.firm_experience_years || 0,
+          totalYearsInBusiness: employee.total_experience_years || 0,
+          targetRole: '',
+          gdprConsentGiven: !!employee.gdpr_consent_given_at
+        },
+        cvHighlights: {
+          education: employee.education ? [employee.education] : [],
+          certifications: [],
+          keyExperience: [],
+          toolProficiency: [],
+          languages: []
+        }
+      },
+      competencyProfile: {
+        role: employee.role_profile?.role_title || '',
+        assessmentDate: new Date().toISOString().split('T')[0],
+        clusters: Array.from(clusterMap.values())
+      },
+      analysis: {
+        overallScore: employee.overall_score || 0,
+        topStrengths: [],
+        developmentAreas: [],
+        promotionReadiness: {
+          targetRole: '',
+          readinessPercentage: employee.promotion_readiness || 0,
+          criticalGaps: [],
+          estimatedTimeline: ''
+        }
+      },
+      compliance: {
+        gdprConsentVerified: !!employee.gdpr_consent_given_at,
+        disclaimer: ''
+      }
+    };
+  }, [employee]);
+
+  // Apply rating changes from certificate analysis
+  const applyRatingChanges = useCallback(async (result: CertificateUpdateResult) => {
+    try {
+      // Update overall_score
+      const { error: updateError } = await supabase
+        .from('employees')
+        .update({ 
+          overall_score: result.overallScoreChange.newScore,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', employeeId);
+
+      if (updateError) throw updateError;
+
+      // Log to audit
+      await supabase.rpc('log_audit_event', {
+        p_action: 'certificate_upload',
+        p_entity_type: 'employee',
+        p_entity_id: employeeId,
+        p_new_values: {
+          certificate: result.documentAnalysis.title,
+          issuer: result.documentAnalysis.issuer,
+          changes: result.ratingChanges.map(c => ({
+            competency: c.competency,
+            change: c.change
+          })),
+          newScore: result.overallScoreChange.newScore
+        }
+      });
+
+      // Save certification record
+      if (employee?.organization_id) {
+        const { error: certInsertError } = await supabase
+          .from('certifications')
+          .insert([{
+            employee_id: employeeId,
+            organization_id: employee.organization_id,
+            document_type: result.documentAnalysis.documentType,
+            title: result.documentAnalysis.title,
+            issuer: result.documentAnalysis.issuer,
+            issue_date: result.documentAnalysis.issueDate || null,
+            expiry_date: result.documentAnalysis.expiryDate || null,
+            ai_analysis: JSON.parse(JSON.stringify(result)),
+            affected_competencies: JSON.parse(JSON.stringify(result.ratingChanges)),
+            is_processed: true,
+            is_verified: false
+          }]);
+
+        if (certInsertError) {
+          console.error('Error saving certification:', certInsertError);
+        }
+      }
+
+      toast({
+        title: "Profil aktualisiert!",
+        description: `${result.ratingChanges.length} Kompetenz(en) wurden angepasst.`,
+      });
+
+      // Refresh employee data
+      queryClient.invalidateQueries({ queryKey: ['employee', employeeId] });
+      
+    } catch (error) {
+      console.error('Error applying rating changes:', error);
+      toast({
+        title: "Fehler",
+        description: "Rating-Änderungen konnten nicht gespeichert werden.",
+        variant: "destructive"
+      });
+    }
+  }, [employeeId, employee?.organization_id, queryClient]);
 
   // Map competencies from database structure to component-friendly format
   const mappedCompetencies = useMemo<MappedCompetency[]>(() => {
@@ -129,11 +283,22 @@ export function EmployeeProfile({ employeeId, onClose }: EmployeeProfileProps) {
             <p className="text-sm text-muted-foreground">{employee.email}</p>
           </div>
         </div>
-        {onClose && (
-          <button onClick={onClose} className="p-2 hover:bg-secondary rounded-lg">
-            <X className="w-5 h-5 text-muted-foreground" />
-          </button>
-        )}
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowCertModal(true)}
+            className="gap-2"
+          >
+            <FileUp className="w-4 h-4" />
+            Zertifikat hochladen
+          </Button>
+          {onClose && (
+            <button onClick={onClose} className="p-2 hover:bg-secondary rounded-lg">
+              <X className="w-5 h-5 text-muted-foreground" />
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Info Cards */}
@@ -352,6 +517,19 @@ export function EmployeeProfile({ employeeId, onClose }: EmployeeProfileProps) {
         skills={radarSkills}
         title={`Kompetenz-Radar: ${employee.full_name}`}
       />
+
+      {/* Certificate Upload Modal */}
+      {showCertModal && currentProfile && (
+        <CertificateUploadModal
+          open={showCertModal}
+          onClose={() => setShowCertModal(false)}
+          currentProfile={currentProfile}
+          onUpdateConfirmed={async (result) => {
+            await applyRatingChanges(result);
+            setShowCertModal(false);
+          }}
+        />
+      )}
     </div>
   );
 }

@@ -151,7 +151,7 @@ const LoginPage = () => {
       {/* Logo */}
       <div className="mb-8 text-center animate-fade-in-up relative">
         <div className="flex items-center justify-center mb-4">
-          <img alt="FUTURA TEAMS" className="h-14 w-auto object-scale-down" src="/lovable-uploads/0bc6bfce-a8d3-478e-9ca0-d0a4ea01f255.png" />
+          <img alt="FUTURA TEAMS" className="h-14 w-auto object-scale-down" src="/lovable-uploads/a50abc9a-d671-46a3-86f9-65462c633fba.png" />
         </div>
         <p className="text-muted-foreground text-base max-w-md italic">„Empower your teams for the future"</p>
       </div>

@@ -11,7 +11,7 @@ const LoginPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { signIn, isAuthenticated, isLoading: authLoading, profile } = useAuth();
-  
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -32,12 +32,15 @@ const LoginPage = () => {
   }, []);
 
   const isRouteAllowedForRole = (path: string, role: string): boolean => {
-    if (role === 'super_admin') return true;
-    if (role === 'org_admin') {
-      return path.startsWith('/admin') || path.startsWith('/employee');
+    if (role === "super_admin") {
+      // Super-Admin soll NUR zu Super-Admin Routen redirected werden
+      return path.startsWith("/super-admin");
     }
-    if (role === 'employee') {
-      return path.startsWith('/employee');
+    if (role === "org_admin") {
+      return path.startsWith("/admin") || path.startsWith("/employee");
+    }
+    if (role === "employee") {
+      return path.startsWith("/employee");
     }
     return false;
   };
@@ -46,26 +49,26 @@ const LoginPage = () => {
   useEffect(() => {
     if (isAuthenticated && profile && !authLoading) {
       let redirectTo = getDefaultRedirect(profile.role);
-      
+
       // Only use 'from' if the route is allowed for the user's role
       if (from && isRouteAllowedForRole(from, profile.role)) {
         redirectTo = from;
       }
-      
+
       navigate(redirectTo, { replace: true });
     }
   }, [isAuthenticated, profile, authLoading, navigate, from]);
 
   const getDefaultRedirect = (role: string) => {
     switch (role) {
-      case 'super_admin':
-        return '/super-admin';
-      case 'org_admin':
-        return '/admin';
-      case 'employee':
-        return '/employee';
+      case "super_admin":
+        return "/super-admin";
+      case "org_admin":
+        return "/admin";
+      case "employee":
+        return "/employee";
       default:
-        return '/employee';
+        return "/employee";
     }
   };
 
@@ -83,13 +86,13 @@ const LoginPage = () => {
   };
 
   const getErrorMessage = (message: string) => {
-    if (message.includes('Invalid login credentials')) {
-      return 'Ungültige E-Mail oder Passwort';
+    if (message.includes("Invalid login credentials")) {
+      return "Ungültige E-Mail oder Passwort";
     }
-    if (message.includes('Email not confirmed')) {
-      return 'Bitte bestätigen Sie Ihre E-Mail-Adresse';
+    if (message.includes("Email not confirmed")) {
+      return "Bitte bestätigen Sie Ihre E-Mail-Adresse";
     }
-    return 'Ein Fehler ist aufgetreten. Bitte versuchen Sie es erneut.';
+    return "Ein Fehler ist aufgetreten. Bitte versuchen Sie es erneut.";
   };
 
   if (authLoading) {
@@ -104,38 +107,38 @@ const LoginPage = () => {
     <div className="min-h-screen flex flex-col items-center justify-center bg-background p-4 overflow-hidden">
       {/* Animated background */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div 
+        <div
           className="absolute w-[800px] h-[800px] rounded-full opacity-30 blur-[120px] animate-gradient-shift"
           style={{
             background: "radial-gradient(circle, hsl(45 75% 50% / 0.4), hsl(45 75% 50% / 0.1) 40%, transparent 70%)",
             top: "-10%",
             left: "-10%",
             transform: `translate(${mousePosition.x * 2}px, ${mousePosition.y * 2}px)`,
-            transition: "transform 0.2s ease-out"
+            transition: "transform 0.2s ease-out",
           }}
         />
-        <div 
+        <div
           className="absolute w-[600px] h-[600px] rounded-full opacity-20 blur-[100px] animate-gradient-shift-reverse"
           style={{
             background: "radial-gradient(circle, hsl(222 60% 30% / 0.6), transparent 70%)",
             bottom: "-5%",
             right: "-5%",
             transform: `translate(${-mousePosition.x * 1.5}px, ${-mousePosition.y * 1.5}px)`,
-            transition: "transform 0.2s ease-out"
+            transition: "transform 0.2s ease-out",
           }}
         />
-        <div 
+        <div
           className="absolute w-[500px] h-[500px] rounded-full opacity-15 blur-[80px] animate-gradient-pulse"
           style={{
             background: "radial-gradient(circle, hsl(45 75% 55% / 0.3), transparent 70%)",
             top: "50%",
             left: "50%",
             transform: `translate(-50%, -50%) translate(${mousePosition.x * 0.8}px, ${mousePosition.y * 0.8}px)`,
-            transition: "transform 0.2s ease-out"
+            transition: "transform 0.2s ease-out",
           }}
         />
         <div className="absolute inset-0 hex-pattern opacity-50" />
-        <div 
+        <div
           className="absolute inset-0 opacity-[0.02]"
           style={{
             backgroundImage: `
@@ -144,10 +147,10 @@ const LoginPage = () => {
             `,
             backgroundSize: "60px 60px",
             transform: `translate(${mousePosition.x * 0.1}px, ${mousePosition.y * 0.1}px)`,
-            transition: "transform 0.3s ease-out"
+            transition: "transform 0.3s ease-out",
           }}
         />
-        <div 
+        <div
           className="absolute inset-0"
           style={{ background: "radial-gradient(ellipse at center, transparent 0%, hsl(222 47% 6% / 0.6) 70%)" }}
         />
@@ -158,18 +161,14 @@ const LoginPage = () => {
         <div className="flex items-center justify-center mb-4">
           <img alt="FUTURA TEAMS" src={futuraLogo} className="h-14 w-auto object-scale-down" />
         </div>
-        <p className="text-muted-foreground text-base max-w-md italic">
-          „Empower your teams for the future"
-        </p>
+        <p className="text-muted-foreground text-base max-w-md italic">„Empower your teams for the future"</p>
       </div>
 
       {/* Login Card */}
       <div className="w-full max-w-md relative animate-fade-in-up stagger-1 opacity-0">
         <div className="glass-card p-8">
           <h1 className="text-2xl font-semibold text-foreground mb-2">Willkommen zurück</h1>
-          <p className="text-muted-foreground text-sm mb-6">
-            Melden Sie sich an, um fortzufahren
-          </p>
+          <p className="text-muted-foreground text-sm mb-6">Melden Sie sich an, um fortzufahren</p>
 
           {error && (
             <div className="mb-6 p-3 rounded-xl bg-destructive/10 border border-destructive/20 flex items-center gap-3">
@@ -203,10 +202,7 @@ const LoginPage = () => {
                 <Label htmlFor="password" className="text-xs font-medium text-foreground/80">
                   Passwort
                 </Label>
-                <Link 
-                  to="/forgot-password" 
-                  className="text-xs text-primary hover:text-primary/80 transition-colors"
-                >
+                <Link to="/forgot-password" className="text-xs text-primary hover:text-primary/80 transition-colors">
                   Passwort vergessen?
                 </Link>
               </div>
@@ -245,9 +241,7 @@ const LoginPage = () => {
 
       {/* Footer */}
       <div className="mt-8 text-center animate-fade-in stagger-3 opacity-0 relative">
-        <p className="text-xs text-muted-foreground">
-          FUTURA TEAMS • AI-Driven Team Intelligence Platform
-        </p>
+        <p className="text-xs text-muted-foreground">FUTURA TEAMS • AI-Driven Team Intelligence Platform</p>
       </div>
     </div>
   );

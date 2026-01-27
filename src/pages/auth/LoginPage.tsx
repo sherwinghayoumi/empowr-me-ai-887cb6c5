@@ -32,12 +32,13 @@ const LoginPage = () => {
   }, []);
 
   const isRouteAllowedForRole = (path: string, role: string): boolean => {
+    // Jede Rolle soll nur zu ihrem PRIMÄREN Bereich redirected werden
+    // Das verhindert, dass Benutzer auf "falschen" Dashboards landen
     if (role === "super_admin") {
-      // Super-Admin soll NUR zu Super-Admin Routen redirected werden
       return path.startsWith("/super-admin");
     }
     if (role === "org_admin") {
-      return path.startsWith("/admin") || path.startsWith("/employee");
+      return path.startsWith("/admin");
     }
     if (role === "employee") {
       return path.startsWith("/employee");

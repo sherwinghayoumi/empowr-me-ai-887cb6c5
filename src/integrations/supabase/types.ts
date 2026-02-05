@@ -452,6 +452,7 @@ export type Database = {
           role_profile_id: string | null
           target_role_id: string | null
           team_id: string | null
+          team_role: string | null
           total_experience_years: number | null
           updated_at: string | null
         }
@@ -475,6 +476,7 @@ export type Database = {
           role_profile_id?: string | null
           target_role_id?: string | null
           team_id?: string | null
+          team_role?: string | null
           total_experience_years?: number | null
           updated_at?: string | null
         }
@@ -498,6 +500,7 @@ export type Database = {
           role_profile_id?: string | null
           target_role_id?: string | null
           team_id?: string | null
+          team_role?: string | null
           total_experience_years?: number | null
           updated_at?: string | null
         }
@@ -943,35 +946,50 @@ export type Database = {
       teams: {
         Row: {
           average_score: number | null
+          color: string | null
           created_at: string | null
           description: string | null
+          icon: string | null
           id: string
+          is_archived: boolean | null
           lead_id: string | null
           member_count: number | null
           name: string
           organization_id: string
+          priority: number | null
+          tags: string[] | null
           updated_at: string | null
         }
         Insert: {
           average_score?: number | null
+          color?: string | null
           created_at?: string | null
           description?: string | null
+          icon?: string | null
           id?: string
+          is_archived?: boolean | null
           lead_id?: string | null
           member_count?: number | null
           name: string
           organization_id: string
+          priority?: number | null
+          tags?: string[] | null
           updated_at?: string | null
         }
         Update: {
           average_score?: number | null
+          color?: string | null
           created_at?: string | null
           description?: string | null
+          icon?: string | null
           id?: string
+          is_archived?: boolean | null
           lead_id?: string | null
           member_count?: number | null
           name?: string
           organization_id?: string
+          priority?: number | null
+          tags?: string[] | null
           updated_at?: string | null
         }
         Relationships: [

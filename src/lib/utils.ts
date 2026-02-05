@@ -14,3 +14,22 @@ export function capLevel(value: number | null | undefined, max = 100): number {
   if (value === null || value === undefined) return 0;
   return Math.min(value, max);
 }
+
+/**
+ * Skill level classification based on percentage score.
+ * Used for visual representation of skill proficiency.
+ */
+export type SkillLevel = "very-strong" | "strong" | "moderate" | "weak" | "very-weak";
+
+/**
+ * Converts a numeric skill score (0-100) into a categorical skill level.
+ * @param score - Skill score as percentage (0-100)
+ * @returns SkillLevel classification
+ */
+export function getSkillLevel(score: number): SkillLevel {
+  if (score >= 90) return "very-strong";
+  if (score >= 70) return "strong";
+  if (score >= 50) return "moderate";
+  if (score >= 30) return "weak";
+  return "very-weak";
+}

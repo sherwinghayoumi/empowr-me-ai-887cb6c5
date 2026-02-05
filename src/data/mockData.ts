@@ -1,12 +1,14 @@
 // SkillShift Mock Data for Corporate Law - London Office
+import { getSkillLevel, type SkillLevel } from "@/lib/utils";
+
+// Re-export for backwards compatibility
+export { getSkillLevel, type SkillLevel } from "@/lib/utils";
 
 export type SkillCategory = 
   | "Legal Core" 
   | "Business Acumen" 
   | "Technology" 
   | "Soft Skills";
-
-export type SkillLevel = "very-strong" | "strong" | "moderate" | "weak" | "very-weak";
 
 export interface Skill {
   id: string;
@@ -84,15 +86,6 @@ export const roles: Role[] = [
   { id: "counsel", name: "Counsel", description: "Senior Partner Track", level: "counsel" },
   { id: "legal-tech-associate", name: "Legal Tech Associate", description: "Legal Tech Spezialist", level: "specialist" },
 ];
-
-// Helper function to get skill level from score
-export function getSkillLevel(score: number): SkillLevel {
-  if (score >= 90) return "very-strong";
-  if (score >= 70) return "strong";
-  if (score >= 50) return "moderate";
-  if (score >= 30) return "weak";
-  return "very-weak";
-}
 
 // Helper to convert 1-5 scale to 0-100
 function toPercent(val: number): number {

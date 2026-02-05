@@ -23,7 +23,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Users, TrendingUp, BookOpen, Building2 } from "lucide-react";
 import { useEmployees, useTeams, useRoleProfilesPublished, useOrgStats, useQuarterlyReports } from "@/hooks/useOrgData";
 import { useAuth } from "@/contexts/AuthContext";
-import { getSkillLevel } from "@/data/mockData";
+import { getSkillLevel } from "@/lib/utils";
 
 // Type for employee from database
 interface DbEmployee {

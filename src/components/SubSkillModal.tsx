@@ -5,8 +5,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
-import { getSkillLevel, type SkillLevel } from "@/data/mockData";
+import { cn, getSkillLevel, type SkillLevel } from "@/lib/utils";
 import { Info } from "lucide-react";
 
 interface Subskill {

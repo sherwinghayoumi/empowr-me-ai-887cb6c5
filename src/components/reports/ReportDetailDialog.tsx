@@ -24,6 +24,7 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import type { Report } from '@/hooks/useReports';
 import { useReportChangelog } from '@/hooks/useReports';
+import { MarkdownRenderer } from './MarkdownRenderer';
 
 interface ReportDetailDialogProps {
   open: boolean;
@@ -136,11 +137,9 @@ export function ReportDetailDialog({
 
           <TabsContent value="summary" className="flex-1 overflow-hidden mt-4">
             <ScrollArea className="h-full">
-              <div className="prose prose-sm dark:prose-invert max-w-none p-4 bg-muted/20 rounded-lg">
+              <div className="p-4 bg-muted/20 rounded-lg">
                 {report.executive_summary ? (
-                  <pre className="whitespace-pre-wrap font-sans text-sm">
-                    {report.executive_summary}
-                  </pre>
+                  <MarkdownRenderer content={report.executive_summary} />
                 ) : (
                   <p className="text-muted-foreground italic">Keine Executive Summary vorhanden.</p>
                 )}
@@ -150,11 +149,9 @@ export function ReportDetailDialog({
 
           <TabsContent value="full" className="flex-1 overflow-hidden mt-4">
             <ScrollArea className="h-full">
-              <div className="prose prose-sm dark:prose-invert max-w-none p-4 bg-muted/20 rounded-lg">
+              <div className="p-4 bg-muted/20 rounded-lg">
                 {report.full_report_markdown ? (
-                  <pre className="whitespace-pre-wrap font-sans text-sm">
-                    {report.full_report_markdown}
-                  </pre>
+                  <MarkdownRenderer content={report.full_report_markdown} />
                 ) : (
                   <p className="text-muted-foreground italic">Kein vollständiger Report vorhanden.</p>
                 )}

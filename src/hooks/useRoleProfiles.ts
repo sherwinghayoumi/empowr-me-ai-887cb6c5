@@ -112,8 +112,7 @@ export function useRoleProfiles() {
       queryClient.invalidateQueries({ queryKey: ['role_profiles'] });
       toast.success('Rollenprofil gelöscht');
     },
-    onError: (error) => {
-      console.error('Error deleting role profile:', error);
+    onError: () => {
       toast.error('Fehler beim Löschen');
     },
   });
@@ -552,7 +551,6 @@ export async function importRoleProfile(
     
     return { success: true, roleProfileId: roleProfile.id };
   } catch (error) {
-    console.error('Import error:', error);
     return { success: false, error: (error as Error).message };
   }
 }
@@ -615,7 +613,6 @@ export async function publishRoleProfiles(
       },
     };
   } catch (error) {
-    console.error('Publish error:', error);
     return { success: false, error: (error as Error).message };
   }
 }
@@ -678,7 +675,6 @@ export async function propagateToEmployees(
     
     return { success: true, updated: totalUpdated };
   } catch (error) {
-    console.error('Propagation error:', error);
     return { success: false, updated: 0, error: (error as Error).message };
   }
 }

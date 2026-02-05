@@ -50,8 +50,7 @@ export function useReports() {
       queryClient.invalidateQueries({ queryKey: ['quarterly_reports'] });
       toast.success('Report erfolgreich erstellt');
     },
-    onError: (error) => {
-      console.error('Error creating report:', error);
+    onError: () => {
       toast.error('Fehler beim Erstellen des Reports');
     },
   });
@@ -72,8 +71,7 @@ export function useReports() {
       queryClient.invalidateQueries({ queryKey: ['quarterly_reports'] });
       toast.success('Report erfolgreich aktualisiert');
     },
-    onError: (error) => {
-      console.error('Error updating report:', error);
+    onError: () => {
       toast.error('Fehler beim Aktualisieren des Reports');
     },
   });
@@ -91,8 +89,7 @@ export function useReports() {
       queryClient.invalidateQueries({ queryKey: ['quarterly_reports'] });
       toast.success('Report erfolgreich gelöscht');
     },
-    onError: (error) => {
-      console.error('Error deleting report:', error);
+    onError: () => {
       toast.error('Fehler beim Löschen des Reports');
     },
   });
@@ -133,8 +130,7 @@ export function useReports() {
       queryClient.invalidateQueries({ queryKey: ['quarterly_reports'] });
       toast.success('Report erfolgreich veröffentlicht');
     },
-    onError: (error) => {
-      console.error('Error publishing report:', error);
+    onError: () => {
       toast.error('Fehler beim Veröffentlichen des Reports');
     },
   });
@@ -155,8 +151,7 @@ export function useReports() {
       queryClient.invalidateQueries({ queryKey: ['quarterly_reports'] });
       toast.success('Report zurückgezogen');
     },
-    onError: (error) => {
-      console.error('Error unpublishing report:', error);
+    onError: () => {
       toast.error('Fehler beim Zurückziehen des Reports');
     },
   });
@@ -219,7 +214,6 @@ export async function uploadReportFile(file: File, quarter: string, year: number
     .upload(filePath, file);
   
   if (error) {
-    console.error('Error uploading file:', error);
     toast.error('Fehler beim Hochladen der Datei');
     return null;
   }
@@ -241,7 +235,6 @@ export async function downloadReportFile(path: string): Promise<Blob | null> {
     .download(path);
   
   if (error) {
-    console.error('Error downloading file:', error);
     toast.error('Fehler beim Herunterladen der Datei');
     return null;
   }

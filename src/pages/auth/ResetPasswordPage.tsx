@@ -30,7 +30,6 @@ const ResetPasswordPage = () => {
 
     // Listen for auth state changes (invite link token exchange)
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      console.log("Auth event in ResetPasswordPage:", event);
       if (event === 'SIGNED_IN' || event === 'PASSWORD_RECOVERY') {
         setHasSession(true);
         setIsCheckingSession(false);

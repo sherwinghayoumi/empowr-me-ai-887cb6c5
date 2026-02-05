@@ -148,8 +148,7 @@ export default function SuperAdminUsers() {
       // Note: In a production system, you would use admin auth APIs or magic links
       // For now, we redirect to login where they can enter the user's credentials
       window.location.href = `/login?impersonate=${user.email}`;
-    } catch (error) {
-      console.error('Error starting impersonation:', error);
+    } catch {
       toast.error('Impersonation fehlgeschlagen');
     }
   };

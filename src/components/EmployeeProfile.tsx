@@ -177,9 +177,7 @@ export function EmployeeProfile({ employeeId, onClose }: EmployeeProfileProps) {
             is_verified: false
           }]);
 
-        if (certInsertError) {
-          console.error('Error saving certification:', certInsertError);
-        }
+        // Silently handle certification save errors
       }
 
       toast({
@@ -190,8 +188,7 @@ export function EmployeeProfile({ employeeId, onClose }: EmployeeProfileProps) {
       // Refresh employee data
       queryClient.invalidateQueries({ queryKey: ['employee', employeeId] });
       
-    } catch (error) {
-      console.error('Error applying rating changes:', error);
+    } catch {
       toast({
         title: "Fehler",
         description: "Rating-Änderungen konnten nicht gespeichert werden.",

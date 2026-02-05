@@ -37,8 +37,7 @@ export function ImpersonationBanner() {
       
       // Redirect to login (super admin needs to re-login)
       navigate('/login');
-    } catch (error) {
-      console.error('Error ending impersonation:', error);
+    } catch {
       toast.error('Fehler beim Beenden der Impersonation');
     }
   };

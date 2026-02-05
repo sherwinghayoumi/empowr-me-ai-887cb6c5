@@ -115,7 +115,6 @@ export function CertificateUploadModal({
         });
       }
     } catch (error) {
-      console.error("Certificate analysis error:", error);
       toast({
         title: "Analysefehler",
         description: error instanceof Error ? error.message : "Unbekannter Fehler",

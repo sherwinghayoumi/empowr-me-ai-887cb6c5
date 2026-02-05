@@ -125,8 +125,7 @@ export function UserDetailDialog({
         description: `E-Mail wurde an ${user.email} gesendet`,
       });
       setResetPasswordOpen(false);
-    } catch (error) {
-      console.error('Error sending password reset:', error);
+    } catch {
       toast.error('Fehler beim Senden', {
         description: 'Password Reset E-Mail konnte nicht gesendet werden',
       });
@@ -170,7 +169,6 @@ export function UserDetailDialog({
       setNewPassword('');
       setConfirmPassword('');
     } catch (error: any) {
-      console.error('Error setting password:', error);
       setPasswordError(error.message || 'Fehler beim Setzen des Passworts');
     } finally {
       setIsSettingPassword(false);

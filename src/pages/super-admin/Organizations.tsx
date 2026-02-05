@@ -207,7 +207,6 @@ export default function SuperAdminOrganizations() {
       });
     },
     onError: (error: Error) => {
-      console.error('Error creating organization:', error);
       toast.error('Fehler beim Erstellen der Organisation', {
         description: error.message,
       });

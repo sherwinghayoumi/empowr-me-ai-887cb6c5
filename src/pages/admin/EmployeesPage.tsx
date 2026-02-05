@@ -125,24 +125,6 @@ const EmployeesPage = () => {
 
   // Save generated profile to database - returns matching statistics
   const saveProfileToDatabase = async (employeeId: string, profile: GeneratedProfile): Promise<{ matched: number; unmatched: string[] }> => {
-    console.log('=== SAVE PROFILE TO DATABASE ===');
-    console.log('Employee ID:', employeeId);
-    console.log('Overall Score:', profile.analysis.overallScore);
-    console.log('Promotion Readiness:', profile.analysis.promotionReadiness.readinessPercentage);
-    console.log('GDPR Verified:', profile.compliance.gdprConsentVerified);
-    console.log('Cluster Count:', profile.competencyProfile?.clusters?.length);
-    
-    // Log all competencies being saved
-    let totalCompetencies = 0;
-    let totalSubskills = 0;
-    profile.competencyProfile?.clusters?.forEach(cluster => {
-      cluster.competencies?.forEach(comp => {
-        totalCompetencies++;
-        totalSubskills += comp.subskills?.length || 0;
-      });
-    });
-    console.log(`Total competencies: ${totalCompetencies}, Total subskills: ${totalSubskills}`);
-
     // Update employee overall_score and promotion_readiness
     const { error } = await supabase
       .from("employees")
@@ -155,7 +137,6 @@ const EmployeesPage = () => {
       .eq("id", employeeId);
 
     if (error) {
-      console.error("Error saving employee profile:", error);
       throw new Error("Fehler beim Speichern des Profils");
     }
 
@@ -173,9 +154,7 @@ const EmployeesPage = () => {
       `)
       .eq("employee_id", employeeId);
 
-    if (fetchError) {
-      console.error("Error fetching competencies:", fetchError);
-    } else if (existingCompetencies) {
+    if (!fetchError && existingCompetencies) {
       // Build lookup table of DB competency names -> ids
       const dbCompetencies = existingCompetencies.map(ec => ({
         id: ec.id,
@@ -202,10 +181,6 @@ const EmployeesPage = () => {
           if (matchedEc) {
             matchedCount++;
             
-            console.log(`📝 Updating competency: ${comp.name}`);
-            console.log(`   - Competency ID: ${matchedEc.competencyId}`);
-            console.log(`   - Rating: ${rating}% (raw: ${comp.rating})`);
-            
             // Use UPSERT via employee_id + competency_id (leverages unique constraint)
             const { error: updateError } = await supabase
               .from("employee_competencies")
@@ -224,9 +199,7 @@ const EmployeesPage = () => {
               });
 
             if (updateError) {
-              console.error(`❌ Failed to update competency ${comp.name}:`, updateError);
-            } else {
-              console.log(`✅ Successfully updated: ${comp.name} -> ${rating}%`);
+              // Silently log errors - can be enabled for debugging if needed
             }
 
             // Process subskills with proper upsert and detailed logging
@@ -296,21 +269,10 @@ const EmployeesPage = () => {
                       onConflict: 'employee_id,subskill_id'
                     });
                   
-                  if (upsertError) {
-                    console.error(`❌ Subskill upsert failed: ${aiSubskill.name} → ${matchedSubskill.name}:`, upsertError);
-                  } else {
-                    console.log(`  ✅ Subskill: ${aiSubskill.name} → ${matchedSubskill.name} (${subskillRating}%)`);
-                  }
+                  // Silently handle errors - can be enabled for debugging if needed
                 } else {
                   unmatchedSubskills.push(aiSubskill.name);
                 }
-              }
-              
-              // Log subskill matching summary for this competency
-              if (unmatchedSubskills.length > 0) {
-                console.warn(`  ⚠️ ${comp.name}: ${subskillMatchedCount}/${comp.subskills.length} subskills matched`);
-                console.warn(`     Unmatched: ${unmatchedSubskills.join(', ')}`);
-                console.log(`     DB subskills available: ${matchedEc.subskills.map(s => s.name).join(', ')}`);
               }
               
               // RECALCULATE competency level from subskill averages
@@ -340,11 +302,7 @@ const EmployeesPage = () => {
                       .eq("employee_id", employeeId)
                       .eq("competency_id", matchedEc.competencyId);
                     
-                    if (avgUpdateError) {
-                      console.error(`❌ Failed to update competency avg for ${comp.name}:`, avgUpdateError);
-                    } else {
-                      console.log(`📊 Recalculated ${comp.name} level: ${avgLevel}% (from ${validRatings.length} subskills)`);
-                    }
+                    // Silently handle errors - can be enabled for debugging if needed
                   }
                 }
               }
@@ -354,17 +312,6 @@ const EmployeesPage = () => {
           }
         }
       }
-
-      console.log('=== COMPETENCY MATCHING RESULTS ===');
-      console.log(`✅ Matched: ${matchedCount} competencies`);
-      console.log(`❌ Unmatched: ${unmatchedNames.length} competencies`);
-      if (unmatchedNames.length > 0) {
-        console.log('Unmatched names:', unmatchedNames);
-        console.log('DB competency names:', dbCompetencies.map(c => c.name));
-      }
-      console.log('=== END MATCHING RESULTS ===');
-
-      console.log('=== PROFILE SAVE COMPLETE ===');
 
       // Log audit event
       await supabase.rpc("log_audit_event", {
@@ -383,8 +330,6 @@ const EmployeesPage = () => {
 
       return { matched: matchedCount, unmatched: unmatchedNames };
     }
-
-    console.log('=== PROFILE SAVE COMPLETE (no competencies to match) ===');
 
     // Log audit event even if no competencies matched
     await supabase.rpc("log_audit_event", {

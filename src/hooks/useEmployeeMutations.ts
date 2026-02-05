@@ -6,8 +6,6 @@ import type { EmployeeFormData } from "@/components/employees/EmployeeFormDialog
 
 // Initialize employee competencies based on role profile (ONLY active, non-deprecated)
 async function initializeEmployeeCompetencies(employeeId: string, roleProfileId: string) {
-  console.log(`🔄 Initializing competencies for employee ${employeeId} with role profile ${roleProfileId}`);
-  
   // Get ONLY active competencies for this role profile (exclude deprecated)
   const { data: competencies, error: compError } = await supabase
     .from("competencies")
@@ -16,21 +14,13 @@ async function initializeEmployeeCompetencies(employeeId: string, roleProfileId:
     .neq("status", "deprecated") // Exclude deprecated competencies
     .eq("status", "active");     // Only active competencies
 
-  if (compError) {
-    console.error("Error fetching competencies:", compError);
+  if (compError || !competencies || competencies.length === 0) {
     return;
   }
-
-  if (!competencies || competencies.length === 0) {
-    console.log("No active competencies found for role profile:", roleProfileId);
-    return;
-  }
-
-  console.log(`📋 Found ${competencies.length} active competencies to assign:`, competencies.map(c => c.name));
 
   // Create employee_competencies with current_level = 0 using UPSERT to prevent duplicates
   for (const comp of competencies) {
-    const { error: insertError } = await supabase
+    await supabase
       .from("employee_competencies")
       .upsert({
         employee_id: employeeId,
@@ -43,10 +33,6 @@ async function initializeEmployeeCompetencies(employeeId: string, roleProfileId:
       }, {
         onConflict: 'employee_id,competency_id'
       });
-
-    if (insertError) {
-      console.error(`Error initializing competency ${comp.name}:`, insertError);
-    }
   }
 
   // Also initialize subskills for each competency
@@ -55,32 +41,21 @@ async function initializeEmployeeCompetencies(employeeId: string, roleProfileId:
     .select("id, name, competency_id")
     .in("competency_id", competencies.map(c => c.id));
 
-  if (subError) {
-    console.error("Error fetching subskills:", subError);
+  if (subError || !subskills || subskills.length === 0) {
     return;
   }
 
-  if (subskills && subskills.length > 0) {
-    console.log(`📋 Initializing ${subskills.length} subskills`);
-    
-    for (const sub of subskills) {
-      const { error: subInsertError } = await supabase
-        .from("employee_subskills")
-        .upsert({
-          employee_id: employeeId,
-          subskill_id: sub.id,
-          current_level: 0, // Will be filled by AI assessment
-        }, {
-          onConflict: 'employee_id,subskill_id'
-        });
-
-      if (subInsertError) {
-        console.error(`Error initializing subskill ${sub.name}:`, subInsertError);
-      }
-    }
+  for (const sub of subskills) {
+    await supabase
+      .from("employee_subskills")
+      .upsert({
+        employee_id: employeeId,
+        subskill_id: sub.id,
+        current_level: 0, // Will be filled by AI assessment
+      }, {
+        onConflict: 'employee_id,subskill_id'
+      });
   }
-
-  console.log(`✅ Employee competency initialization complete`);
 }
 
 export function useCreateEmployee() {
@@ -137,8 +112,7 @@ export function useCreateEmployee() {
       queryClient.invalidateQueries({ queryKey: ["org-stats"] });
       toast.success("Mitarbeiter erfolgreich angelegt");
     },
-    onError: (error) => {
-      console.error("Create employee error:", error);
+    onError: () => {
       toast.error("Fehler beim Anlegen des Mitarbeiters");
     },
   });
@@ -182,8 +156,7 @@ export function useUpdateEmployee() {
       queryClient.invalidateQueries({ queryKey: ["employee", variables.id] });
       toast.success("Änderungen gespeichert");
     },
-    onError: (error) => {
-      console.error("Update employee error:", error);
+    onError: () => {
       toast.error("Fehler beim Speichern der Änderungen");
     },
   });
@@ -217,8 +190,7 @@ export function useArchiveEmployee() {
       queryClient.invalidateQueries({ queryKey: ["org-stats"] });
       toast.success("Mitarbeiter archiviert");
     },
-    onError: (error) => {
-      console.error("Archive employee error:", error);
+    onError: () => {
       toast.error("Fehler beim Archivieren des Mitarbeiters");
     },
   });
@@ -236,10 +208,7 @@ export function usePermanentDeleteEmployee() {
         .delete()
         .eq("employee_id", id);
 
-      if (subskillError) {
-        console.error("Error deleting employee subskills:", subskillError);
-        throw subskillError;
-      }
+      if (subskillError) throw subskillError;
 
       // 2. Delete employee_competencies
       const { error: compError } = await supabase
@@ -247,10 +216,7 @@ export function usePermanentDeleteEmployee() {
         .delete()
         .eq("employee_id", id);
 
-      if (compError) {
-        console.error("Error deleting employee competencies:", compError);
-        throw compError;
-      }
+      if (compError) throw compError;
 
       // 3. Delete certifications
       const { error: certError } = await supabase
@@ -258,10 +224,7 @@ export function usePermanentDeleteEmployee() {
         .delete()
         .eq("employee_id", id);
 
-      if (certError) {
-        console.error("Error deleting certifications:", certError);
-        throw certError;
-      }
+      if (certError) throw certError;
 
       // 4. Delete learning_paths (and their modules via cascade)
       const { error: pathError } = await supabase
@@ -269,10 +232,7 @@ export function usePermanentDeleteEmployee() {
         .delete()
         .eq("employee_id", id);
 
-      if (pathError) {
-        console.error("Error deleting learning paths:", pathError);
-        throw pathError;
-      }
+      if (pathError) throw pathError;
 
       // 5. Finally delete the employee
       const { error: empError } = await supabase
@@ -295,8 +255,7 @@ export function usePermanentDeleteEmployee() {
       queryClient.invalidateQueries({ queryKey: ["org-stats"] });
       toast.success("Mitarbeiter endgültig gelöscht");
     },
-    onError: (error) => {
-      console.error("Permanent delete employee error:", error);
+    onError: () => {
       toast.error("Fehler beim Löschen des Mitarbeiters");
     },
   });

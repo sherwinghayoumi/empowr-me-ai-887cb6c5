@@ -116,7 +116,6 @@ export function useEmployeeSkills() {
         .single();
 
       if (error) {
-        console.error("Error fetching employee skills:", error);
         throw error;
       }
 

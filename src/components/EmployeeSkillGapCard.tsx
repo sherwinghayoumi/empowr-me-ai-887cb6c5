@@ -165,22 +165,22 @@ export function EmployeeSkillGapCard({
             <Button
               variant="default"
               size="sm"
-              className="w-full group"
+              className="w-full group overflow-hidden"
               onClick={() => setShowAIModal(true)}
             >
-              <Sparkles className="w-4 h-4 mr-2" />
-              AI Lernpfad generieren
-              <ChevronRight className="w-4 h-4 ml-auto transition-transform group-hover:translate-x-1" />
+              <Sparkles className="w-4 h-4 mr-2 shrink-0" />
+              <span className="truncate">AI Lernpfad generieren</span>
+              <ChevronRight className="w-4 h-4 ml-auto shrink-0 transition-transform group-hover:translate-x-1" />
             </Button>
             <Button
               variant="outline"
               size="sm"
-              className="w-full group"
+              className="w-full group overflow-hidden"
               onClick={() => setShowNotesModal(true)}
             >
-              <StickyNote className="w-4 h-4 mr-2" />
-              Admin Notizen
-              <ChevronRight className="w-4 h-4 ml-auto transition-transform group-hover:translate-x-1" />
+              <StickyNote className="w-4 h-4 mr-2 shrink-0" />
+              <span className="truncate">Admin Notizen</span>
+              <ChevronRight className="w-4 h-4 ml-auto shrink-0 transition-transform group-hover:translate-x-1" />
             </Button>
           </div>
         </GlassCardContent>

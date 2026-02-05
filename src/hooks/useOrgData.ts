@@ -123,21 +123,27 @@ export function useEmployee(employeeId: string) {
 // TEAMS
 // =====================================================
 
-export function useTeams() {
+export function useTeams(includeArchived = false) {
   const { organization } = useAuth();
   
   return useQuery({
-    queryKey: ['teams', organization?.id],
+    queryKey: ['teams', organization?.id, includeArchived],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from('teams')
         .select(`
           *,
-          members:employees(id, full_name, avatar_url, overall_score, role_profile:role_profiles(role_title))
+          members:employees(id, full_name, avatar_url, overall_score, team_role, role_profile:role_profiles!employees_role_profile_id_fkey(role_title))
         `)
         .eq('organization_id', organization?.id)
+        .order('priority', { ascending: false })
         .order('name');
       
+      if (!includeArchived) {
+        query = query.eq('is_archived', false);
+      }
+      
+      const { data, error } = await query;
       if (error) throw error;
       return data;
     },
@@ -145,33 +151,171 @@ export function useTeams() {
   });
 }
 
+interface CreateTeamData {
+  name: string;
+  description: string | null;
+  color?: string;
+  icon?: string;
+  tags?: string[];
+  priority?: number;
+  members?: { employeeId: string; role: string }[];
+}
+
 export function useCreateTeam() {
   const { organization } = useAuth();
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: async ({ name, description }: { name: string; description: string | null }) => {
+    mutationFn: async (data: CreateTeamData) => {
       if (!organization?.id) throw new Error('No organization');
       
-      const { data, error } = await supabase
+      // Create team
+      const { data: team, error } = await supabase
         .from('teams')
         .insert({
-          name,
-          description,
+          name: data.name,
+          description: data.description,
+          color: data.color || '#6366f1',
+          icon: data.icon || 'Users',
+          tags: data.tags || [],
+          priority: data.priority || 0,
           organization_id: organization.id,
         })
         .select()
         .single();
       
       if (error) throw error;
-      return data;
+      
+      // Assign members if provided
+      if (data.members && data.members.length > 0) {
+        const memberUpdates = data.members.map(m => 
+          supabase
+            .from('employees')
+            .update({ team_id: team.id, team_role: m.role || null })
+            .eq('id', m.employeeId)
+        );
+        await Promise.all(memberUpdates);
+      }
+      
+      return team;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['teams'] });
+      queryClient.invalidateQueries({ queryKey: ['employees'] });
       toast.success('Team erfolgreich erstellt');
     },
-    onError: (error) => {
+    onError: () => {
       toast.error('Fehler beim Erstellen des Teams');
+    },
+  });
+}
+
+interface UpdateTeamData extends CreateTeamData {
+  id: string;
+  isArchived?: boolean;
+}
+
+export function useUpdateTeam() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async (data: UpdateTeamData) => {
+      // Update team
+      const { data: team, error } = await supabase
+        .from('teams')
+        .update({
+          name: data.name,
+          description: data.description,
+          color: data.color,
+          icon: data.icon,
+          tags: data.tags,
+          priority: data.priority,
+          is_archived: data.isArchived || false,
+        })
+        .eq('id', data.id)
+        .select()
+        .single();
+      
+      if (error) throw error;
+      
+      // Remove current members from this team
+      await supabase
+        .from('employees')
+        .update({ team_id: null, team_role: null })
+        .eq('team_id', data.id);
+      
+      // Assign new members
+      if (data.members && data.members.length > 0) {
+        const memberUpdates = data.members.map(m => 
+          supabase
+            .from('employees')
+            .update({ team_id: team.id, team_role: m.role || null })
+            .eq('id', m.employeeId)
+        );
+        await Promise.all(memberUpdates);
+      }
+      
+      return team;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['teams'] });
+      queryClient.invalidateQueries({ queryKey: ['employees'] });
+      toast.success('Team erfolgreich aktualisiert');
+    },
+    onError: () => {
+      toast.error('Fehler beim Aktualisieren des Teams');
+    },
+  });
+}
+
+export function useDeleteTeam() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async (teamId: string) => {
+      // Remove members from team first
+      await supabase
+        .from('employees')
+        .update({ team_id: null, team_role: null })
+        .eq('team_id', teamId);
+      
+      // Delete team
+      const { error } = await supabase
+        .from('teams')
+        .delete()
+        .eq('id', teamId);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['teams'] });
+      queryClient.invalidateQueries({ queryKey: ['employees'] });
+      toast.success('Team erfolgreich gelöscht');
+    },
+    onError: () => {
+      toast.error('Fehler beim Löschen des Teams');
+    },
+  });
+}
+
+export function useArchiveTeam() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async ({ teamId, archive }: { teamId: string; archive: boolean }) => {
+      const { error } = await supabase
+        .from('teams')
+        .update({ is_archived: archive })
+        .eq('id', teamId);
+      
+      if (error) throw error;
+    },
+    onSuccess: (_, { archive }) => {
+      queryClient.invalidateQueries({ queryKey: ['teams'] });
+      toast.success(archive ? 'Team archiviert' : 'Team wiederhergestellt');
+    },
+    onError: () => {
+      toast.error('Fehler bei der Archivierung');
     },
   });
 }

@@ -33,6 +33,7 @@ import {
 } from "lucide-react";
 import { useReports, type Report } from "@/hooks/useReports";
 import { cn } from "@/lib/utils";
+import { MarkdownRenderer } from "@/components/reports/MarkdownRenderer";
 
 const ReportsPage = () => {
   const { reports, isLoading } = useReports();
@@ -395,12 +396,8 @@ function ReportReader({ report, onBack }: ReportReaderProps) {
             <GlassCardContent className="pt-6">
               <TabsContent value="summary" className="mt-0">
                 {report.executive_summary ? (
-                  <div className="prose prose-sm dark:prose-invert max-w-none">
-                    <div className="p-6 rounded-lg bg-muted/30">
-                      <div className="whitespace-pre-wrap text-foreground leading-relaxed">
-                        {report.executive_summary}
-                      </div>
-                    </div>
+                  <div className="p-6 rounded-lg bg-muted/30">
+                    <MarkdownRenderer content={report.executive_summary} />
                   </div>
                 ) : (
                   <div className="text-center py-12 text-muted-foreground">
@@ -413,12 +410,8 @@ function ReportReader({ report, onBack }: ReportReaderProps) {
               <TabsContent value="full" className="mt-0">
                 {report.full_report_markdown ? (
                   <ScrollArea className="h-[calc(100vh-400px)] min-h-[400px]">
-                    <div className="prose prose-sm dark:prose-invert max-w-none">
-                      <div className="p-6 rounded-lg bg-muted/30">
-                        <div className="whitespace-pre-wrap text-foreground leading-relaxed">
-                          {report.full_report_markdown}
-                        </div>
-                      </div>
+                    <div className="p-6 rounded-lg bg-muted/30">
+                      <MarkdownRenderer content={report.full_report_markdown} />
                     </div>
                   </ScrollArea>
                 ) : (

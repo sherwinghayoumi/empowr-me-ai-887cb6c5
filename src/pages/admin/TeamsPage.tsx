@@ -4,15 +4,43 @@ import { EmployeeProfile } from "@/components/EmployeeProfile";
 import { GlassCard, GlassCardContent, GlassCardHeader, GlassCardTitle } from "@/components/GlassCard";
 import { ScrollReveal } from "@/components/ScrollReveal";
 import { AnimatedCounter } from "@/components/AnimatedCounter";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Users } from "lucide-react";
-import { useTeams } from "@/hooks/useOrgData";
+import { Users, Plus } from "lucide-react";
+import { useTeams, useCreateTeam } from "@/hooks/useOrgData";
+import { toast } from "sonner";
 
 const TeamsPage = () => {
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string | null>(null);
+  const [addTeamDialogOpen, setAddTeamDialogOpen] = useState(false);
+  const [newTeamName, setNewTeamName] = useState("");
+  const [newTeamDescription, setNewTeamDescription] = useState("");
   const { data: teams, isLoading } = useTeams();
+  const createTeam = useCreateTeam();
+
+  const handleAddTeam = async () => {
+    if (!newTeamName.trim()) {
+      toast.error("Bitte geben Sie einen Team-Namen ein");
+      return;
+    }
+    
+    try {
+      await createTeam.mutateAsync({
+        name: newTeamName.trim(),
+        description: newTeamDescription.trim() || null,
+      });
+      setAddTeamDialogOpen(false);
+      setNewTeamName("");
+      setNewTeamDescription("");
+    } catch (error) {
+      // Error handled by mutation
+    }
+  };
 
   if (isLoading) {
     return (
@@ -35,7 +63,13 @@ const TeamsPage = () => {
       <Header variant="admin" />
       <main className="container py-8">
         <ScrollReveal>
-          <h1 className="text-3xl font-bold text-foreground mb-8">Teams</h1>
+          <div className="flex items-center justify-between mb-8">
+            <h1 className="text-3xl font-bold text-foreground">Teams</h1>
+            <Button onClick={() => setAddTeamDialogOpen(true)}>
+              <Plus className="w-4 h-4 mr-2" />
+              Team hinzufügen
+            </Button>
+          </div>
         </ScrollReveal>
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {teams?.map((team, index) => (
@@ -85,6 +119,7 @@ const TeamsPage = () => {
           ))}
         </div>
       </main>
+      {/* Employee Profile Dialog */}
       <Dialog open={!!selectedEmployeeId} onOpenChange={() => setSelectedEmployeeId(null)}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto glass">
           {selectedEmployeeId && (
@@ -93,6 +128,44 @@ const TeamsPage = () => {
               onClose={() => setSelectedEmployeeId(null)} 
             />
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Team Dialog */}
+      <Dialog open={addTeamDialogOpen} onOpenChange={setAddTeamDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Neues Team erstellen</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="team-name">Team Name *</Label>
+              <Input
+                id="team-name"
+                value={newTeamName}
+                onChange={(e) => setNewTeamName(e.target.value)}
+                placeholder="z.B. Corporate Advisory"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="team-description">Beschreibung (optional)</Label>
+              <Textarea
+                id="team-description"
+                value={newTeamDescription}
+                onChange={(e) => setNewTeamDescription(e.target.value)}
+                placeholder="Kurze Beschreibung des Teams..."
+                rows={3}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAddTeamDialogOpen(false)}>
+              Abbrechen
+            </Button>
+            <Button onClick={handleAddTeam} disabled={createTeam.isPending}>
+              {createTeam.isPending ? "Erstelle..." : "Team erstellen"}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

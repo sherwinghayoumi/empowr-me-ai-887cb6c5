@@ -1,6 +1,7 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { toast } from 'sonner';
 
 // =====================================================
 // EMPLOYEES
@@ -141,6 +142,37 @@ export function useTeams() {
       return data;
     },
     enabled: !!organization?.id
+  });
+}
+
+export function useCreateTeam() {
+  const { organization } = useAuth();
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async ({ name, description }: { name: string; description: string | null }) => {
+      if (!organization?.id) throw new Error('No organization');
+      
+      const { data, error } = await supabase
+        .from('teams')
+        .insert({
+          name,
+          description,
+          organization_id: organization.id,
+        })
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['teams'] });
+      toast.success('Team erfolgreich erstellt');
+    },
+    onError: (error) => {
+      toast.error('Fehler beim Erstellen des Teams');
+    },
   });
 }
 

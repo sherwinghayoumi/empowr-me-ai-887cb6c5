@@ -46,8 +46,7 @@ export function useUsers() {
       queryClient.invalidateQueries({ queryKey: ['super-admin-users'] });
       toast.success('Benutzer aktualisiert');
     },
-    onError: (error) => {
-      console.error('Error updating user:', error);
+    onError: () => {
       toast.error('Fehler beim Aktualisieren');
     },
   });
@@ -66,8 +65,7 @@ export function useUsers() {
       queryClient.invalidateQueries({ queryKey: ['super-admin-users'] });
       toast.success('Benutzer gelöscht');
     },
-    onError: (error) => {
-      console.error('Error deleting user:', error);
+    onError: () => {
       toast.error('Fehler beim Löschen');
     },
   });

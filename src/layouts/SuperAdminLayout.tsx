@@ -65,8 +65,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
       await signOut();
       toast.success('Erfolgreich abgemeldet');
       navigate('/login');
-    } catch (error) {
-      console.error('Logout error:', error);
+    } catch {
       toast.error('Fehler beim Abmelden');
     }
   };
@@ -168,8 +167,7 @@ export function SuperAdminLayout() {
       await signOut();
       toast.success('Erfolgreich abgemeldet');
       navigate('/login');
-    } catch (error) {
-      console.error('Logout error:', error);
+    } catch {
       toast.error('Fehler beim Abmelden');
     }
   };

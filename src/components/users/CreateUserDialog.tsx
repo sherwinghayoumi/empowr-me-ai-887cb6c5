@@ -100,7 +100,6 @@ export function CreateUserDialog({
       onSuccess();
       handleClose();
     } catch (error: any) {
-      console.error('Error creating user:', error);
       setError(error.message || 'Fehler beim Erstellen des Benutzers');
     } finally {
       setIsCreating(false);

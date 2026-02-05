@@ -35,8 +35,7 @@ export function Header({ variant }: HeaderProps) {
     try {
       await signOut();
       toast.success('Erfolgreich abgemeldet');
-    } catch (error) {
-      console.error('Logout error:', error);
+    } catch {
       toast.error('Fehler beim Abmelden');
     }
   };

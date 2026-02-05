@@ -20,7 +20,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .single();
 
       if (error) {
-        console.error('Error fetching profile:', error);
         return null;
       }
 
@@ -41,8 +40,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       };
 
       return profile;
-    } catch (error) {
-      console.error('Error fetching profile:', error);
+    } catch {
       return null;
     }
   }, []);
@@ -56,13 +54,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .single();
 
       if (error) {
-        console.error('Error fetching organization:', error);
         return null;
       }
 
       return data as Organization;
-    } catch (error) {
-      console.error('Error fetching organization:', error);
+    } catch {
       return null;
     }
   }, []);
@@ -95,8 +91,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log('Auth state changed:', event);
-        
         if (event === 'SIGNED_OUT') {
           setUser(null);
           setProfile(null);

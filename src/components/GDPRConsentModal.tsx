@@ -62,16 +62,12 @@ export function GDPRConsentModal({ open, onConsentGiven }: GDPRConsentModalProps
         },
       });
 
-      if (auditError) {
-        console.error('Audit log error:', auditError);
-        // Don't fail the consent process for audit log errors
-      }
+      // Don't fail the consent process for audit log errors
 
       await refreshProfile();
       toast.success('Einwilligung erfolgreich gespeichert');
       onConsentGiven();
-    } catch (error) {
-      console.error('Error saving consent:', error);
+    } catch {
       toast.error('Fehler beim Speichern der Einwilligung');
     } finally {
       setIsSubmitting(false);

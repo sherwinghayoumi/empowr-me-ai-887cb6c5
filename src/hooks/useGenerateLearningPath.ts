@@ -102,8 +102,7 @@ export function useSaveLearningPath() {
         description: "Der AI-generierte Lernpfad wurde erfolgreich erstellt.",
       });
     },
-    onError: (error) => {
-      console.error('Error saving learning path:', error);
+    onError: () => {
       toast({
         title: "Fehler beim Speichern",
         description: "Der Lernpfad konnte nicht gespeichert werden.",

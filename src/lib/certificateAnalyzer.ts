@@ -21,7 +21,6 @@ export async function analyzeCertificate(
   });
 
   if (error) {
-    console.error('Certificate analysis error:', error);
     throw new Error(error.message || 'Fehler bei der Zertifikat-Analyse');
   }
 
@@ -53,7 +52,6 @@ export async function analyzeCertificateImage(
   });
 
   if (error) {
-    console.error('Certificate image analysis error:', error);
     throw new Error(error.message || 'Fehler bei der Zertifikat-Bild-Analyse');
   }
 

@@ -140,8 +140,8 @@ export function LearningPathGeneratorModal({
       setGeneratedPath(result);
       setSelectedModules(new Set(result.modules.map((_, i) => i)));
       setHasGenerated(true);
-    } catch (error) {
-      console.error('Error generating learning path:', error);
+    } catch {
+      // Error handling already done by the hook
     }
   };
 

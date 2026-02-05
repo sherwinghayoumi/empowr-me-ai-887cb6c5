@@ -99,8 +99,7 @@ export function EmployeeLearningPathsTab({ learningPaths, employeeName, employee
       queryClient.invalidateQueries({ queryKey: ['employee', employeeId] });
       setDeletePathId(null);
     },
-    onError: (error) => {
-      console.error('Delete error:', error);
+    onError: () => {
       toast.error("Fehler beim Löschen des Lernpfads");
     }
   });
@@ -142,8 +141,7 @@ export function EmployeeLearningPathsTab({ learningPaths, employeeName, employee
       queryClient.invalidateQueries({ queryKey: ['employee', employeeId] });
       setShowCertificateHint(true);
     },
-    onError: (error) => {
-      console.error('Complete error:', error);
+    onError: () => {
       toast.error("Fehler beim Abschließen des Lernpfads");
     }
   });

@@ -1,5 +1,5 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { StrengthsWeaknessesRadar } from "./StrengthsWeaknessesRadar";
+import { SwipeableRadarChart } from "./SwipeableRadarChart";
 import { Target } from "lucide-react";
 
 interface SkillData {
@@ -8,6 +8,7 @@ interface SkillData {
   currentLevel: number;
   demandedLevel: number;
   futureLevel?: number;
+  clusterName?: string;
 }
 
 interface RadarChartModalProps {
@@ -38,7 +39,7 @@ export function RadarChartModal({
         
         <div className="py-4">
           {/* Large Radar Chart */}
-          <StrengthsWeaknessesRadar 
+          <SwipeableRadarChart 
             skills={skills} 
             className="h-[500px]"
             showDemanded={true}

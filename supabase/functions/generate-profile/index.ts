@@ -324,12 +324,12 @@ Antworte NUR mit validem JSON im folgenden Schema:
             "confidence": "HIGH" | "MEDIUM" | "LOW",
             "selfRating": number oder null,
             "managerRating": number oder null,
-            "evidenceSummary": "Begründung",
+            "evidenceSummary": "max 10 Wörter",
             "subskills": [
               {
                 "name": "EXAKT wie oben definiert",
                 "rating": 1-5,
-                "evidence": "Kurze Begründung"
+                "evidence": "max 5 Wörter"
               }
             ]
           }
@@ -343,16 +343,16 @@ Antworte NUR mit validem JSON im folgenden Schema:
       {
         "competency": "Name",
         "rating": number,
-        "evidence": "Begründung"
+        "evidence": "max 10 Wörter"
       }
     ],
     "developmentAreas": [
       {
         "competency": "Name",
-        "currentRating": number oder "NB",
+        "currentRating": number,
         "targetRating": number,
-        "gap": "Beschreibung",
-        "recommendation": "Empfehlung"
+        "gap": "max 5 Wörter",
+        "recommendation": "max 10 Wörter"
       }
     ],
     "promotionReadiness": {
@@ -371,9 +371,10 @@ Antworte NUR mit validem JSON im folgenden Schema:
 WICHTIGE REGELN:
 1. Verwende NUR die oben definierten Cluster-, Kompetenz- und Subskill-Namen!
 2. Bewerte ALLE Kompetenzen in ALLEN oben aufgelisteten Clustern für diese Rolle!
-3. Vergib IMMER ein numerisches Rating (1-5) – NIEMALS "NB"! Bei wenig Evidence: Rating schätzen + Confidence "LOW".
-4. Overall Score = gewichteter Durchschnitt aller bewerteten Kompetenzen (Rating 1=20%, 2=40%, 3=60%, 4=80%, 5=100%)
-5. Antworte NUR mit JSON - keine Erklärungen davor oder danach!`;
+3. Vergib IMMER ein numerisches Rating (1-5) – NIEMALS "NB"!
+4. Overall Score = gewichteter Durchschnitt aller Kompetenzen (1=20%, 2=40%, 3=60%, 4=80%, 5=100%)
+5. Antworte NUR mit JSON - keine Erklärungen davor oder danach!
+6. HALTE ALLE Textfelder (evidence, gap, recommendation) EXTREM KURZ (max 10 Wörter)! Kürze ist kritisch!`;
 }
 
 serve(async (req) => {

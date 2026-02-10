@@ -731,7 +731,6 @@ Erstelle das Kompetenzprofil als JSON. Verwende EXAKT die im System definierten 
     const allowedClusters = getClustersForRole(roleTitle);
 
     console.log("Using DB competency schema:", !!dbCompetencySchema, "count:", dbCompetencySchema?.length || 0);
-    const allowedClusters = getClustersForRole(roleTitle);
 
     console.log("Calling Anthropic API with role:", roleTitle);
     console.log("Normalized role:", normalizeRoleKey(roleTitle));

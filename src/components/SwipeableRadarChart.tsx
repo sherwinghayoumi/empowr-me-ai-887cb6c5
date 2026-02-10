@@ -58,7 +58,7 @@ export function SwipeableRadarChart({
   skills,
   showDemanded = true,
   className,
-  maxPerChart = 12,
+  maxPerChart = 15,
 }: SwipeableRadarChartProps) {
   const [activeIndex, setActiveIndex] = useState(0);
 

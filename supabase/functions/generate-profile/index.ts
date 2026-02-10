@@ -424,7 +424,7 @@ Erstelle das Kompetenzprofil als JSON. Verwende EXAKT die im System definierten 
       },
       body: JSON.stringify({
         model: "claude-sonnet-4-20250514",
-        max_tokens: 10000,
+        max_tokens: 16000,
         system: systemPrompt,
         messages: [
           { role: "user", content: userPrompt },
@@ -449,9 +449,16 @@ Erstelle das Kompetenzprofil als JSON. Verwende EXAKT die im System definierten 
 
     const data = await response.json();
     const content = data.content?.[0]?.text;
+    const stopReason = data.stop_reason;
 
     console.log("AI response length:", content?.length);
+    console.log("Stop reason:", stopReason);
     console.log("AI response preview:", content?.substring(0, 500));
+
+    // Check if response was truncated
+    if (stopReason === "max_tokens") {
+      console.warn("Response was truncated by max_tokens limit!");
+    }
 
     // JSON aus Antwort extrahieren
     const jsonMatch = content.match(/\{[\s\S]*\}/);
@@ -463,7 +470,41 @@ Erstelle das Kompetenzprofil als JSON. Verwende EXAKT die im System definierten 
       );
     }
 
-    const profile = JSON.parse(jsonMatch[0]);
+    let jsonStr = jsonMatch[0];
+    
+    // Attempt to repair truncated JSON by closing open structures
+    let profile;
+    try {
+      profile = JSON.parse(jsonStr);
+    } catch (parseError) {
+      console.warn("JSON parse failed, attempting repair...", (parseError as Error).message);
+      // Count open vs close braces/brackets and close them
+      let openBraces = 0, openBrackets = 0;
+      for (const ch of jsonStr) {
+        if (ch === '{') openBraces++;
+        else if (ch === '}') openBraces--;
+        else if (ch === '[') openBrackets++;
+        else if (ch === ']') openBrackets--;
+      }
+      // Trim trailing comma or incomplete value
+      jsonStr = jsonStr.replace(/,\s*$/, '');
+      // Remove incomplete last key-value pair (e.g. truncated string)
+      jsonStr = jsonStr.replace(/,\s*"[^"]*"?\s*:?\s*"?[^"]*$/, '');
+      // Close open brackets and braces
+      for (let i = 0; i < openBrackets; i++) jsonStr += ']';
+      for (let i = 0; i < openBraces; i++) jsonStr += '}';
+      
+      try {
+        profile = JSON.parse(jsonStr);
+        console.log("JSON repair successful");
+      } catch (repairError) {
+        console.error("JSON repair also failed:", (repairError as Error).message);
+        return new Response(
+          JSON.stringify({ error: "KI-Antwort war unvollständig. Bitte erneut versuchen." }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    }
 
     // Validierung: Prüfe ob Cluster-Namen korrekt sind
     const validClusters = Object.keys(COMPETENCY_SCHEMA);

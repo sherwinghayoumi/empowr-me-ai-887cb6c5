@@ -323,9 +323,23 @@ export default function SuperAdminUsers() {
                       {getRoleBadge(user.role, user.is_super_admin)}
                     </TableCell>
                     <TableCell className="hidden md:table-cell">
-                      {user.organizations?.name || (
-                        <span className="text-muted-foreground">-</span>
-                      )}
+                      <Select
+                        value={user.organization_id || 'none'}
+                        onValueChange={(value) => {
+                          const newOrgId = value === 'none' ? null : value;
+                          handleUpdateUser(user.id, { organization_id: newOrgId });
+                        }}
+                      >
+                        <SelectTrigger className="h-8 w-[180px] text-xs">
+                          <SelectValue placeholder="Keine Organisation" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">Keine Organisation</SelectItem>
+                          {organizations?.map(org => (
+                            <SelectItem key={org.id} value={org.id}>{org.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </TableCell>
                     <TableCell className="hidden lg:table-cell">
                       {user.gdpr_consent_given_at ? (

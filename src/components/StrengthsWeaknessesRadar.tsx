@@ -30,18 +30,21 @@ export function StrengthsWeaknessesRadar({
   className,
 }: StrengthsWeaknessesRadarProps) {
   const radarData = useMemo(() => {
-    return skills.map((skill) => {
-      const name = skill.skillName || skill.skillId;
-      // Truncate long names for better display
-      const shortName = name.length > 15 ? name.substring(0, 12) + "..." : name;
-      
-      return {
-        subject: shortName,
-        fullName: name,
-        current: capLevel(skill.currentLevel),
-        demanded: capLevel(skill.demandedLevel),
-      };
-    });
+    // Filter out skills with NULL/undefined currentLevel (not yet assessed)
+    return skills
+      .filter((skill) => skill.currentLevel != null)
+      .map((skill) => {
+        const name = skill.skillName || skill.skillId;
+        // Truncate long names for better display
+        const shortName = name.length > 15 ? name.substring(0, 12) + "..." : name;
+        
+        return {
+          subject: shortName,
+          fullName: name,
+          current: capLevel(skill.currentLevel),
+          demanded: capLevel(skill.demandedLevel),
+        };
+      });
   }, [skills]);
 
   // Calculate appropriate height based on className

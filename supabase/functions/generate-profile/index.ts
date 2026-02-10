@@ -707,10 +707,6 @@ serve(async (req) => {
   try {
     const { cvText, selfText, managerText, roleTitle, dbCompetencySchema } = await req.json();
     
-    const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
-    if (!ANTHROPIC_API_KEY) {
-      throw new Error("ANTHROPIC_API_KEY is not configured");
-    }
 
     const userPrompt = `
 ROLLE: ${roleTitle}
@@ -737,36 +733,47 @@ Erstelle das Kompetenzprofil als JSON. Verwende EXAKT die im System definierten 
     console.log("Allowed clusters:", allowedClusters);
     console.log("System prompt length:", systemPrompt.length);
 
-    const response = await fetch("https://api.anthropic.com/v1/messages", {
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    if (!LOVABLE_API_KEY) {
+      throw new Error("LOVABLE_API_KEY is not configured");
+    }
+
+    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "x-api-key": ANTHROPIC_API_KEY,
-        "anthropic-version": "2023-06-01",
+        "Authorization": `Bearer ${LOVABLE_API_KEY}`,
       },
       body: JSON.stringify({
-        model: "claude-sonnet-4-20250514",
-        max_tokens: 16000,
-        system: systemPrompt,
-        messages: [{ role: "user", content: userPrompt }],
+        model: "google/gemini-2.5-flash",
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPrompt },
+        ],
+        max_tokens: 8000,
       }),
     });
 
     if (!response.ok) {
-      const err = await response.json();
-      console.error("Anthropic API error:", err);
+      const err = await response.text();
+      console.error("AI Gateway error:", response.status, err);
+      if (response.status === 429) {
+        return new Response(
+          JSON.stringify({ error: "Rate limit erreicht. Bitte versuchen Sie es in einer Minute erneut." }),
+          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
       return new Response(
-        JSON.stringify({ error: err.error?.message || "Claude API Fehler" }),
+        JSON.stringify({ error: "KI-API Fehler: " + response.status }),
         { status: response.status, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
     const data = await response.json();
-    const content = data.content[0]?.text;
+    const content = data.choices?.[0]?.message?.content;
 
-    // Logging für Debugging
-    console.log("Claude response length:", content?.length);
-    console.log("Claude response preview:", content?.substring(0, 500));
+    console.log("AI response length:", content?.length);
+    console.log("AI response preview:", content?.substring(0, 500));
 
     // JSON aus Antwort extrahieren
     const jsonMatch = content.match(/\{[\s\S]*\}/);

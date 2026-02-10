@@ -3,7 +3,7 @@ import { useEmployee } from "@/hooks/useOrgData";
 import { useQueryClient } from "@tanstack/react-query";
 import { CompetencyBar } from "./CompetencyBar";
 import { SubSkillModal } from "./SubSkillModal";
-import { StrengthsWeaknessesRadar } from "./StrengthsWeaknessesRadar";
+import { SwipeableRadarChart } from "./SwipeableRadarChart";
 import { RadarChartModal } from "./RadarChartModal";
 import { EmployeeSkillGapCard } from "./EmployeeSkillGapCard";
 import { CertificateUploadModal } from "./CertificateUploadModal";
@@ -226,7 +226,8 @@ export function EmployeeProfile({ employeeId, onClose }: EmployeeProfileProps) {
       skillName: comp.name,
       currentLevel: comp.currentLevel,
       demandedLevel: comp.demandedLevel,
-      futureLevel: comp.futureLevel
+      futureLevel: comp.futureLevel,
+      clusterName: comp.clusterName,
     }));
   }, [mappedCompetencies]);
 
@@ -418,7 +419,7 @@ export function EmployeeProfile({ employeeId, onClose }: EmployeeProfileProps) {
             <p className="text-sm text-muted-foreground">Kompetenzübersicht auf einen Blick</p>
           </GlassCardHeader>
           <GlassCardContent>
-            <StrengthsWeaknessesRadar skills={radarSkills} />
+            <SwipeableRadarChart skills={radarSkills} />
           </GlassCardContent>
         </GlassCard>
       </ScrollReveal>

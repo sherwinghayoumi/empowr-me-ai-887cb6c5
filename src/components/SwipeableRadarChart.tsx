@@ -58,12 +58,13 @@ export function SwipeableRadarChart({
   skills,
   showDemanded = true,
   className,
-  maxPerChart = 10,
+  maxPerChart = 12,
 }: SwipeableRadarChartProps) {
   const [activeIndex, setActiveIndex] = useState(0);
 
+  const minPerChart = 5;
+
   const groups = useMemo<ChartGroup[]>(() => {
-    // If 10 or fewer, show all in one chart
     if (skills.length <= maxPerChart) {
       return [{
         label: "Gesamtübersicht",
@@ -80,61 +81,88 @@ export function SwipeableRadarChart({
       clusterMap.get(cluster)!.push(s);
     });
 
-    const result: ChartGroup[] = [];
-    let overflow: SkillData[] = [];
-    let overflowLabels: string[] = [];
+    // First pass: collect clusters
+    const rawGroups: ChartGroup[] = [];
+    const smallClusters: { label: string; items: SkillData[] }[] = [];
 
     clusterMap.forEach((items, label) => {
-      if (items.length >= 3) {
+      if (items.length >= minPerChart) {
+        // Split if too large
         if (items.length > maxPerChart) {
           for (let i = 0; i < items.length; i += maxPerChart) {
             const chunk = items.slice(i, i + maxPerChart);
             const part = Math.floor(i / maxPerChart) + 1;
-            result.push({
-              label: `${label} (Teil ${part})`,
+            rawGroups.push({
+              label: items.length > maxPerChart ? `${label} (Teil ${part})` : label,
               description: getClusterDescription(label),
               skills: chunk,
             });
           }
         } else {
-          result.push({
-            label,
-            description: getClusterDescription(label),
-            skills: items,
-          });
+          rawGroups.push({ label, description: getClusterDescription(label), skills: items });
         }
       } else {
-        overflow.push(...items);
-        overflowLabels.push(label);
-        if (overflow.length >= maxPerChart) {
-          const chunk = overflow.splice(0, maxPerChart);
-          result.push({
-            label: overflowLabels.join(" & "),
-            description: getMergedDescription(overflowLabels),
-            skills: chunk,
-          });
-          overflowLabels = [];
-        }
+        smallClusters.push({ label, items });
       }
     });
 
-    if (overflow.length > 0) {
-      const last = result[result.length - 1];
-      if (last && last.skills.length + overflow.length <= maxPerChart) {
-        last.skills.push(...overflow);
-        last.label += ` & ${overflowLabels.join(" & ")}`;
-        last.description = getMergedDescription([last.label, ...overflowLabels]);
-      } else {
-        result.push({
-          label: overflowLabels.join(" & ") || "Weitere Kompetenzen",
-          description: getMergedDescription(overflowLabels),
-          skills: overflow,
+    // Second pass: merge small clusters into groups of minPerChart..maxPerChart
+    let bucket: SkillData[] = [];
+    let bucketLabels: string[] = [];
+
+    const flushBucket = () => {
+      if (bucket.length > 0) {
+        rawGroups.push({
+          label: bucketLabels.join(" & "),
+          description: getMergedDescription(bucketLabels),
+          skills: [...bucket],
         });
+        bucket = [];
+        bucketLabels = [];
+      }
+    };
+
+    smallClusters.forEach(({ label, items }) => {
+      bucket.push(...items);
+      bucketLabels.push(label);
+      if (bucket.length >= maxPerChart) {
+        flushBucket();
+      }
+    });
+
+    // Remaining bucket: merge into an existing group if too small
+    if (bucket.length > 0 && bucket.length < minPerChart) {
+      // Find the smallest existing group that can absorb them
+      const candidate = rawGroups
+        .filter((g) => g.skills.length + bucket.length <= maxPerChart)
+        .sort((a, b) => a.skills.length - b.skills.length)[0];
+
+      if (candidate) {
+        candidate.skills.push(...bucket);
+        candidate.label += ` & ${bucketLabels.join(" & ")}`;
+        candidate.description = getMergedDescription([candidate.label]);
+      } else {
+        flushBucket();
+      }
+    } else {
+      flushBucket();
+    }
+
+    // Final pass: ensure no group is below min by merging adjacent small groups
+    const final: ChartGroup[] = [];
+    for (const group of rawGroups) {
+      const prev = final[final.length - 1];
+      if (prev && prev.skills.length < minPerChart && prev.skills.length + group.skills.length <= maxPerChart) {
+        prev.skills.push(...group.skills);
+        prev.label += ` & ${group.label}`;
+        prev.description = getMergedDescription([prev.label]);
+      } else {
+        final.push(group);
       }
     }
 
-    return result;
-  }, [skills, maxPerChart]);
+    return final;
+  }, [skills, maxPerChart, minPerChart]);
 
   const totalGroups = groups.length;
   const current = groups[activeIndex] || groups[0];

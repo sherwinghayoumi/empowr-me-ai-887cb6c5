@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils';
 import { parseAllDocuments } from '@/lib/documentParser';
 import { generateProfile } from '@/lib/profileGenerator';
 import { GeneratedProfile, UploadedDocuments } from '@/types/profileGeneration';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
 interface ProfileGenerationModalProps {
@@ -16,7 +17,7 @@ interface ProfileGenerationModalProps {
   employee: {
     id: string;
     full_name: string;
-    role_profile: { role_key: string } | null;
+    role_profile: { id: string; role_key: string } | null;
   };
   onProfileGenerated: (profile: GeneratedProfile) => void;
 }
@@ -86,9 +87,34 @@ export function ProfileGenerationModal({
       // Generate profile with proper role key fallback
       const roleKey = employee.role_profile?.role_key || 'mid-level_associate_(mla)';
       
+      // Query ACTUAL DB competencies for this employee's role profile
+      // This ensures the AI uses EXACT DB names - no fuzzy matching needed
+      let dbCompetencySchema: Array<{ clusterName: string; competencyName: string; subskills: string[] }> = [];
+      if (employee.role_profile?.id) {
+        const { data: dbComps } = await supabase
+          .from('competencies')
+          .select(`
+            name,
+            cluster:competency_clusters(name),
+            subskills(name)
+          `)
+          .eq('role_profile_id', employee.role_profile.id)
+          .eq('status', 'active');
+
+        if (dbComps && dbComps.length > 0) {
+          dbCompetencySchema = dbComps.map((c: any) => ({
+            clusterName: c.cluster?.name || 'Uncategorized',
+            competencyName: c.name,
+            subskills: (c.subskills || []).map((s: any) => s.name),
+          }));
+          console.log(`Loaded ${dbCompetencySchema.length} competencies from DB for role profile`);
+        }
+      }
+
       const profile = await generateProfile(
         parsedDocs,
-        roleKey
+        roleKey,
+        dbCompetencySchema.length > 0 ? dbCompetencySchema : undefined
       );
 
       // Validate profile structure

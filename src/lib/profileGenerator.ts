@@ -10,7 +10,8 @@ import { GeneratedProfile } from '@/types/profileGeneration';
  */
 export async function generateProfile(
   documents: { cvText: string; selfText: string; managerText: string },
-  roleTitle: string
+  roleTitle: string,
+  dbCompetencySchema?: Array<{ clusterName: string; competencyName: string; subskills: string[] }>
 ): Promise<GeneratedProfile> {
   const { data, error } = await supabase.functions.invoke('generate-profile', {
     body: {
@@ -18,6 +19,7 @@ export async function generateProfile(
       selfText: documents.selfText,
       managerText: documents.managerText,
       roleTitle,
+      dbCompetencySchema,
     },
   });
 

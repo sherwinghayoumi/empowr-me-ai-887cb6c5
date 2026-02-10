@@ -18,14 +18,14 @@ async function initializeEmployeeCompetencies(employeeId: string, roleProfileId:
     return;
   }
 
-  // Create employee_competencies with current_level = 0 using UPSERT to prevent duplicates
+  // Create employee_competencies with current_level = NULL (not yet assessed) using UPSERT
   for (const comp of competencies) {
     await supabase
       .from("employee_competencies")
       .upsert({
         employee_id: employeeId,
         competency_id: comp.id,
-        current_level: 0, // Will be filled by AI assessment
+        current_level: null, // NULL = not yet assessed, will be filled by AI
         demanded_level: comp.demand_weight || 50,
         future_level: comp.future_demand_max || comp.demand_weight || 70,
         gap_to_current: comp.demand_weight || 50, // Maximum gap at start
@@ -51,7 +51,7 @@ async function initializeEmployeeCompetencies(employeeId: string, roleProfileId:
       .upsert({
         employee_id: employeeId,
         subskill_id: sub.id,
-        current_level: 0, // Will be filled by AI assessment
+        current_level: null, // NULL = not yet assessed
       }, {
         onConflict: 'employee_id,subskill_id'
       });

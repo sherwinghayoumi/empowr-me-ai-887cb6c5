@@ -170,7 +170,8 @@ const EmployeesPage = () => {
       for (const cluster of profile.competencyProfile.clusters) {
         for (const comp of cluster.competencies) {
           // Convert 1-5 rating to 0-100 scale
-          const rating = comp.rating === 'NB' ? 0 : (comp.rating as number) * 20;
+          // NB (Not Benchmarked) → NULL (not assessed), NOT 0 (zero proficiency)
+          const rating = comp.rating === 'NB' ? null : (comp.rating as number) * 20;
           const selfRating = comp.selfRating ? comp.selfRating * 20 : null;
           const managerRating = comp.managerRating ? comp.managerRating * 20 : null;
 
@@ -208,7 +209,8 @@ const EmployeesPage = () => {
               const unmatchedSubskills: string[] = [];
               
               for (const aiSubskill of comp.subskills) {
-                const subskillRating = aiSubskill.rating === 'NB' ? 0 : (aiSubskill.rating as number) * 20;
+                // NB → NULL (not assessed), NOT 0
+                const subskillRating = aiSubskill.rating === 'NB' ? null : (aiSubskill.rating as number) * 20;
                 
                 // IMPROVED MATCHING: Extract title before ":" for more accurate matching
                 const extractTitle = (name: string) => {

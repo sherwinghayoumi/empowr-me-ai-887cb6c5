@@ -116,13 +116,24 @@ const AdminDashboard = () => {
         {/* Organization Header */}
         {organization && (
           <ScrollReveal>
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center">
-                <Building2 className="w-5 h-5 text-primary" />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold text-foreground">{organization.name}</h1>
-                <p className="text-sm text-muted-foreground">Admin Dashboard</p>
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center">
+                  <Building2 className="w-5 h-5 text-primary" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h1 className="text-2xl font-bold text-foreground">{organization.name}</h1>
+                    {organization.subscription_status && (
+                      <Badge variant={organization.subscription_status === 'active' ? 'default' : 'secondary'} className="text-xs">
+                        {organization.subscription_status === 'active' ? 'Aktiv' : organization.subscription_status === 'trial' ? 'Trial' : organization.subscription_status}
+                      </Badge>
+                    )}
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    {stats?.employeeCount || 0} Mitarbeiter · {stats?.teamCount || 0} Teams
+                  </p>
+                </div>
               </div>
             </div>
           </ScrollReveal>

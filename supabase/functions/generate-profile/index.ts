@@ -423,7 +423,7 @@ Erstelle das Kompetenzprofil als JSON. Verwende EXAKT die im System definierten 
         "anthropic-version": "2023-06-01",
       },
       body: JSON.stringify({
-        model: "claude-3-5-haiku-20241022",
+        model: "claude-3-5-haiku-latest",
         max_tokens: 16000,
         system: systemPrompt,
         messages: [

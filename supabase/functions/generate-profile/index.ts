@@ -498,15 +498,46 @@ function getClustersForRole(roleKey: string): string[] {
 }
 
 // Generiert den Kompetenz-Teil für den System Prompt - NUR für die angegebene Rolle
-function getCompetencySchemaForPrompt(roleKey: string): string {
+// If dbCompetencySchema is provided, use it (exact DB names). Otherwise fall back to static schema.
+function getCompetencySchemaForPrompt(roleKey: string, dbCompetencySchema?: Array<{ clusterName: string; competencyName: string; subskills: string[] }>): string {
+  // If we have actual DB competencies, use them - this guarantees 100% name match
+  if (dbCompetencySchema && dbCompetencySchema.length > 0) {
+    console.log(`Using DB competency schema with ${dbCompetencySchema.length} competencies`);
+    
+    // Group by cluster
+    const clusterMap = new Map<string, Array<{ competencyName: string; subskills: string[] }>>();
+    for (const comp of dbCompetencySchema) {
+      if (!clusterMap.has(comp.clusterName)) {
+        clusterMap.set(comp.clusterName, []);
+      }
+      clusterMap.get(comp.clusterName)!.push(comp);
+    }
+
+    let output = "";
+    for (const [cluster, competencies] of clusterMap) {
+      output += `\n═══════════════════════════════════════════════════════════════════════════════\n`;
+      output += `CLUSTER: "${cluster}"\n`;
+      output += `═══════════════════════════════════════════════════════════════════════════════\n`;
+
+      for (const comp of competencies) {
+        output += `\nKOMPETENZ: "${comp.competencyName}"\n`;
+        output += `Subskills:\n`;
+        for (const sub of comp.subskills) {
+          output += `- "${sub}"\n`;
+        }
+      }
+    }
+    return output;
+  }
+
+  // Fallback: use static schema
   const allowedClusters = getClustersForRole(roleKey);
   let output = "";
 
-  console.log(`Generating schema for role: ${roleKey}`);
+  console.log(`Using static schema for role: ${roleKey}`);
   console.log(`Allowed clusters: ${allowedClusters.join(", ")}`);
 
   for (const [cluster, competencies] of Object.entries(COMPETENCY_SCHEMA)) {
-    // Skip clusters not relevant for this role
     if (!allowedClusters.includes(cluster)) {
       continue;
     }
@@ -528,9 +559,10 @@ function getCompetencySchemaForPrompt(roleKey: string): string {
 }
 
 // Generates the system prompt with role-specific competencies only
-function getSystemPrompt(roleKey: string): string {
+function getSystemPrompt(roleKey: string, dbCompetencySchema?: Array<{ clusterName: string; competencyName: string; subskills: string[] }>): string {
   const normalizedRole = normalizeRoleKey(roleKey);
-  const allowedClusters = getClustersForRole(roleKey);
+  const allowedClusters = dbCompetencySchema ? [] : getClustersForRole(roleKey);
+  const schemaSource = dbCompetencySchema ? "Datenbank" : "statisches Schema";
   
   return `Du bist ein HR-Analytics-Assistent für eine Wirtschaftskanzlei im Bereich Corporate Law / M&A.
 
@@ -539,7 +571,7 @@ Du erhältst 3 Dokumente: CV, Self-Assessment, Manager-Assessment.
 Deine Aufgabe:
 1. DSGVO-Consent prüfen (muss im Self-Assessment bestätigt sein)
 2. Daten extrahieren aus allen Dokumenten
-3. Kompetenzen bewerten (Rating 1-5, oder "NB" wenn keine Evidence)
+3. Kompetenzen bewerten (Rating 1-5)
 4. Stärken und Entwicklungsfelder identifizieren
 
 RATING-SKALA:
@@ -557,17 +589,20 @@ Setze in diesem Fall die Confidence auf "LOW" und erkläre in der Evidence, wora
 
 ═══════════════════════════════════════════════════════════════════════════════
 KRITISCH: Du bewertest einen ${roleKey} (normalisiert: ${normalizedRole})
+Kompetenz-Quelle: ${schemaSource}
 ═══════════════════════════════════════════════════════════════════════════════
 
-Bewerte NUR die folgenden ${allowedClusters.length} Cluster für diese Rolle:
-${allowedClusters.map((c, i) => `${i + 1}. ${c}`).join("\n")}
-
+${dbCompetencySchema ? '' : `Bewerte NUR die folgenden ${allowedClusters.length} Cluster für diese Rolle:
+${allowedClusters.map((c: string, i: number) => `${i + 1}. ${c}`).join("\n")}
+`}
 ═══════════════════════════════════════════════════════════════════════════════
-EXAKTE KOMPETENZ- UND SUBSKILL-NAMEN FÜR DIESE ROLLE
-Keine Abweichungen, keine Umformulierungen, keine Abkürzungen!
+EXAKTE KOMPETENZ- UND SUBSKILL-NAMEN (aus der ${schemaSource})
+KRITISCH: Du MUSST die Namen ZEICHENGENAU (character-for-character) verwenden!
+Keine Abweichungen, keine Umformulierungen, keine Abkürzungen, keine Ergänzungen!
+Kopiere die Namen exakt wie hier angegeben in deine JSON-Antwort!
 ═══════════════════════════════════════════════════════════════════════════════
 
-${getCompetencySchemaForPrompt(roleKey)}
+${getCompetencySchemaForPrompt(roleKey, dbCompetencySchema)}
 
 ═══════════════════════════════════════════════════════════════════════════════
 ANTWORT-FORMAT
@@ -670,7 +705,7 @@ serve(async (req) => {
   }
 
   try {
-    const { cvText, selfText, managerText, roleTitle } = await req.json();
+    const { cvText, selfText, managerText, roleTitle, dbCompetencySchema } = await req.json();
     
     const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
     if (!ANTHROPIC_API_KEY) {
@@ -689,10 +724,13 @@ ${selfText}
 === MANAGER-ASSESSMENT ===
 ${managerText}
 
-Erstelle das Kompetenzprofil als JSON. Verwende NUR die im System definierten Kompetenz-Namen!`;
+Erstelle das Kompetenzprofil als JSON. Verwende EXAKT die im System definierten Kompetenz-Namen – zeichengenau, ohne Abweichungen!`;
 
-    // Generate role-specific system prompt
-    const systemPrompt = getSystemPrompt(roleTitle);
+    // Generate role-specific system prompt (use DB schema if available)
+    const systemPrompt = getSystemPrompt(roleTitle, dbCompetencySchema);
+    const allowedClusters = getClustersForRole(roleTitle);
+
+    console.log("Using DB competency schema:", !!dbCompetencySchema, "count:", dbCompetencySchema?.length || 0);
     const allowedClusters = getClustersForRole(roleTitle);
 
     console.log("Calling Anthropic API with role:", roleTitle);

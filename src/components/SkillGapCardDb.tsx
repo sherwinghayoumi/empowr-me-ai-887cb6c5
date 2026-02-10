@@ -94,7 +94,7 @@ export function SkillGapCardDb({ employee, competency, subskills = [], delay = 0
   return (
     <>
       <GlassCard 
-        className={`min-w-[320px] max-w-[360px] hover-lift transition-all duration-500 ${
+        className={`min-w-[320px] max-w-[360px] whitespace-normal hover-lift transition-all duration-500 ${
           isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
         }`}
       >

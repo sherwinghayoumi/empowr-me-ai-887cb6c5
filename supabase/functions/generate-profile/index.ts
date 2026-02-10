@@ -548,7 +548,12 @@ RATING-SKALA:
 - 3 = Kompetent
 - 4 = Stark
 - 5 = Exzellent
-- NB = Nicht bewertbar (keine Evidence)
+
+WICHTIG: Du MUSST für JEDE Kompetenz und JEDEN Subskill ein numerisches Rating (1-5) vergeben!
+Wenn keine direkte Evidence vorhanden ist, nutze dein Expertenwissen, um basierend auf dem Gesamtbild
+(Berufserfahrung, Seniorität, verwandte Skills, Rollenanforderungen) eine fundierte Einschätzung abzugeben.
+Setze in diesem Fall die Confidence auf "LOW" und erkläre in der Evidence, worauf die Einschätzung basiert.
+"NB" (Nicht bewertbar) ist KEINE gültige Antwort – es muss IMMER ein Rating von 1-5 vergeben werden.
 
 ═══════════════════════════════════════════════════════════════════════════════
 KRITISCH: Du bewertest einen ${roleKey} (normalisiert: ${normalizedRole})
@@ -603,7 +608,7 @@ Antworte NUR mit validem JSON im folgenden Schema:
         "competencies": [
           {
             "name": "EXAKT wie oben definiert",
-            "rating": 1-5 oder "NB",
+            "rating": 1-5,
             "confidence": "HIGH" | "MEDIUM" | "LOW",
             "selfRating": number oder null,
             "managerRating": number oder null,
@@ -611,7 +616,7 @@ Antworte NUR mit validem JSON im folgenden Schema:
             "subskills": [
               {
                 "name": "EXAKT wie oben definiert",
-                "rating": 1-5 oder "NB",
+                "rating": 1-5,
                 "evidence": "Kurze Begründung"
               }
             ]
@@ -654,7 +659,7 @@ Antworte NUR mit validem JSON im folgenden Schema:
 WICHTIGE REGELN:
 1. Verwende NUR die oben definierten Cluster-, Kompetenz- und Subskill-Namen!
 2. Bewerte ALLE Kompetenzen in ALLEN oben aufgelisteten Clustern für diese Rolle!
-3. Bei fehlender Evidence: "NB" (Nicht bewertbar)
+3. Vergib IMMER ein numerisches Rating (1-5) – NIEMALS "NB"! Bei wenig Evidence: Rating schätzen + Confidence "LOW".
 4. Overall Score = gewichteter Durchschnitt aller bewerteten Kompetenzen (Rating 1=20%, 2=40%, 3=60%, 4=80%, 5=100%)
 5. Antworte NUR mit JSON - keine Erklärungen davor oder danach!`;
 }

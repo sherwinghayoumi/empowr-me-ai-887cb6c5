@@ -92,24 +92,50 @@ const EmployeesPage = () => {
   const archiveEmployee = useArchiveEmployee();
   const permanentDeleteEmployee = usePermanentDeleteEmployee();
 
-  // Check if bulk update is available (any role profile published_at is newer than employee profile_last_updated_at)
-  const latestPublishedAt = useMemo(() => {
-    if (!roleProfiles?.length) return null;
-    const dates = roleProfiles
-      .map(rp => rp.published_at)
-      .filter(Boolean)
-      .sort()
-      .reverse();
-    return dates[0] || null;
+  // Build a map of role_profile_id -> Set of competency IDs from the latest role profiles
+  const roleProfileCompetencyMap = useMemo(() => {
+    const map = new Map<string, Set<string>>();
+    if (!roleProfiles?.length) return map;
+    for (const rp of roleProfiles) {
+      const compIds = new Set<string>();
+      for (const comp of (rp as any).competencies || []) {
+        if (comp.status === 'active') compIds.add(comp.id);
+      }
+      map.set(rp.id, compIds);
+    }
+    return map;
   }, [roleProfiles]);
 
+  // Check per employee if they are missing competencies from their role profile
+  const employeeMissingSkills = useMemo(() => {
+    const missing = new Map<string, number>(); // employee_id -> count of missing competencies
+    if (!employees?.length || roleProfileCompetencyMap.size === 0) return missing;
+
+    for (const emp of employees as any[]) {
+      const rpId = emp.role_profile?.id;
+      if (!rpId) continue;
+      const requiredCompIds = roleProfileCompetencyMap.get(rpId);
+      if (!requiredCompIds || requiredCompIds.size === 0) continue;
+
+      // Get the competency IDs the employee already has ratings for
+      const empCompIds = new Set<string>();
+      for (const ec of emp.competencies || []) {
+        if (ec.competency?.id && ec.current_level != null) {
+          empCompIds.add(ec.competency.id);
+        }
+      }
+
+      const missingCount = [...requiredCompIds].filter(id => !empCompIds.has(id)).length;
+      if (missingCount > 0) {
+        missing.set(emp.id, missingCount);
+      }
+    }
+    return missing;
+  }, [employees, roleProfileCompetencyMap]);
+
   const needsBulkUpdate = useMemo(() => {
-    if (!latestPublishedAt || !employees?.length) return false;
-    return employees.some((emp: any) =>
-      (emp.overall_score != null && emp.overall_score > 0) &&
-      (!emp.profile_last_updated_at || new Date(emp.profile_last_updated_at) < new Date(latestPublishedAt))
-    );
-  }, [employees, latestPublishedAt]);
+    return employeeMissingSkills.size > 0;
+  }, [employeeMissingSkills]);
 
   const openProfileModal = (employee: DbEmployee) => {
     setSelectedEmployeeForProfile(employee);
@@ -250,28 +276,32 @@ const EmployeesPage = () => {
                           {emp.team?.name || "Kein Team"}
                         </p>
                       </button>
-                      {/* Update badge: show orange if profile is outdated or never updated, green if current */}
+                      {/* Update badge: show orange if missing skills, green if complete */}
                       {emp.overall_score != null && emp.overall_score > 0 && (
                         <TooltipProvider>
                           <Tooltip>
                             <TooltipTrigger asChild>
-                              {(!emp.profile_last_updated_at || (latestPublishedAt && new Date(emp.profile_last_updated_at) < new Date(latestPublishedAt))) ? (
+                              {employeeMissingSkills.has(emp.id) ? (
                                 <Badge variant="outline" className="text-xs gap-1 mt-1 bg-amber-500/15 text-amber-500 border-amber-500/30">
                                   <RefreshCw className="w-3 h-3" />
-                                  Update verfügbar
+                                  {employeeMissingSkills.get(emp.id)} neue Skills
                                 </Badge>
                               ) : (
                                 <Badge variant="outline" className="text-xs gap-1 mt-1 bg-emerald-500/15 text-emerald-400 border-emerald-500/30">
                                   <CheckCircle className="w-3 h-3" />
-                                  {format(new Date(emp.profile_last_updated_at), 'dd.MM.yy', { locale: de })}
+                                  {emp.profile_last_updated_at
+                                    ? format(new Date(emp.profile_last_updated_at), 'dd.MM.yy', { locale: de })
+                                    : 'Aktuell'}
                                 </Badge>
                               )}
                             </TooltipTrigger>
                             <TooltipContent>
                               <p>
-                                {(!emp.profile_last_updated_at || (latestPublishedAt && new Date(emp.profile_last_updated_at) < new Date(latestPublishedAt)))
-                                  ? 'Neue Kompetenzen verfügbar — Profil aktualisieren'
-                                  : `KI-Profil zuletzt aktualisiert am ${format(new Date(emp.profile_last_updated_at!), 'dd.MM.yyyy HH:mm', { locale: de })}`}
+                                {employeeMissingSkills.has(emp.id)
+                                  ? `${employeeMissingSkills.get(emp.id)} Kompetenzen ohne Bewertung — Profil aktualisieren`
+                                  : emp.profile_last_updated_at
+                                    ? `KI-Profil zuletzt aktualisiert am ${format(new Date(emp.profile_last_updated_at), 'dd.MM.yyyy HH:mm', { locale: de })}`
+                                    : 'Alle Kompetenzen bewertet'}
                               </p>
                             </TooltipContent>
                           </Tooltip>

@@ -59,16 +59,12 @@ export function ProtectedRoute({
 
   if (needsGDPRConsent && showGDPRModal) {
     return (
-      <>
-        {/* Show blurred/dimmed background */}
-        <div className="min-h-screen bg-background opacity-50 pointer-events-none">
-          {children}
-        </div>
+      <div className="min-h-screen bg-background">
         <GDPRConsentModal 
           open={true} 
           onConsentGiven={() => setShowGDPRModal(false)} 
         />
-      </>
+      </div>
     );
   }
 

@@ -15,15 +15,15 @@ interface HeaderProps {
 const adminNavItems = [
   { label: "Dashboard", href: "/admin", icon: LayoutDashboard },
   { label: "Teams", href: "/admin/teams", icon: Users },
-  { label: "Employees", href: "/admin/employees", icon: Users },
+  { label: "Mitarbeiter", href: "/admin/employees", icon: Users },
   { label: "Skill Gaps", href: "/admin/skill-gaps", icon: AlertTriangle },
-  { label: "Reports", href: "/admin/reports", icon: FileText },
+  { label: "Berichte", href: "/admin/reports", icon: FileText },
 ];
 
 const employeeNavItems = [
-  { label: "My Dashboard", href: "/employee", icon: LayoutDashboard },
-  { label: "My Skills", href: "/employee/skills", icon: Award },
-  { label: "My Skill Gaps", href: "/employee/learning", icon: AlertTriangle },
+  { label: "Mein Dashboard", href: "/employee", icon: LayoutDashboard },
+  { label: "Meine Skills", href: "/employee/skills", icon: Award },
+  { label: "Meine Lernpfade", href: "/employee/learning", icon: AlertTriangle },
 ];
 
 export function Header({ variant }: HeaderProps) {
@@ -44,7 +44,7 @@ export function Header({ variant }: HeaderProps) {
     <header className="sticky top-0 z-50 w-full border-b border-border/30 backdrop-blur-2xl bg-background/80">
       <div className="container flex h-16 items-center justify-between">
         {/* Logo */}
-        <Link to="/" className="flex items-center gap-3 group">
+        <Link to={variant === "admin" ? "/admin" : "/employee"} className="flex items-center gap-3 group">
           <img 
             src={starLogo} 
             alt="FUTURA TEAMS" 

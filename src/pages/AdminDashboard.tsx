@@ -146,7 +146,7 @@ const AdminDashboard = () => {
               <GlassCardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-muted-foreground">Employees</p>
+                    <p className="text-sm text-muted-foreground">Mitarbeiter</p>
                     <p className="text-3xl font-bold text-foreground">
                       <AnimatedCounter value={stats?.employeeCount || 0} duration={1500} />
                     </p>
@@ -182,7 +182,7 @@ const AdminDashboard = () => {
               <GlassCardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-muted-foreground">Avg. Competency Level</p>
+                    <p className="text-sm text-muted-foreground">Ø Kompetenzniveau</p>
                     <p className="text-3xl font-bold text-foreground">
                       <AnimatedCounter value={stats?.avgCompetencyLevel || 0} duration={1500} />%
                     </p>
@@ -200,7 +200,7 @@ const AdminDashboard = () => {
               <GlassCardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-muted-foreground">Learning Paths</p>
+                    <p className="text-sm text-muted-foreground">Lernpfade</p>
                     <p className="text-3xl font-bold text-foreground">
                       <AnimatedCounter value={stats?.activeLearningPaths || 0} duration={1500} delay={300} />
                     </p>
@@ -249,9 +249,9 @@ const AdminDashboard = () => {
             <GlassCard className="hover-glow h-full">
               <GlassCardHeader className="flex flex-row items-center justify-between">
                 <div>
-                  <GlassCardTitle className="text-foreground">{selectedRole?.role_title || "Select Role"}</GlassCardTitle>
+                  <GlassCardTitle className="text-foreground">{selectedRole?.role_title || "Rolle wählen"}</GlassCardTitle>
                   <p className="text-sm text-muted-foreground mt-1">
-                    Employee Development / Competency Gap Analysis
+                    Mitarbeiterentwicklung / Kompetenz-Gap-Analyse
                   </p>
                 </div>
                 <Select value={effectiveRoleKey} onValueChange={setSelectedRoleKey}>
@@ -272,15 +272,15 @@ const AdminDashboard = () => {
                 <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground mb-4 pb-3 border-b border-border/50">
                   <div className="flex items-center gap-1.5">
                     <div className="w-3 h-3 rounded bg-primary" />
-                    <span>Competency Level</span>
+                    <span>Kompetenzniveau</span>
                   </div>
                   <div className="flex items-center gap-1.5">
                     <div className="w-0.5 h-3 bg-[hsl(var(--skill-moderate))]" />
-                    <span>Ø Current Demand ({avgCurrentDemand}%)</span>
+                    <span>Ø Aktuelle Anforderung ({avgCurrentDemand}%)</span>
                   </div>
                   <div className="flex items-center gap-1.5">
                     <div className="w-0.5 h-3 bg-[hsl(var(--skill-weak))]" />
-                    <span>Ø Future Demand ({avgFutureDemand}%)</span>
+                    <span>Ø Zukünftige Anforderung ({avgFutureDemand}%)</span>
                   </div>
                 </div>
                 <div className="space-y-4 max-h-[400px] overflow-y-auto">
@@ -311,7 +311,7 @@ const AdminDashboard = () => {
                     ))
                   ) : (
                     <p className="text-muted-foreground text-center py-8">
-                      No employees in this role
+                      Keine Mitarbeiter in dieser Rolle
                     </p>
                   )}
                 </div>
@@ -382,7 +382,7 @@ const AdminDashboard = () => {
             <GlassCard className="hover-glow h-full">
               <GlassCardHeader>
                 <GlassCardTitle className="text-foreground text-center">
-                  Latest Future Skill Reports
+                  Aktuelle Future Skill Berichte
                 </GlassCardTitle>
               </GlassCardHeader>
               <GlassCardContent className="space-y-3">
@@ -424,7 +424,7 @@ const AdminDashboard = () => {
         <ScrollReveal delay={500} direction="up">
           <GlassCard className="mt-6">
             <GlassCardHeader>
-              <GlassCardTitle className="text-foreground">Teams Overview</GlassCardTitle>
+              <GlassCardTitle className="text-foreground">Team-Übersicht</GlassCardTitle>
             </GlassCardHeader>
             <GlassCardContent>
               {teamsLoading ? (
@@ -445,7 +445,7 @@ const AdminDashboard = () => {
                           </Badge>
                         </div>
                         <p className="text-sm text-muted-foreground mb-3">
-                          {team.member_count || 0} Members
+                          {team.member_count || 0} Mitglieder
                         </p>
                         <div className="space-y-2">
                           {team.members?.slice(0, 4).map((member) => (
@@ -466,7 +466,7 @@ const AdminDashboard = () => {
                           ))}
                           {(team.members?.length || 0) > 4 && (
                             <p className="text-xs text-muted-foreground">
-                              +{(team.members?.length || 0) - 4} more
+                              +{(team.members?.length || 0) - 4} weitere
                             </p>
                           )}
                         </div>
@@ -475,7 +475,7 @@ const AdminDashboard = () => {
                   ))}
                 </div>
               ) : (
-                <p className="text-muted-foreground text-center py-8">No teams found</p>
+                <p className="text-muted-foreground text-center py-8">Keine Teams gefunden</p>
               )}
             </GlassCardContent>
           </GlassCard>

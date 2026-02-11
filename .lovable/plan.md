@@ -1,70 +1,56 @@
 
 
-## Plan: Gespeicherte Dokumente im UI anzeigen und automatisch vorladen
+## Plan: Kritische Bugs und UX-Verbesserungen aus dem HR-Walkthrough
 
-### Problem
+Basierend auf dem ausfuehrlichen Walkthrough als tech-getriebene Head of HR habe ich 13 Befunde identifiziert. Hier ist der priorisierte Fix-Plan fuer die kritischsten Probleme:
 
-Wenn ein Admin das KI-Profil-Modal oeffnet, sind die Upload-Felder immer leer -- auch wenn bereits Dokumente in Supabase Storage gespeichert sind. Der Admin muss die Dateien jedes Mal neu hochladen, obwohl sie bereits im System vorliegen.
+### Phase 1: Kritische Bugs (sofort)
 
-### Loesung
+#### 1. Logo-Link reparieren
+Das Logo in der Navigation linkt auf `/`, was zu `/login` redirected und damit eingeloggte User effektiv ausloggt.
+- **Datei**: `src/components/Header.tsx`
+- **Fix**: Logo-Link dynamisch setzen basierend auf `variant` prop (`/admin` fuer Admin, `/employee` fuer Employee)
 
-Zwei Aenderungen:
+#### 2. Employee-Nav-Label korrigieren
+"My Skill Gaps" linkt zu `/employee/learning` (Lernpfade-Seite) -- das Label stimmt nicht mit dem Inhalt ueberein.
+- **Datei**: `src/components/Header.tsx`
+- **Fix**: Label auf "My Learning" oder "Meine Lernpfade" aendern
 
-1. **ProfileGenerationModal**: Beim Oeffnen automatisch pruefen, ob gespeicherte Dokumente vorhanden sind, und diese in die Upload-Felder vorladen. Der Admin sieht sofort, welche Dateien bereits vorliegen, und kann direkt auf "Profil generieren" klicken.
+#### 3. Komplette Sprachvereinheitlichung auf Deutsch
+Navigation, Stats-Cards, Seitentitel und Labels durchgaengig auf Deutsch umstellen. Betroffen:
+- `src/components/Header.tsx` -- Nav-Labels
+- `src/pages/AdminDashboard.tsx` -- Stat-Cards, Sektions-Ueberschriften
+- `src/pages/admin/SkillGapPage.tsx` -- alle Labels
+- `src/components/EmployeeProfile.tsx` -- gemischte Labels
 
-2. **Employee-Karten**: Ein kleines Dokument-Icon oder Badge anzeigen, das signalisiert, ob Dokumente gespeichert sind (z.B. "3/3 Dokumente" oder "0/3 Dokumente").
+### Phase 2: UX-Verbesserungen (diese Woche)
 
-### Konkrete Aenderungen
+#### 4. GDPR-Consent: Daten nicht vorladen
+Statt die App geblurrt im Hintergrund zu rendern (wobei Daten im DOM sichtbar sind), sollte bei fehlendem GDPR-Consent NUR das Modal gezeigt werden -- ohne die eigentlichen Seiteninhalte zu laden.
+- **Datei**: `src/components/ProtectedRoute.tsx`
+- **Fix**: `children` nicht rendern wenn Consent fehlt, nur Modal + leeren Hintergrund anzeigen
 
-#### 1. ProfileGenerationModal.tsx -- Dokumente automatisch vorladen
+### Phase 3: Feature-Luecken (naechste Sprints)
 
-- Die `employee`-Props enthalten bereits `cv_storage_path`, `self_assessment_path`, `manager_assessment_path`
-- Im `useEffect` beim Oeffnen des Modals: Wenn Pfade vorhanden sind, `downloadDocumentsFromStorage()` aufrufen und die resultierenden `File`-Objekte in den `documents`-State setzen
-- Ein Ladezustand ("Lade gespeicherte Dokumente...") anzeigen waehrend des Downloads
-- Die UploadBox-Komponente zeigt dann automatisch den Dateinamen an (bereits implementiert fuer `file !== null`)
-- Der "Profil generieren"-Button ist sofort klickbar wenn alle 3 Dokumente geladen sind
-
-```text
-useEffect beim Modal-Open:
-  1. Pruefen ob cv_storage_path, self_assessment_path, manager_assessment_path vorhanden
-  2. Wenn ja: setIsLoadingDocs(true), downloadDocumentsFromStorage() aufrufen
-  3. Ergebnis in setDocuments() speichern
-  4. setIsLoadingDocs(false)
-  5. Toast: "Gespeicherte Dokumente geladen"
-```
-
-- Die employee-Prop-Schnittstelle wird erweitert um die drei Pfad-Felder (bereits in DbEmployee vorhanden)
-
-#### 2. UploadBox -- Visuelles Feedback fuer vorgeladene Dateien
-
-- Kleine Anpassung: Wenn eine Datei vorhanden ist und aus dem Storage geladen wurde, optional ein "Gespeichert"-Label anzeigen (z.B. kleines Cloud-Icon)
-- Bestehende Dateien koennen weiterhin durch neue ersetzt werden (Drag & Drop oder Klick)
-
-#### 3. EmployeesPage.tsx -- Dokument-Status auf Karten
-
-- Neben dem bestehenden Badge (Update verfuegbar / Aktuell) ein kleines Icon hinzufuegen das zeigt:
-  - Alle 3 Dokumente vorhanden: Ordner-Icon in Gruen
-  - Teilweise vorhanden: Ordner-Icon in Orange mit Anzahl
-  - Keine Dokumente: kein Icon (oder grau)
-- Die Daten sind bereits im Employee-Objekt vorhanden (`cv_storage_path`, etc.)
+Die folgenden wurden identifiziert, sind aber nicht als sofortige Fixes geplant:
+- ROI als eigener Navigationspunkt
+- Profil-/Settings-Seite fuer eingeloggte User (Passwort aendern)
+- Export-Funktionen (CSV/PDF)
+- Team-Filter auf dem Dashboard
+- Suchfunktion auf der Skill-Gap-Seite
+- Team-Karten mit Kompetenz-Cluster-Aufschluesselung
 
 ### Technische Details
 
-| Datei | Aenderung |
-|---|---|
-| `src/components/admin/ProfileGenerationModal.tsx` | Employee-Props erweitern, useEffect fuer Auto-Download, Ladezustand |
-| `src/pages/admin/EmployeesPage.tsx` | Dokument-Status-Badge auf Employee-Karten, vollstaendige Pfade an Modal weitergeben |
+| Datei | Aenderung | Prioritaet |
+|---|---|---|
+| `src/components/Header.tsx` | Logo-Link dynamisch, Nav-Labels Deutsch, Employee-Label-Fix | Kritisch |
+| `src/pages/AdminDashboard.tsx` | Alle Stat-Labels auf Deutsch | Kritisch |
+| `src/pages/admin/SkillGapPage.tsx` | Alle Labels auf Deutsch | Kritisch |
+| `src/components/ProtectedRoute.tsx` | GDPR: children nicht rendern bei fehlendem Consent | Hoch |
 
-### Ablauf nach der Aenderung
+### Nicht-technische Empfehlungen
 
-```text
-Admin klickt Bot-Icon
-  -> Modal oeffnet sich
-  -> "Lade gespeicherte Dokumente..." (1-2 Sekunden)
-  -> Upload-Felder zeigen gespeicherte Dateien an (gruen markiert)
-  -> Admin klickt direkt "Profil generieren"
-  -> Fertig -- kein erneutes Hochladen noetig
-```
-
-Falls keine Dokumente gespeichert sind, bleibt das Verhalten wie bisher (leere Upload-Felder).
+- Einheitliche Sprachkonvention als Regel festlegen (komplett Deutsch fuer DACH-Markt)
+- Feature-Requests (Export, Settings-Seite, Team-Drill-Down) in Backlog aufnehmen
 

@@ -254,13 +254,24 @@ const EmployeesPage = () => {
                         <TooltipProvider>
                           <Tooltip>
                             <TooltipTrigger asChild>
-                              <Badge variant="outline" className="text-xs gap-1 mt-1">
-                                <CheckCircle className="w-3 h-3" />
-                                {format(new Date(emp.profile_last_updated_at), 'dd.MM.yy', { locale: de })}
-                              </Badge>
+                              {latestPublishedAt && new Date(emp.profile_last_updated_at) < new Date(latestPublishedAt) ? (
+                                <Badge variant="outline" className="text-xs gap-1 mt-1 bg-amber-500/15 text-amber-500 border-amber-500/30">
+                                  <RefreshCw className="w-3 h-3" />
+                                  Update verfügbar
+                                </Badge>
+                              ) : (
+                                <Badge variant="outline" className="text-xs gap-1 mt-1 bg-emerald-500/15 text-emerald-400 border-emerald-500/30">
+                                  <CheckCircle className="w-3 h-3" />
+                                  {format(new Date(emp.profile_last_updated_at), 'dd.MM.yy', { locale: de })}
+                                </Badge>
+                              )}
                             </TooltipTrigger>
                             <TooltipContent>
-                              <p>KI-Profil zuletzt aktualisiert</p>
+                              <p>
+                                {latestPublishedAt && new Date(emp.profile_last_updated_at) < new Date(latestPublishedAt)
+                                  ? 'Neue Kompetenzen verfügbar — Profil aktualisieren'
+                                  : `KI-Profil zuletzt aktualisiert am ${format(new Date(emp.profile_last_updated_at), 'dd.MM.yyyy HH:mm', { locale: de })}`}
+                              </p>
                             </TooltipContent>
                           </Tooltip>
                         </TooltipProvider>

@@ -251,22 +251,34 @@ Deine Aufgabe:
 3. Kompetenzen bewerten (Rating 1-5)
 4. Stärken und Entwicklungsfelder identifizieren
 
-RATING-SKALA:
-- 1 = Grundlagen fehlen
-- 2 = Basis vorhanden
-- 3 = Kompetent
-- 4 = Stark
-- 5 = Exzellent
+BEWERTUNGSMASSSTAB: Rollenrelativ fuer ${roleKey}
+Die Bewertung bezieht sich AUSSCHLIESSLICH auf die Erwartungen der aktuellen Rolle.
+Ein Junior Associate, der alle JA-Kompetenzen perfekt beherrscht, verdient eine 5.
+Ein Senior Associate, der SA-Kompetenzen nur teilweise beherrscht, kann eine 2 bekommen.
+Vergleiche NICHT zwischen Rollen -- bewerte nur innerhalb der Rollenerwartung.
+
+- 1 = Erfuellt die Rollenerwartung nicht (deutliche Luecken fuer diese Stufe)
+- 2 = Teilweise auf Rollenniveau (Grundlagen vorhanden, aber Luecken)
+- 3 = Auf Rollenniveau (erfuellt die Erwartung fuer diese Position solide)
+- 4 = Ueber Rollenniveau (uebertrifft die Erwartung fuer diese Stufe)
+- 5 = Herausragend fuer diese Rolle (Benchmark / Vorbild auf dieser Stufe)
 
 WICHTIG: Du MUSST für JEDE Kompetenz und JEDEN Subskill ein numerisches Rating (1-5) vergeben!
 Wenn keine direkte Evidence vorhanden ist, nutze dein Expertenwissen, um basierend auf dem Gesamtbild
-(Berufserfahrung, Seniorität, verwandte Skills, Rollenanforderungen) eine fundierte Einschätzung abzugeben.
+(Berufserfahrung, verwandte Skills, dokumentierte Leistungen) eine fundierte Einschaetzung abzugeben.
+Beziehe die Bewertung dabei IMMER auf das erwartete Niveau der aktuellen Rolle -- NICHT auf eine absolute Senioritaetsskala.
 Setze in diesem Fall die Confidence auf "LOW" und erkläre in der Evidence, worauf die Einschätzung basiert.
 "NB" (Nicht bewertbar) ist KEINE gültige Antwort – es muss IMMER ein Rating von 1-5 vergeben werden.
 
 ═══════════════════════════════════════════════════════════════════════════════
 KRITISCH: Du bewertest einen ${roleKey} (normalisiert: ${normalizedRole})
 Kompetenz-Quelle: ${schemaSource}
+
+BEWERTUNGSPRINZIP: Alle Ratings sind RELATIV zur Rolle "${roleKey}".
+Eine 5 bedeutet: herausragend FUER DIESE ROLLE.
+Eine 3 bedeutet: solide auf dem erwarteten Niveau DIESER ROLLE.
+Absolute Berufserfahrung oder Senioritaet duerfen das Rating
+NICHT systematisch nach oben oder unten verzerren.
 ═══════════════════════════════════════════════════════════════════════════════
 
 ${dbCompetencySchema ? '' : `Bewerte NUR die folgenden ${allowedClusters.length} Cluster für diese Rolle:

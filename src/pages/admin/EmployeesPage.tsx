@@ -106,7 +106,7 @@ const EmployeesPage = () => {
   const needsBulkUpdate = useMemo(() => {
     if (!latestPublishedAt || !employees?.length) return false;
     return employees.some((emp: any) =>
-      emp.cv_storage_path && 
+      (emp.overall_score != null && emp.overall_score > 0) &&
       (!emp.profile_last_updated_at || new Date(emp.profile_last_updated_at) < new Date(latestPublishedAt))
     );
   }, [employees, latestPublishedAt]);
@@ -250,11 +250,12 @@ const EmployeesPage = () => {
                           {emp.team?.name || "Kein Team"}
                         </p>
                       </button>
-                      {emp.profile_last_updated_at && (
+                      {/* Update badge: show orange if profile is outdated or never updated, green if current */}
+                      {emp.overall_score != null && emp.overall_score > 0 && (
                         <TooltipProvider>
                           <Tooltip>
                             <TooltipTrigger asChild>
-                              {latestPublishedAt && new Date(emp.profile_last_updated_at) < new Date(latestPublishedAt) ? (
+                              {(!emp.profile_last_updated_at || (latestPublishedAt && new Date(emp.profile_last_updated_at) < new Date(latestPublishedAt))) ? (
                                 <Badge variant="outline" className="text-xs gap-1 mt-1 bg-amber-500/15 text-amber-500 border-amber-500/30">
                                   <RefreshCw className="w-3 h-3" />
                                   Update verfügbar
@@ -268,9 +269,9 @@ const EmployeesPage = () => {
                             </TooltipTrigger>
                             <TooltipContent>
                               <p>
-                                {latestPublishedAt && new Date(emp.profile_last_updated_at) < new Date(latestPublishedAt)
+                                {(!emp.profile_last_updated_at || (latestPublishedAt && new Date(emp.profile_last_updated_at) < new Date(latestPublishedAt)))
                                   ? 'Neue Kompetenzen verfügbar — Profil aktualisieren'
-                                  : `KI-Profil zuletzt aktualisiert am ${format(new Date(emp.profile_last_updated_at), 'dd.MM.yyyy HH:mm', { locale: de })}`}
+                                  : `KI-Profil zuletzt aktualisiert am ${format(new Date(emp.profile_last_updated_at!), 'dd.MM.yyyy HH:mm', { locale: de })}`}
                               </p>
                             </TooltipContent>
                           </Tooltip>

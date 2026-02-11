@@ -285,14 +285,12 @@ const EmployeesPage = () => {
                               {employeeMissingSkills.has(emp.id) ? (
                                 <Badge variant="outline" className="text-xs gap-1 mt-1 bg-amber-500/15 text-amber-500 border-amber-500/30">
                                   <RefreshCw className="w-3 h-3" />
-                                  {employeeMissingSkills.get(emp.id)} neue Skills
+                                  Update verfügbar
                                 </Badge>
                               ) : (
                                 <Badge variant="outline" className="text-xs gap-1 mt-1 bg-emerald-500/15 text-emerald-400 border-emerald-500/30">
                                   <CheckCircle className="w-3 h-3" />
-                                  {emp.profile_last_updated_at
-                                    ? format(new Date(emp.profile_last_updated_at), 'dd.MM.yy', { locale: de })
-                                    : 'Aktuell'}
+                                  Aktuell
                                 </Badge>
                               )}
                             </TooltipTrigger>
@@ -300,9 +298,7 @@ const EmployeesPage = () => {
                               <p>
                                 {employeeMissingSkills.has(emp.id)
                                   ? `${employeeMissingSkills.get(emp.id)} Kompetenzen ohne Bewertung — Profil aktualisieren`
-                                  : emp.profile_last_updated_at
-                                    ? `KI-Profil zuletzt aktualisiert am ${format(new Date(emp.profile_last_updated_at), 'dd.MM.yyyy HH:mm', { locale: de })}`
-                                    : 'Alle Kompetenzen bewertet'}
+                                  : 'Alle Kompetenzen bewertet'}
                               </p>
                             </TooltipContent>
                           </Tooltip>

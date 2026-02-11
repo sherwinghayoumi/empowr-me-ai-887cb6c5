@@ -241,7 +241,7 @@ const SkillGapPage = () => {
                 </div>
                 <div>
                   <p className="text-2xl font-bold text-foreground">{totalGaps}</p>
-                  <p className="text-sm text-muted-foreground">Total Skill Gaps</p>
+                  <p className="text-sm text-muted-foreground">Skill Gaps gesamt</p>
                 </div>
               </GlassCardContent>
             </GlassCard>
@@ -253,7 +253,7 @@ const SkillGapPage = () => {
                 </div>
                 <div>
                   <p className="text-2xl font-bold text-foreground">{criticalGaps}</p>
-                  <p className="text-sm text-muted-foreground">Critical Gaps</p>
+                  <p className="text-sm text-muted-foreground">Kritische Gaps</p>
                 </div>
               </GlassCardContent>
             </GlassCard>
@@ -265,7 +265,7 @@ const SkillGapPage = () => {
                 </div>
                 <div>
                   <p className="text-2xl font-bold text-foreground">{affectedEmployees}</p>
-                  <p className="text-sm text-muted-foreground">Employees Affected</p>
+                  <p className="text-sm text-muted-foreground">Betroffene Mitarbeiter</p>
                 </div>
               </GlassCardContent>
             </GlassCard>
@@ -277,15 +277,15 @@ const SkillGapPage = () => {
           <div className="flex flex-wrap gap-4 mb-6 text-sm">
             <div className="flex items-center gap-2">
               <div className="w-3 h-3 rounded bg-primary/60" />
-              <span className="text-muted-foreground">Current Level</span>
+              <span className="text-muted-foreground">Aktuelles Niveau</span>
             </div>
             <div className="flex items-center gap-2">
               <div className="w-3 h-0.5 bg-foreground/70" />
-              <span className="text-muted-foreground">Demanded Level</span>
+              <span className="text-muted-foreground">Gefordert</span>
             </div>
             <div className="flex items-center gap-2">
               <div className="w-3 h-0.5 bg-primary" />
-              <span className="text-muted-foreground">Future Demand</span>
+              <span className="text-muted-foreground">Zukünftig gefordert</span>
             </div>
           </div>
         </ScrollReveal>
@@ -319,7 +319,7 @@ const SkillGapPage = () => {
                     return (
                       <div key={competencyId} className="space-y-2">
                         <h3 className="text-sm font-medium text-muted-foreground pl-2">
-                          {firstGap.competencyName} ({gaps.length} gaps)
+                          {firstGap.competencyName} ({gaps.length} Gaps)
                         </h3>
                         <ScrollArea className="w-full whitespace-nowrap">
                           <div className="flex gap-4 pb-4">
@@ -357,9 +357,9 @@ const SkillGapPage = () => {
           <GlassCard>
             <GlassCardContent className="py-12 text-center">
               <AlertTriangle className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-              <p className="text-foreground">No significant skill gaps detected</p>
+              <p className="text-foreground">Keine signifikanten Skill Gaps erkannt</p>
               <p className="text-sm text-muted-foreground mt-2">
-                All employees meet or exceed their competency requirements
+                Alle Mitarbeiter erfüllen oder übertreffen ihre Kompetenzanforderungen
               </p>
             </GlassCardContent>
           </GlassCard>

@@ -437,6 +437,7 @@ export type Database = {
           avatar_url: string | null
           career_objective: string | null
           created_at: string | null
+          cv_storage_path: string | null
           data_source: string | null
           deleted_at: string | null
           education: string | null
@@ -446,10 +447,13 @@ export type Database = {
           gdpr_consent_given_at: string | null
           id: string
           is_active: boolean | null
+          manager_assessment_path: string | null
           organization_id: string
           overall_score: number | null
+          profile_last_updated_at: string | null
           promotion_readiness: number | null
           role_profile_id: string | null
+          self_assessment_path: string | null
           target_role_id: string | null
           team_id: string | null
           team_role: string | null
@@ -461,6 +465,7 @@ export type Database = {
           avatar_url?: string | null
           career_objective?: string | null
           created_at?: string | null
+          cv_storage_path?: string | null
           data_source?: string | null
           deleted_at?: string | null
           education?: string | null
@@ -470,10 +475,13 @@ export type Database = {
           gdpr_consent_given_at?: string | null
           id?: string
           is_active?: boolean | null
+          manager_assessment_path?: string | null
           organization_id: string
           overall_score?: number | null
+          profile_last_updated_at?: string | null
           promotion_readiness?: number | null
           role_profile_id?: string | null
+          self_assessment_path?: string | null
           target_role_id?: string | null
           team_id?: string | null
           team_role?: string | null
@@ -485,6 +493,7 @@ export type Database = {
           avatar_url?: string | null
           career_objective?: string | null
           created_at?: string | null
+          cv_storage_path?: string | null
           data_source?: string | null
           deleted_at?: string | null
           education?: string | null
@@ -494,10 +503,13 @@ export type Database = {
           gdpr_consent_given_at?: string | null
           id?: string
           is_active?: boolean | null
+          manager_assessment_path?: string | null
           organization_id?: string
           overall_score?: number | null
+          profile_last_updated_at?: string | null
           promotion_readiness?: number | null
           role_profile_id?: string | null
+          self_assessment_path?: string | null
           target_role_id?: string | null
           team_id?: string | null
           team_role?: string | null

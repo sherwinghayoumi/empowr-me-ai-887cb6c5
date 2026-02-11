@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Header } from "@/components/Header";
 import { EmployeeProfile } from "@/components/EmployeeProfile";
 import { EmployeeFormDialog, type EmployeeFormData } from "@/components/employees/EmployeeFormDialog";
 import { DeleteEmployeeDialog } from "@/components/employees/DeleteEmployeeDialog";
 import { ProfileGenerationModal } from "@/components/admin/ProfileGenerationModal";
+import { BulkReProfileModal } from "@/components/admin/BulkReProfileModal";
 import { GlassCard, GlassCardContent } from "@/components/GlassCard";
 import { ScrollReveal } from "@/components/ScrollReveal";
 import { AnimatedCounter } from "@/components/AnimatedCounter";
@@ -24,12 +25,15 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { UserPlus, Search, MoreVertical, Pencil, Trash2, Eye, Bot } from "lucide-react";
+import { UserPlus, Search, MoreVertical, Pencil, Trash2, Eye, Bot, RefreshCw, CheckCircle } from "lucide-react";
 import { useEmployees, useTeams, useRoleProfilesPublished } from "@/hooks/useOrgData";
 import { useCreateEmployee, useUpdateEmployee, useArchiveEmployee, usePermanentDeleteEmployee } from "@/hooks/useEmployeeMutations";
+import { saveProfileToDatabase } from "@/hooks/useProfileSaving";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import type { GeneratedProfile } from "@/types/profileGeneration";
+import { format } from "date-fns";
+import { de } from "date-fns/locale";
 
 interface DbEmployee {
   id: string;
@@ -42,6 +46,11 @@ interface DbEmployee {
   total_experience_years: number | null;
   firm_experience_years: number | null;
   career_objective: string | null;
+  organization_id: string;
+  cv_storage_path: string | null;
+  self_assessment_path: string | null;
+  manager_assessment_path: string | null;
+  profile_last_updated_at: string | null;
   role_profile: {
     id: string;
     role_title: string;
@@ -69,6 +78,9 @@ const EmployeesPage = () => {
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [selectedEmployeeForProfile, setSelectedEmployeeForProfile] = useState<DbEmployee | null>(null);
 
+  // Bulk re-profile modal state
+  const [showBulkModal, setShowBulkModal] = useState(false);
+
   // Data hooks
   const { data: employees, isLoading: employeesLoading, refetch } = useEmployees();
   const { data: teams } = useTeams();
@@ -80,274 +92,24 @@ const EmployeesPage = () => {
   const archiveEmployee = useArchiveEmployee();
   const permanentDeleteEmployee = usePermanentDeleteEmployee();
 
-  // Helper function for fuzzy name matching (supports EN and DE names)
-  const normalizeCompetencyName = (name: string): string => {
-    return name
-      .toLowerCase()
-      .replace(/[^a-z0-9äöüß]/g, '') // Remove special chars
-      .trim();
-  };
+  // Check if bulk update is available (any role profile published_at is newer than employee profile_last_updated_at)
+  const latestPublishedAt = useMemo(() => {
+    if (!roleProfiles?.length) return null;
+    const dates = roleProfiles
+      .map(rp => rp.published_at)
+      .filter(Boolean)
+      .sort()
+      .reverse();
+    return dates[0] || null;
+  }, [roleProfiles]);
 
-  const findBestMatch = (
-    aiName: string, 
-    dbCompetencies: Array<{ name: string; id: string; name_de?: string | null }>
-  ): string | null => {
-    const normalized = normalizeCompetencyName(aiName);
-    
-    // Try exact match first (both EN and DE)
-    const exactMatch = dbCompetencies.find(c => 
-      normalizeCompetencyName(c.name) === normalized ||
-      (c.name_de && normalizeCompetencyName(c.name_de) === normalized)
+  const needsBulkUpdate = useMemo(() => {
+    if (!latestPublishedAt || !employees?.length) return false;
+    return employees.some((emp: any) =>
+      emp.cv_storage_path && 
+      (!emp.profile_last_updated_at || new Date(emp.profile_last_updated_at) < new Date(latestPublishedAt))
     );
-    if (exactMatch) return exactMatch.id;
-    
-    // Try partial match (AI name contained in DB name or vice versa) - EN and DE
-    const partialMatch = dbCompetencies.find(c => {
-      const dbNorm = normalizeCompetencyName(c.name);
-      const dbNormDe = c.name_de ? normalizeCompetencyName(c.name_de) : '';
-      return dbNorm.includes(normalized) || normalized.includes(dbNorm) ||
-             dbNormDe.includes(normalized) || normalized.includes(dbNormDe);
-    });
-    if (partialMatch) return partialMatch.id;
-    
-    // Try word-based matching (at least 2 words in common)
-    const aiWords = aiName.toLowerCase().split(/\s+/).filter(w => w.length > 2);
-    for (const dbComp of dbCompetencies) {
-      const dbWords = dbComp.name.toLowerCase().split(/\s+/).filter(w => w.length > 2);
-      const dbWordsDe = dbComp.name_de ? dbComp.name_de.toLowerCase().split(/\s+/).filter(w => w.length > 2) : [];
-      const allDbWords = [...dbWords, ...dbWordsDe];
-      const commonWords = aiWords.filter(w => allDbWords.some(dw => dw.includes(w) || w.includes(dw)));
-      if (commonWords.length >= 2) return dbComp.id;
-    }
-    
-    return null;
-  };
-
-  // Save generated profile to database - returns matching statistics
-  const saveProfileToDatabase = async (employeeId: string, profile: GeneratedProfile): Promise<{ matched: number; unmatched: string[] }> => {
-    // Update employee overall_score and promotion_readiness
-    const { error } = await supabase
-      .from("employees")
-      .update({
-        overall_score: profile.analysis.overallScore,
-        promotion_readiness: profile.analysis.promotionReadiness.readinessPercentage,
-        gdpr_consent_given_at: profile.compliance.gdprConsentVerified ? new Date().toISOString() : null,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", employeeId);
-
-    if (error) {
-      throw new Error("Fehler beim Speichern des Profils");
-    }
-
-    // Get all competencies with their subskills for this employee (including name_de for subskills)
-    const { data: existingCompetencies, error: fetchError } = await supabase
-      .from("employee_competencies")
-      .select(`
-        id, 
-        competency_id,
-        competency:competencies(
-          id, 
-          name,
-          subskills:subskills(id, name, name_de)
-        )
-      `)
-      .eq("employee_id", employeeId);
-
-    if (!fetchError && existingCompetencies) {
-      // Build lookup table of DB competency names -> ids
-      const dbCompetencies = existingCompetencies.map(ec => ({
-        id: ec.id,
-        competencyId: ec.competency_id,
-        name: ec.competency?.name || '',
-        subskills: (ec.competency?.subskills || []) as Array<{ id: string; name: string; name_de?: string | null }>
-      }));
-
-      // Process AI ratings
-      let matchedCount = 0;
-      let unmatchedNames: string[] = [];
-
-      for (const cluster of profile.competencyProfile.clusters) {
-        for (const comp of cluster.competencies) {
-          // Convert 1-5 rating to 0-100 scale
-          // NB (Not Benchmarked) → NULL (not assessed), NOT 0 (zero proficiency)
-          const rating = comp.rating === 'NB' ? null : (comp.rating as number) * 20;
-          const selfRating = comp.selfRating ? comp.selfRating * 20 : null;
-          const managerRating = comp.managerRating ? comp.managerRating * 20 : null;
-
-          // Find matching DB competency using fuzzy matching (pass ALL competencies for correct matching)
-          const matchId = findBestMatch(comp.name, dbCompetencies);
-          const matchedEc = matchId ? dbCompetencies.find(db => db.id === matchId) : null;
-
-          if (matchedEc) {
-            matchedCount++;
-            
-            // Use UPSERT via employee_id + competency_id (leverages unique constraint)
-            const { error: updateError } = await supabase
-              .from("employee_competencies")
-              .upsert({
-                employee_id: employeeId,
-                competency_id: matchedEc.competencyId,
-                current_level: rating,
-                self_rating: selfRating,
-                manager_rating: managerRating,
-                evidence_summary: comp.evidenceSummary,
-                rating_confidence: comp.confidence,
-                rated_at: new Date().toISOString(),
-                updated_at: new Date().toISOString(),
-              }, {
-                onConflict: 'employee_id,competency_id'
-              });
-
-            if (updateError) {
-              // Silently log errors - can be enabled for debugging if needed
-            }
-
-            // Process subskills with proper upsert and detailed logging
-            if (comp.subskills && comp.subskills.length > 0) {
-              let subskillMatchedCount = 0;
-              const unmatchedSubskills: string[] = [];
-              
-              for (const aiSubskill of comp.subskills) {
-                // NB → NULL (not assessed), NOT 0
-                const subskillRating = aiSubskill.rating === 'NB' ? null : (aiSubskill.rating as number) * 20;
-                
-                // IMPROVED MATCHING: Extract title before ":" for more accurate matching
-                const extractTitle = (name: string) => {
-                  const colonIndex = name.indexOf(':');
-                  return colonIndex > 0 ? name.substring(0, colonIndex).trim() : name.trim();
-                };
-                
-                const aiTitle = extractTitle(aiSubskill.name);
-                const aiNormalized = normalizeCompetencyName(aiTitle);
-                
-                // Try multiple matching strategies in order of precision
-                const matchedSubskill = matchedEc.subskills.find(dbSub => {
-                  const dbTitle = extractTitle(dbSub.name);
-                  const dbNormalized = normalizeCompetencyName(dbTitle);
-                  const dbDeTitle = dbSub.name_de ? extractTitle(dbSub.name_de) : '';
-                  const dbDeNormalized = dbDeTitle ? normalizeCompetencyName(dbDeTitle) : '';
-                  
-                  // Strategy 1: Exact match on titles (before ":")
-                  if (dbNormalized === aiNormalized || dbDeNormalized === aiNormalized) return true;
-                  
-                  // Strategy 2: Match first 3 significant words (ignore common words)
-                  const getSignificantWords = (str: string) => {
-                    const commonWords = ['the', 'and', 'or', 'for', 'to', 'in', 'on', 'at', 'with', 'by'];
-                    return str.split(/\s+/)
-                      .filter(w => w.length > 2 && !commonWords.includes(w.toLowerCase()))
-                      .slice(0, 3)
-                      .join(' ');
-                  };
-                  
-                  const aiWords = getSignificantWords(aiNormalized);
-                  const dbWords = getSignificantWords(dbNormalized);
-                  const dbDeWords = dbDeNormalized ? getSignificantWords(dbDeNormalized) : '';
-                  
-                  if (aiWords && dbWords && aiWords === dbWords) return true;
-                  if (aiWords && dbDeWords && aiWords === dbDeWords) return true;
-                  
-                  // Strategy 3: One contains the other (but only if long enough to avoid false positives)
-                  if (aiNormalized.length > 15 && dbNormalized.length > 15) {
-                    if (dbNormalized.includes(aiNormalized) || aiNormalized.includes(dbNormalized)) return true;
-                  }
-                  
-                  return false;
-                });
-
-                if (matchedSubskill) {
-                  subskillMatchedCount++;
-                  
-                  // Use proper UPSERT with onConflict (relies on unique constraint)
-                  const { error: upsertError } = await supabase
-                    .from("employee_subskills")
-                    .upsert({
-                      employee_id: employeeId,
-                      subskill_id: matchedSubskill.id,
-                      current_level: subskillRating,
-                      evidence: aiSubskill.evidence,
-                      rated_at: new Date().toISOString(),
-                    }, {
-                      onConflict: 'employee_id,subskill_id'
-                    });
-                  
-                  // Silently handle errors - can be enabled for debugging if needed
-                } else {
-                  unmatchedSubskills.push(aiSubskill.name);
-                }
-              }
-              
-              // RECALCULATE competency level from subskill averages
-              // Fetch all subskill ratings for this competency and calculate average
-              const subskillIds = matchedEc.subskills.map(s => s.id);
-              if (subskillIds.length > 0) {
-                const { data: subskillRatings } = await supabase
-                  .from("employee_subskills")
-                  .select("current_level")
-                  .eq("employee_id", employeeId)
-                  .in("subskill_id", subskillIds);
-                
-                if (subskillRatings && subskillRatings.length > 0) {
-                  const validRatings = subskillRatings.filter(r => r.current_level !== null);
-                  if (validRatings.length > 0) {
-                    const avgLevel = Math.round(
-                      validRatings.reduce((sum, r) => sum + (r.current_level || 0), 0) / validRatings.length
-                    );
-                    
-                    // Update competency current_level with calculated average
-                    const { error: avgUpdateError } = await supabase
-                      .from("employee_competencies")
-                      .update({ 
-                        current_level: avgLevel,
-                        updated_at: new Date().toISOString()
-                      })
-                      .eq("employee_id", employeeId)
-                      .eq("competency_id", matchedEc.competencyId);
-                    
-                    // Silently handle errors - can be enabled for debugging if needed
-                  }
-                }
-              }
-            }
-          } else {
-            unmatchedNames.push(comp.name);
-          }
-        }
-      }
-
-      // Log audit event
-      await supabase.rpc("log_audit_event", {
-        p_action: "ai_profile_generated",
-        p_entity_type: "employee",
-        p_entity_id: employeeId,
-        p_new_values: {
-          overall_score: profile.analysis.overallScore,
-          promotion_readiness: profile.analysis.promotionReadiness.readinessPercentage,
-          strengths: profile.analysis.topStrengths.map((s) => s.competency),
-          development_areas: profile.analysis.developmentAreas.map((d) => d.competency),
-          matched_competencies: matchedCount,
-          unmatched_competencies: unmatchedNames.length,
-        },
-      });
-
-      return { matched: matchedCount, unmatched: unmatchedNames };
-    }
-
-    // Log audit event even if no competencies matched
-    await supabase.rpc("log_audit_event", {
-      p_action: "ai_profile_generated",
-      p_entity_type: "employee",
-      p_entity_id: employeeId,
-      p_new_values: {
-        overall_score: profile.analysis.overallScore,
-        promotion_readiness: profile.analysis.promotionReadiness.readinessPercentage,
-        strengths: profile.analysis.topStrengths.map((s) => s.competency),
-        development_areas: profile.analysis.developmentAreas.map((d) => d.competency),
-      },
-    });
-
-    return { matched: 0, unmatched: [] };
-  };
+  }, [employees, latestPublishedAt]);
 
   const openProfileModal = (employee: DbEmployee) => {
     setSelectedEmployeeForProfile(employee);
@@ -432,10 +194,18 @@ const EmployeesPage = () => {
             <h1 className="text-3xl font-bold text-foreground">
               Mitarbeiter (<AnimatedCounter value={employees?.length || 0} duration={1000} />)
             </h1>
-            <Button onClick={openCreateDialog} className="gap-2">
-              <UserPlus className="w-4 h-4" />
-              Neuer Mitarbeiter
-            </Button>
+            <div className="flex gap-2">
+              {needsBulkUpdate && (
+                <Button variant="outline" onClick={() => setShowBulkModal(true)} className="gap-2">
+                  <RefreshCw className="w-4 h-4" />
+                  Profile aktualisieren
+                </Button>
+              )}
+              <Button onClick={openCreateDialog} className="gap-2">
+                <UserPlus className="w-4 h-4" />
+                Neuer Mitarbeiter
+              </Button>
+            </div>
           </div>
         </ScrollReveal>
 
@@ -480,6 +250,21 @@ const EmployeesPage = () => {
                           {emp.team?.name || "Kein Team"}
                         </p>
                       </button>
+                      {emp.profile_last_updated_at && (
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Badge variant="outline" className="text-xs gap-1 mt-1">
+                                <CheckCircle className="w-3 h-3" />
+                                {format(new Date(emp.profile_last_updated_at), 'dd.MM.yy', { locale: de })}
+                              </Badge>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>KI-Profil zuletzt aktualisiert</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      )}
                     </div>
                     <div className="flex items-center gap-2">
                       <Badge
@@ -605,11 +390,12 @@ const EmployeesPage = () => {
             setShowProfileModal(false);
             setSelectedEmployeeForProfile(null);
           }}
-          employee={{
-            id: selectedEmployeeForProfile.id,
-            full_name: selectedEmployeeForProfile.full_name,
-            role_profile: selectedEmployeeForProfile.role_profile,
-          }}
+           employee={{
+             id: selectedEmployeeForProfile.id,
+             full_name: selectedEmployeeForProfile.full_name,
+             organization_id: selectedEmployeeForProfile.organization_id,
+             role_profile: selectedEmployeeForProfile.role_profile,
+           }}
           onProfileGenerated={async (profile) => {
             try {
               const result = await saveProfileToDatabase(selectedEmployeeForProfile.id, profile);
@@ -633,6 +419,21 @@ const EmployeesPage = () => {
           }}
         />
       )}
+
+      {/* Bulk Re-Profile Modal */}
+      <BulkReProfileModal
+        open={showBulkModal}
+        onClose={() => setShowBulkModal(false)}
+        employees={(filteredEmployees || []).map(emp => ({
+          id: emp.id,
+          full_name: emp.full_name,
+          cv_storage_path: emp.cv_storage_path,
+          self_assessment_path: emp.self_assessment_path,
+          manager_assessment_path: emp.manager_assessment_path,
+          role_profile: emp.role_profile,
+        }))}
+        onComplete={() => refetch()}
+      />
     </div>
   );
 };

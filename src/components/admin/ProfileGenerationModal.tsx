@@ -9,6 +9,7 @@ import { parseAllDocuments } from '@/lib/documentParser';
 import { generateProfile } from '@/lib/profileGenerator';
 import { GeneratedProfile, UploadedDocuments } from '@/types/profileGeneration';
 import { supabase } from '@/integrations/supabase/client';
+import { uploadDocumentsToStorage } from '@/hooks/useProfileSaving';
 import { toast } from 'sonner';
 
 interface ProfileGenerationModalProps {
@@ -17,6 +18,7 @@ interface ProfileGenerationModalProps {
   employee: {
     id: string;
     full_name: string;
+    organization_id: string;
     role_profile: { id: string; role_key: string } | null;
   };
   onProfileGenerated: (profile: GeneratedProfile) => void;
@@ -130,8 +132,12 @@ export function ProfileGenerationModal({
     }
   };
 
-  const handleSaveProfile = () => {
+  const handleSaveProfile = async () => {
     if (generatedProfile) {
+      // Upload documents to storage in background
+      uploadDocumentsToStorage(employee.id, employee.organization_id, documents).catch(err => {
+        console.error('Document upload failed:', err);
+      });
       onProfileGenerated(generatedProfile);
       onClose();
     }

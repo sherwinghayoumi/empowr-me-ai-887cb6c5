@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
-import { X, Upload, FileText, User, Briefcase, Loader2, CheckCircle, AlertTriangle } from 'lucide-react';
+import { X, Upload, FileText, User, Briefcase, Loader2, CheckCircle, AlertTriangle, Cloud } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -9,7 +9,7 @@ import { parseAllDocuments } from '@/lib/documentParser';
 import { generateProfile } from '@/lib/profileGenerator';
 import { GeneratedProfile, UploadedDocuments } from '@/types/profileGeneration';
 import { supabase } from '@/integrations/supabase/client';
-import { uploadDocumentsToStorage } from '@/hooks/useProfileSaving';
+import { uploadDocumentsToStorage, downloadDocumentsFromStorage } from '@/hooks/useProfileSaving';
 import { toast } from 'sonner';
 
 interface ProfileGenerationModalProps {
@@ -20,6 +20,9 @@ interface ProfileGenerationModalProps {
     full_name: string;
     organization_id: string;
     role_profile: { id: string; role_key: string } | null;
+    cv_storage_path?: string | null;
+    self_assessment_path?: string | null;
+    manager_assessment_path?: string | null;
   };
   onProfileGenerated: (profile: GeneratedProfile) => void;
 }
@@ -47,13 +50,40 @@ export function ProfileGenerationModal({
     managerAssessment: null,
   });
   const [generatedProfile, setGeneratedProfile] = useState<GeneratedProfile | null>(null);
+  const [isLoadingDocs, setIsLoadingDocs] = useState(false);
+  const [loadedFromStorage, setLoadedFromStorage] = useState<Record<string, boolean>>({});
 
-  // Reset state when modal opens
+  // Reset state when modal opens and auto-load stored documents
   useEffect(() => {
     if (open) {
       setStep('upload');
       setDocuments({ cv: null, selfAssessment: null, managerAssessment: null });
       setGeneratedProfile(null);
+      setLoadedFromStorage({});
+
+      // Auto-download stored documents
+      const hasPaths = employee.cv_storage_path || employee.self_assessment_path || employee.manager_assessment_path;
+      if (hasPaths) {
+        setIsLoadingDocs(true);
+        downloadDocumentsFromStorage({
+          cv_storage_path: employee.cv_storage_path || null,
+          self_assessment_path: employee.self_assessment_path || null,
+          manager_assessment_path: employee.manager_assessment_path || null,
+        }).then((result) => {
+          setDocuments(result);
+          const stored: Record<string, boolean> = {};
+          if (result.cv) stored.cv = true;
+          if (result.selfAssessment) stored.selfAssessment = true;
+          if (result.managerAssessment) stored.managerAssessment = true;
+          setLoadedFromStorage(stored);
+          const count = Object.keys(stored).length;
+          if (count > 0) toast.success(`${count} gespeicherte Dokument(e) geladen`);
+        }).catch((err) => {
+          console.error('Failed to load stored documents:', err);
+        }).finally(() => {
+          setIsLoadingDocs(false);
+        });
+      }
     }
   }, [open]);
 
@@ -158,6 +188,12 @@ export function ProfileGenerationModal({
         {/* Upload Step */}
         {step === 'upload' && (
           <div className="space-y-6">
+            {isLoadingDocs && (
+              <div className="flex items-center justify-center gap-2 py-4 text-muted-foreground">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>Lade gespeicherte Dokumente...</span>
+              </div>
+            )}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <UploadBox
                 icon={<FileText className="w-8 h-8" />}
@@ -165,7 +201,8 @@ export function ProfileGenerationModal({
                 label="Lebenslauf (CV)"
                 accept=".pdf"
                 file={documents.cv}
-                onFileChange={(f) => handleFileUpload('cv', f)}
+                isFromStorage={!!loadedFromStorage.cv}
+                onFileChange={(f) => { handleFileUpload('cv', f); if (!f) setLoadedFromStorage(prev => ({ ...prev, cv: false })); }}
                 onDrop={(e) => handleDrop('cv', e)}
               />
               <UploadBox
@@ -174,7 +211,8 @@ export function ProfileGenerationModal({
                 label="Self-Assessment"
                 accept=".docx"
                 file={documents.selfAssessment}
-                onFileChange={(f) => handleFileUpload('selfAssessment', f)}
+                isFromStorage={!!loadedFromStorage.selfAssessment}
+                onFileChange={(f) => { handleFileUpload('selfAssessment', f); if (!f) setLoadedFromStorage(prev => ({ ...prev, selfAssessment: false })); }}
                 onDrop={(e) => handleDrop('selfAssessment', e)}
               />
               <UploadBox
@@ -183,7 +221,8 @@ export function ProfileGenerationModal({
                 label="Manager-Assessment"
                 accept=".docx"
                 file={documents.managerAssessment}
-                onFileChange={(f) => handleFileUpload('managerAssessment', f)}
+                isFromStorage={!!loadedFromStorage.managerAssessment}
+                onFileChange={(f) => { handleFileUpload('managerAssessment', f); if (!f) setLoadedFromStorage(prev => ({ ...prev, managerAssessment: false })); }}
                 onDrop={(e) => handleDrop('managerAssessment', e)}
               />
             </div>
@@ -405,11 +444,12 @@ interface UploadBoxProps {
   label: string;
   accept: string;
   file: File | null;
+  isFromStorage?: boolean;
   onFileChange: (file: File | null) => void;
   onDrop: (e: React.DragEvent) => void;
 }
 
-function UploadBox({ emoji, label, accept, file, onFileChange, onDrop }: UploadBoxProps) {
+function UploadBox({ emoji, label, accept, file, isFromStorage, onFileChange, onDrop }: UploadBoxProps) {
   const [isDragging, setIsDragging] = useState(false);
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -456,8 +496,11 @@ function UploadBox({ emoji, label, accept, file, onFileChange, onDrop }: UploadB
         
         {file ? (
           <div className="flex items-center gap-2 text-sm text-emerald-500">
-            <CheckCircle className="w-4 h-4" />
+            {isFromStorage ? <Cloud className="w-4 h-4" /> : <CheckCircle className="w-4 h-4" />}
             <span className="truncate max-w-[120px]">{file.name}</span>
+            {isFromStorage && (
+              <span className="text-[10px] text-muted-foreground">(gespeichert)</span>
+            )}
             <button
               type="button"
               onClick={(e) => {

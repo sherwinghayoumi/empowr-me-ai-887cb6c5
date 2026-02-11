@@ -25,7 +25,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { UserPlus, Search, MoreVertical, Pencil, Trash2, Eye, Bot, RefreshCw, CheckCircle } from "lucide-react";
+import { UserPlus, Search, MoreVertical, Pencil, Trash2, Eye, Bot, RefreshCw, CheckCircle, FolderOpen } from "lucide-react";
 import { useEmployees, useTeams, useRoleProfilesPublished } from "@/hooks/useOrgData";
 import { useCreateEmployee, useUpdateEmployee, useArchiveEmployee, usePermanentDeleteEmployee } from "@/hooks/useEmployeeMutations";
 import { saveProfileToDatabase } from "@/hooks/useProfileSaving";
@@ -34,6 +34,7 @@ import { toast } from "sonner";
 import type { GeneratedProfile } from "@/types/profileGeneration";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
+import { cn } from "@/lib/utils";
 
 interface DbEmployee {
   id: string;
@@ -307,6 +308,26 @@ const EmployeesPage = () => {
                           </Tooltip>
                         </TooltipProvider>
                       )}
+                      {/* Document status badge */}
+                      {(() => {
+                        const docCount = [emp.cv_storage_path, emp.self_assessment_path, emp.manager_assessment_path].filter(Boolean).length;
+                        if (docCount === 0) return null;
+                        return (
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Badge variant="outline" className={cn("text-xs gap-1 mt-1", docCount === 3 ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30" : "bg-amber-500/15 text-amber-500 border-amber-500/30")}>
+                                  <FolderOpen className="w-3 h-3" />
+                                  {docCount}/3 Dok.
+                                </Badge>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>{docCount === 3 ? 'Alle Dokumente gespeichert (CV, Self-Assessment, Manager-Assessment)' : `${docCount} von 3 Dokumenten gespeichert`}</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        );
+                      })()}
                     </div>
                     <div className="flex items-center gap-2">
                       <Badge
@@ -437,6 +458,9 @@ const EmployeesPage = () => {
              full_name: selectedEmployeeForProfile.full_name,
              organization_id: selectedEmployeeForProfile.organization_id,
              role_profile: selectedEmployeeForProfile.role_profile,
+             cv_storage_path: selectedEmployeeForProfile.cv_storage_path,
+             self_assessment_path: selectedEmployeeForProfile.self_assessment_path,
+             manager_assessment_path: selectedEmployeeForProfile.manager_assessment_path,
            }}
           onProfileGenerated={async (profile) => {
             try {

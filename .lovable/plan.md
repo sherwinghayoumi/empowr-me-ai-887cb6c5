@@ -1,56 +1,47 @@
 
 
-## Plan: Kritische Bugs und UX-Verbesserungen aus dem HR-Walkthrough
+## Plan: LinkedIn Ads Pitch-Dokument erstellen
 
-Basierend auf dem ausfuehrlichen Walkthrough als tech-getriebene Head of HR habe ich 13 Befunde identifiziert. Hier ist der priorisierte Fix-Plan fuer die kritischsten Probleme:
+Eine Markdown-Datei `docs/linkedin-ads-pitch.md` wird erstellt, die alle Argumente, Pain Points, Meat-Inhalte und validierte Statistiken fuer LinkedIn Ads zusammenfasst.
 
-### Phase 1: Kritische Bugs (sofort)
+### Inhalt der Datei
 
-#### 1. Logo-Link reparieren
-Das Logo in der Navigation linkt auf `/`, was zu `/login` redirected und damit eingeloggte User effektiv ausloggt.
-- **Datei**: `src/components/Header.tsx`
-- **Fix**: Logo-Link dynamisch setzen basierend auf `variant` prop (`/admin` fuer Admin, `/employee` fuer Employee)
+Die Datei wird in 3 Hauptsektionen gegliedert:
 
-#### 2. Employee-Nav-Label korrigieren
-"My Skill Gaps" linkt zu `/employee/learning` (Lernpfade-Seite) -- das Label stimmt nicht mit dem Inhalt ueberein.
-- **Datei**: `src/components/Header.tsx`
-- **Fix**: Label auf "My Learning" oder "Meine Lernpfade" aendern
+**1. Pain Points (umfassend, nach Kategorie)**
+- Fluktuation und deren versteckte Kosten (Recruiting, Onboarding, Wissensverlust)
+- Fehlende Transparenz ueber Kompetenzstaende im Team
+- Blindes Budget fuer Weiterbildung ohne messbare Ergebnisse
+- Zeitfresser: manuelle Skill-Assessments und Excel-Listen
+- Keine Datengrundlage fuer Befoerderungsentscheidungen
+- Fachkraeftemangel im Legal-Markt (sinkende Anwaltszulassungen)
+- Associate-Unzufriedenheit durch fehlende Entwicklungsperspektiven
+- "War for Talent" im Corporate/M&A-Segment Frankfurt
+- Compliance-Risiko: DSGVO bei Personalakten und Assessments
 
-#### 3. Komplette Sprachvereinheitlichung auf Deutsch
-Navigation, Stats-Cards, Seitentitel und Labels durchgaengig auf Deutsch umstellen. Betroffen:
-- `src/components/Header.tsx` -- Nav-Labels
-- `src/pages/AdminDashboard.tsx` -- Stat-Cards, Sektions-Ueberschriften
-- `src/pages/admin/SkillGapPage.tsx` -- alle Labels
-- `src/components/EmployeeProfile.tsx` -- gemischte Labels
+**2. Meat-Stichpunkte (fuer Offer, Problem, Solution, Product)**
+- KI-gestuetzte Kompetenzprofile aus CV + Assessment (Offer/Product)
+- Phillips ROI Modell Level 5 -- wissenschaftlich validierter ROI (Solution)
+- 7 Kompetenzcluster mit 30+ Subskills, spezifisch fuer M&A (Product)
+- Automatische Lernpfad-Generierung pro Skill Gap (Solution)
+- Zertifikats-Upload mit automatischer Profil-Aktualisierung (Product)
+- "In 3 Monaten sehen Sie Ihren ROI" -- datenbasiert, nicht geschaetzt (Offer)
+- Founding Member Programm: 50% Rabatt fuer die ersten 5 Kanzleien (Offer)
 
-### Phase 2: UX-Verbesserungen (diese Woche)
-
-#### 4. GDPR-Consent: Daten nicht vorladen
-Statt die App geblurrt im Hintergrund zu rendern (wobei Daten im DOM sichtbar sind), sollte bei fehlendem GDPR-Consent NUR das Modal gezeigt werden -- ohne die eigentlichen Seiteninhalte zu laden.
-- **Datei**: `src/components/ProtectedRoute.tsx`
-- **Fix**: `children` nicht rendern wenn Consent fehlt, nur Modal + leeren Hintergrund anzeigen
-
-### Phase 3: Feature-Luecken (naechste Sprints)
-
-Die folgenden wurden identifiziert, sind aber nicht als sofortige Fixes geplant:
-- ROI als eigener Navigationspunkt
-- Profil-/Settings-Seite fuer eingeloggte User (Passwort aendern)
-- Export-Funktionen (CSV/PDF)
-- Team-Filter auf dem Dashboard
-- Suchfunktion auf der Skill-Gap-Seite
-- Team-Karten mit Kompetenz-Cluster-Aufschluesselung
+**3. Validierte Zahlen und Statistiken**
+- NALP: Associate Attrition Rate ~18-20% (2024)
+- Fluktuationskosten: 75-200% des Jahresgehalts (SHRM, Gallup)
+- Ø Gehalt M&A Associate Frankfurt: 80-120k EUR
+- Replacement Cost pro Associate: 60.000-150.000 EUR
+- Sinkende Anwaltszulassungen in Deutschland (Anwaltsblatt 2024)
+- 8% Produktivitaetssteigerung durch gezielte Skill-Entwicklung (McKinsey/IBM)
+- Preis: 84 EUR/Seat/Monat, Founding Member: 42 EUR
 
 ### Technische Details
 
-| Datei | Aenderung | Prioritaet |
-|---|---|---|
-| `src/components/Header.tsx` | Logo-Link dynamisch, Nav-Labels Deutsch, Employee-Label-Fix | Kritisch |
-| `src/pages/AdminDashboard.tsx` | Alle Stat-Labels auf Deutsch | Kritisch |
-| `src/pages/admin/SkillGapPage.tsx` | Alle Labels auf Deutsch | Kritisch |
-| `src/components/ProtectedRoute.tsx` | GDPR: children nicht rendern bei fehlendem Consent | Hoch |
+| Datei | Aenderung |
+|---|---|
+| `docs/linkedin-ads-pitch.md` | Neue Datei mit allen Pitch-Argumenten, Pain Points, Meat-Inhalten und validierten Statistiken |
 
-### Nicht-technische Empfehlungen
-
-- Einheitliche Sprachkonvention als Regel festlegen (komplett Deutsch fuer DACH-Markt)
-- Feature-Requests (Export, Settings-Seite, Team-Drill-Down) in Backlog aufnehmen
+Keine Code-Aenderungen noetig -- reine Content-Datei.
 

@@ -333,8 +333,11 @@ const SkillGapPage = () => {
             if (!roleData) return null;
             const { roleTitle, clusters } = roleData;
             const sortedRoleClusters = Object.keys(clusters).sort();
-            const totalRoleGaps = Object.values(clusters).flatMap(c => Object.values(c).flat()).length;
-            const focusRoleGaps  = Object.values(clusters).flatMap(c => Object.values(c).flat()).filter(g => getSeverityLabel(g.weightedGap, g.demandedLevel) === "focus").length;
+            const allRoleGapItems = Object.values(clusters).flatMap(c => Object.values(c).flat());
+            const totalRoleGaps = allRoleGapItems.length;
+            const roleCountFocus    = allRoleGapItems.filter(g => getSeverityLabel(g.weightedGap, g.demandedLevel) === "focus").length;
+            const roleCountBuilding = allRoleGapItems.filter(g => getSeverityLabel(g.weightedGap, g.demandedLevel) === "building").length;
+            const roleCountOntrack  = allRoleGapItems.filter(g => getSeverityLabel(g.weightedGap, g.demandedLevel) === "ontrack").length;
             const isRoleOpen = openFolders[`role-${roleId}`] ?? false;
 
             return (
@@ -353,15 +356,26 @@ const SkillGapPage = () => {
                         <div className="flex-1 min-w-0">
                           <p className="font-semibold text-foreground text-sm truncate">{roleTitle}</p>
                           <p className="text-xs text-muted-foreground">
-                            {sortedRoleClusters.length} Cluster · {totalRoleGaps} Bereiche
+                            {sortedRoleClusters.length} Cluster · {totalRoleGaps} Kompetenzen
                           </p>
                         </div>
-                        {focusRoleGaps > 0 && (
-                          <Badge variant="outline" className="text-xs bg-amber-500/15 text-amber-500 border-amber-500/25 shrink-0">
-                            {focusRoleGaps}× Potenzial
-                          </Badge>
-                        )}
-                        <Badge variant="secondary" className="text-xs shrink-0">{totalRoleGaps}</Badge>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          {roleCountFocus > 0 && (
+                            <Badge variant="outline" className="text-xs bg-amber-500/15 text-amber-500 border-amber-500/25">
+                              {roleCountFocus}× Potenzial
+                            </Badge>
+                          )}
+                          {roleCountBuilding > 0 && (
+                            <Badge variant="outline" className="text-xs bg-sky-500/15 text-sky-400 border-sky-500/25">
+                              {roleCountBuilding}× Wachstum
+                            </Badge>
+                          )}
+                          {roleCountOntrack > 0 && (
+                            <Badge variant="outline" className="text-xs bg-emerald-500/15 text-emerald-500 border-emerald-500/25">
+                              {roleCountOntrack}× Stark
+                            </Badge>
+                          )}
+                        </div>
                         {isRoleOpen
                           ? <ChevronDown className="w-4 h-4 text-muted-foreground shrink-0" />
                           : <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />}
@@ -375,7 +389,9 @@ const SkillGapPage = () => {
                     {sortedRoleClusters.map((clusterName) => {
                       const byComp = clusters[clusterName];
                       const clusterGaps = Object.values(byComp).flat();
-                      const focusInCluster = clusterGaps.filter(g => getSeverityLabel(g.weightedGap, g.demandedLevel) === "focus").length;
+                      const clusterFocus    = clusterGaps.filter(g => getSeverityLabel(g.weightedGap, g.demandedLevel) === "focus").length;
+                      const clusterBuilding = clusterGaps.filter(g => getSeverityLabel(g.weightedGap, g.demandedLevel) === "building").length;
+                      const clusterOntrack  = clusterGaps.filter(g => getSeverityLabel(g.weightedGap, g.demandedLevel) === "ontrack").length;
                       const isClusterOpen = openFolders[`cluster-${roleId}-${clusterName}`] ?? false;
 
                       return (
@@ -390,12 +406,23 @@ const SkillGapPage = () => {
                                 <div className="flex items-center gap-3">
                                   <Folder className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
                                   <span className="text-sm text-foreground flex-1 truncate">{clusterName}</span>
-                                  {focusInCluster > 0 && (
-                                    <Badge variant="outline" className="text-xs bg-amber-500/15 text-amber-500 border-amber-500/25">
-                                      {focusInCluster}× Potenzial
-                                    </Badge>
-                                  )}
-                                  <Badge variant="secondary" className="text-xs">{clusterGaps.length}</Badge>
+                                  <div className="flex items-center gap-1.5 shrink-0">
+                                    {clusterFocus > 0 && (
+                                      <Badge variant="outline" className="text-xs bg-amber-500/15 text-amber-500 border-amber-500/25">
+                                        {clusterFocus}× Potenzial
+                                      </Badge>
+                                    )}
+                                    {clusterBuilding > 0 && (
+                                      <Badge variant="outline" className="text-xs bg-sky-500/15 text-sky-400 border-sky-500/25">
+                                        {clusterBuilding}× Wachstum
+                                      </Badge>
+                                    )}
+                                    {clusterOntrack > 0 && (
+                                      <Badge variant="outline" className="text-xs bg-emerald-500/15 text-emerald-500 border-emerald-500/25">
+                                        {clusterOntrack}× Stark
+                                      </Badge>
+                                    )}
+                                  </div>
                                   {isClusterOpen
                                     ? <ChevronDown className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
                                     : <ChevronRight className="w-3.5 h-3.5 text-muted-foreground shrink-0" />}

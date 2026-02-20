@@ -27,33 +27,34 @@ interface SkillGapCardDbProps {
   delay?: number;
 }
 
-type GapSeverity = "critical" | "high" | "moderate";
+type GapSeverity = "focus" | "building" | "ontrack";
 
 function getGapSeverity(currentLevel: number, demandedLevel: number, futureLevel: number): GapSeverity {
   const weightedGap = (demandedLevel - currentLevel) * 0.4 + (futureLevel - currentLevel) * 0.6;
-  if (weightedGap >= 30) return "critical";
-  if (weightedGap >= 15) return "high";
-  return "moderate";
+  const ratio = demandedLevel > 0 ? weightedGap / demandedLevel : 0;
+  if (ratio >= 0.5) return "focus";
+  if (ratio >= 0.25) return "building";
+  return "ontrack";
 }
 
 const severityConfig: Record<GapSeverity, { badge: string; bar: string; label: string; dot: string }> = {
-  critical: {
-    badge: "bg-destructive/15 text-destructive border-destructive/25",
-    bar: "bg-destructive",
-    label: "Kritisch",
-    dot: "bg-destructive",
+  focus: {
+    badge: "bg-amber-500/15 text-amber-500 border-amber-500/25",
+    bar: "bg-amber-500",
+    label: "Fokusbereich",
+    dot: "bg-amber-500",
   },
-  high: {
-    badge: "bg-orange-500/15 text-orange-400 border-orange-500/25",
-    bar: "bg-orange-500",
-    label: "Hoch",
-    dot: "bg-orange-500",
+  building: {
+    badge: "bg-sky-500/15 text-sky-400 border-sky-500/25",
+    bar: "bg-sky-500",
+    label: "Im Aufbau",
+    dot: "bg-sky-400",
   },
-  moderate: {
-    badge: "bg-yellow-500/15 text-yellow-400 border-yellow-500/25",
-    bar: "bg-yellow-500",
-    label: "Moderat",
-    dot: "bg-yellow-500",
+  ontrack: {
+    badge: "bg-emerald-500/15 text-emerald-500 border-emerald-500/25",
+    bar: "bg-emerald-500",
+    label: "Auf Kurs",
+    dot: "bg-emerald-500",
   },
 };
 
@@ -104,7 +105,7 @@ export function SkillGapCardDb({ employee, competency, subskills = [], delay = 0
           {/* Competency + Gap number */}
           <div className="flex items-center justify-between">
             <p className="text-xs text-muted-foreground truncate flex-1 mr-2">{competency.name}</p>
-            <span className="text-sm font-bold text-destructive shrink-0">−{gap}%</span>
+            <span className="text-sm font-bold text-amber-500 shrink-0">+{gap} Pkt.</span>
           </div>
 
           {/* Progress bar */}

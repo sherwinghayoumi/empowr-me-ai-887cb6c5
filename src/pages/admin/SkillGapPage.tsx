@@ -12,9 +12,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useEmployees } from "@/hooks/useOrgData";
 import {
-  AlertTriangle, TrendingDown, Users, FileQuestion,
+  AlertTriangle, TrendingUp, Users, FileQuestion,
   Search, X, Folder, FolderOpen,
-  ChevronDown, ChevronRight,
+  ChevronDown, ChevronRight, Target,
 } from "lucide-react";
 
 interface DbEmployee {
@@ -50,10 +50,15 @@ interface EmployeeGap {
   weightedGap: number;
 }
 
-function getSeverityLabel(weightedGap: number): "critical" | "high" | "moderate" {
-  if (weightedGap >= 30) return "critical";
-  if (weightedGap >= 15) return "high";
-  return "moderate";
+function getGapRatio(weightedGap: number, demandedLevel: number): number {
+  return demandedLevel > 0 ? weightedGap / demandedLevel : 0;
+}
+
+function getSeverityLabel(weightedGap: number, demandedLevel: number): "focus" | "building" | "ontrack" {
+  const ratio = getGapRatio(weightedGap, demandedLevel);
+  if (ratio >= 0.5) return "focus";
+  if (ratio >= 0.25) return "building";
+  return "ontrack";
 }
 
 // ── Main page ─────────────────────────────────────────────────────────────────
@@ -105,7 +110,7 @@ const SkillGapPage = () => {
       if (!g.employee.full_name.toLowerCase().includes(q) && !g.competencyName.toLowerCase().includes(q)) return false;
     }
     if (filterCluster  !== "all" && g.clusterName !== filterCluster) return false;
-    if (filterSeverity !== "all" && getSeverityLabel(g.weightedGap) !== filterSeverity) return false;
+    if (filterSeverity !== "all" && getSeverityLabel(g.weightedGap, g.demandedLevel) !== filterSeverity) return false;
     if (filterEmployee !== "all" && g.employee.id !== filterEmployee) return false;
     if (filterRole     !== "all" && g.employee.role_profile?.id !== filterRole) return false;
     return true;
@@ -116,7 +121,7 @@ const SkillGapPage = () => {
 
   // Stats
   const totalGaps     = filteredGaps.length;
-  const criticalCount = filteredGaps.filter(g => g.weightedGap >= 30).length;
+  const focusCount    = filteredGaps.filter(g => getSeverityLabel(g.weightedGap, g.demandedLevel) === "focus").length;
   const affectedCount = new Set(filteredGaps.map(g => g.employee.id)).size;
 
   // Group by role → cluster → competency
@@ -217,23 +222,23 @@ const SkillGapPage = () => {
           <div className="grid grid-cols-3 gap-3">
             <GlassCard>
               <GlassCardContent className="py-3 px-4 flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-destructive/15">
-                  <TrendingDown className="w-4 h-4 text-destructive" />
+                <div className="p-2 rounded-lg bg-primary/15">
+                  <TrendingUp className="w-4 h-4 text-primary" />
                 </div>
                 <div>
                   <p className="text-xl font-bold text-foreground leading-none">{totalGaps}</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">Gaps gesamt</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">Entwicklungsbereiche</p>
                 </div>
               </GlassCardContent>
             </GlassCard>
             <GlassCard>
               <GlassCardContent className="py-3 px-4 flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-destructive/10">
-                  <AlertTriangle className="w-4 h-4 text-destructive" />
+                <div className="p-2 rounded-lg bg-amber-500/15">
+                  <Target className="w-4 h-4 text-amber-500" />
                 </div>
                 <div>
-                  <p className="text-xl font-bold text-foreground leading-none">{criticalCount}</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">Kritisch</p>
+                  <p className="text-xl font-bold text-foreground leading-none">{focusCount}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">Fokus-Kompetenzen</p>
                 </div>
               </GlassCardContent>
             </GlassCard>
@@ -276,12 +281,12 @@ const SkillGapPage = () => {
             </Select>
 
             <Select value={filterSeverity} onValueChange={setFilterSeverity}>
-              <SelectTrigger className="h-8 w-36 text-xs"><SelectValue placeholder="Schweregrad" /></SelectTrigger>
+              <SelectTrigger className="h-8 w-40 text-xs"><SelectValue placeholder="Entwicklungsstand" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Alle</SelectItem>
-                <SelectItem value="critical">Kritisch ≥30</SelectItem>
-                <SelectItem value="high">Hoch 15–29</SelectItem>
-                <SelectItem value="moderate">Moderat &lt;15</SelectItem>
+                <SelectItem value="focus">Fokusbereich</SelectItem>
+                <SelectItem value="building">Im Aufbau</SelectItem>
+                <SelectItem value="ontrack">Auf Kurs</SelectItem>
               </SelectContent>
             </Select>
 
@@ -329,7 +334,7 @@ const SkillGapPage = () => {
             const { roleTitle, clusters } = roleData;
             const sortedRoleClusters = Object.keys(clusters).sort();
             const totalRoleGaps = Object.values(clusters).flatMap(c => Object.values(c).flat()).length;
-            const critRoleGaps  = Object.values(clusters).flatMap(c => Object.values(c).flat()).filter(g => g.weightedGap >= 30).length;
+            const focusRoleGaps  = Object.values(clusters).flatMap(c => Object.values(c).flat()).filter(g => getSeverityLabel(g.weightedGap, g.demandedLevel) === "focus").length;
             const isRoleOpen = openFolders[`role-${roleId}`] ?? false;
 
             return (
@@ -348,12 +353,12 @@ const SkillGapPage = () => {
                         <div className="flex-1 min-w-0">
                           <p className="font-semibold text-foreground text-sm truncate">{roleTitle}</p>
                           <p className="text-xs text-muted-foreground">
-                            {sortedRoleClusters.length} Cluster · {totalRoleGaps} Gaps
+                            {sortedRoleClusters.length} Cluster · {totalRoleGaps} Bereiche
                           </p>
                         </div>
-                        {critRoleGaps > 0 && (
-                          <Badge variant="outline" className="text-xs bg-destructive/15 text-destructive border-destructive/25 shrink-0">
-                            {critRoleGaps}× kritisch
+                        {focusRoleGaps > 0 && (
+                          <Badge variant="outline" className="text-xs bg-amber-500/15 text-amber-500 border-amber-500/25 shrink-0">
+                            {focusRoleGaps}× Fokus
                           </Badge>
                         )}
                         <Badge variant="secondary" className="text-xs shrink-0">{totalRoleGaps}</Badge>
@@ -370,7 +375,7 @@ const SkillGapPage = () => {
                     {sortedRoleClusters.map((clusterName) => {
                       const byComp = clusters[clusterName];
                       const clusterGaps = Object.values(byComp).flat();
-                      const critInCluster = clusterGaps.filter(g => g.weightedGap >= 30).length;
+                      const focusInCluster = clusterGaps.filter(g => getSeverityLabel(g.weightedGap, g.demandedLevel) === "focus").length;
                       const isClusterOpen = openFolders[`cluster-${roleId}-${clusterName}`] ?? false;
 
                       return (
@@ -385,9 +390,9 @@ const SkillGapPage = () => {
                                 <div className="flex items-center gap-3">
                                   <Folder className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
                                   <span className="text-sm text-foreground flex-1 truncate">{clusterName}</span>
-                                  {critInCluster > 0 && (
-                                    <Badge variant="outline" className="text-xs bg-destructive/15 text-destructive border-destructive/25">
-                                      {critInCluster}× kritisch
+                                  {focusInCluster > 0 && (
+                                    <Badge variant="outline" className="text-xs bg-amber-500/15 text-amber-500 border-amber-500/25">
+                                      {focusInCluster}× Fokus
                                     </Badge>
                                   )}
                                   <Badge variant="secondary" className="text-xs">{clusterGaps.length}</Badge>

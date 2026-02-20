@@ -238,7 +238,7 @@ const SkillGapPage = () => {
                 </div>
                 <div>
                   <p className="text-xl font-bold text-foreground leading-none">{focusCount}</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">Fokus-Kompetenzen</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">Großes Potenzial</p>
                 </div>
               </GlassCardContent>
             </GlassCard>
@@ -281,12 +281,12 @@ const SkillGapPage = () => {
             </Select>
 
             <Select value={filterSeverity} onValueChange={setFilterSeverity}>
-              <SelectTrigger className="h-8 w-40 text-xs"><SelectValue placeholder="Entwicklungsstand" /></SelectTrigger>
+              <SelectTrigger className="h-8 w-44 text-xs"><SelectValue placeholder="Entwicklungsstand" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Alle</SelectItem>
-                <SelectItem value="focus">Fokusbereich</SelectItem>
-                <SelectItem value="building">Im Aufbau</SelectItem>
-                <SelectItem value="ontrack">Auf Kurs</SelectItem>
+                <SelectItem value="focus">Großes Potenzial</SelectItem>
+                <SelectItem value="building">Im Wachstum</SelectItem>
+                <SelectItem value="ontrack">Gut aufgestellt</SelectItem>
               </SelectContent>
             </Select>
 
@@ -358,7 +358,7 @@ const SkillGapPage = () => {
                         </div>
                         {focusRoleGaps > 0 && (
                           <Badge variant="outline" className="text-xs bg-amber-500/15 text-amber-500 border-amber-500/25 shrink-0">
-                            {focusRoleGaps}× Fokus
+                            {focusRoleGaps}× Potenzial
                           </Badge>
                         )}
                         <Badge variant="secondary" className="text-xs shrink-0">{totalRoleGaps}</Badge>
@@ -392,7 +392,7 @@ const SkillGapPage = () => {
                                   <span className="text-sm text-foreground flex-1 truncate">{clusterName}</span>
                                   {focusInCluster > 0 && (
                                     <Badge variant="outline" className="text-xs bg-amber-500/15 text-amber-500 border-amber-500/25">
-                                      {focusInCluster}× Fokus
+                                      {focusInCluster}× Potenzial
                                     </Badge>
                                   )}
                                   <Badge variant="secondary" className="text-xs">{clusterGaps.length}</Badge>

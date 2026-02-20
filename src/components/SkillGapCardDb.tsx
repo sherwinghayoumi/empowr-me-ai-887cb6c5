@@ -41,19 +41,19 @@ const severityConfig: Record<GapSeverity, { badge: string; bar: string; label: s
   focus: {
     badge: "bg-amber-500/15 text-amber-500 border-amber-500/25",
     bar: "bg-amber-500",
-    label: "Fokusbereich",
+    label: "Großes Potenzial",
     dot: "bg-amber-500",
   },
   building: {
     badge: "bg-sky-500/15 text-sky-400 border-sky-500/25",
     bar: "bg-sky-500",
-    label: "Im Aufbau",
+    label: "Im Wachstum",
     dot: "bg-sky-400",
   },
   ontrack: {
     badge: "bg-emerald-500/15 text-emerald-500 border-emerald-500/25",
     bar: "bg-emerald-500",
-    label: "Auf Kurs",
+    label: "Gut aufgestellt",
     dot: "bg-emerald-500",
   },
 };
@@ -102,10 +102,12 @@ export function SkillGapCardDb({ employee, competency, subskills = [], delay = 0
             </Badge>
           </div>
 
-          {/* Competency + Gap number */}
+          {/* Competency + achieved % */}
           <div className="flex items-center justify-between">
             <p className="text-xs text-muted-foreground truncate flex-1 mr-2">{competency.name}</p>
-            <span className="text-sm font-bold text-amber-500 shrink-0">+{gap} Pkt.</span>
+            <span className="text-sm font-semibold text-foreground shrink-0">
+              {demandedLevel > 0 ? Math.round((currentLevel / demandedLevel) * 100) : 0}% erreicht
+            </span>
           </div>
 
           {/* Progress bar */}
@@ -129,8 +131,8 @@ export function SkillGapCardDb({ employee, competency, subskills = [], delay = 0
             </div>
             {/* Labels below bar */}
             <div className="flex justify-between text-[10px] text-muted-foreground">
-              <span>Ist: {currentLevel}%</span>
-              <span>Soll: {demandedLevel}% · Ziel: {futureLevel}%</span>
+              <span>Aktuell: {currentLevel}%</span>
+              <span>Ziel: {demandedLevel}%</span>
             </div>
           </div>
 

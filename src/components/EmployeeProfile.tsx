@@ -1,4 +1,5 @@
 import { useMemo, useState, useCallback } from "react";
+import { differenceInYears, parseISO } from "date-fns";
 import { useEmployee } from "@/hooks/useOrgData";
 import { useQueryClient } from "@tanstack/react-query";
 import { CompetencyBar } from "./CompetencyBar";
@@ -309,7 +310,9 @@ export function EmployeeProfile({ employeeId, onClose }: EmployeeProfileProps) {
           <GlassCard className="hover-lift">
             <GlassCardContent className="p-4 text-center">
               <p className="text-2xl font-bold text-foreground">
-                <AnimatedCounter value={employee.age || 0} duration={1200} />
+                {(employee as any).birth_date
+                  ? differenceInYears(new Date(), parseISO((employee as any).birth_date))
+                  : "—"}
               </p>
               <p className="text-sm text-muted-foreground">Alter</p>
             </GlassCardContent>

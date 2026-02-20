@@ -435,6 +435,7 @@ export type Database = {
         Row: {
           age: number | null
           avatar_url: string | null
+          birth_date: string | null
           career_objective: string | null
           created_at: string | null
           cv_storage_path: string | null
@@ -463,6 +464,7 @@ export type Database = {
         Insert: {
           age?: number | null
           avatar_url?: string | null
+          birth_date?: string | null
           career_objective?: string | null
           created_at?: string | null
           cv_storage_path?: string | null
@@ -491,6 +493,7 @@ export type Database = {
         Update: {
           age?: number | null
           avatar_url?: string | null
+          birth_date?: string | null
           career_objective?: string | null
           created_at?: string | null
           cv_storage_path?: string | null

@@ -42,7 +42,7 @@ interface DbEmployee {
   email: string | null;
   overall_score: number | null;
   avatar_url: string | null;
-  age: number | null;
+  birth_date: string | null;
   education: string | null;
   total_experience_years: number | null;
   firm_experience_years: number | null;

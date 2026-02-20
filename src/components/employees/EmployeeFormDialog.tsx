@@ -28,6 +28,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Loader2, UserPlus, Save } from "lucide-react";
+import { differenceInYears, parseISO } from "date-fns";
 
 const employeeFormSchema = z.object({
   full_name: z.string().min(2, "Name muss mindestens 2 Zeichen haben"),
@@ -38,7 +39,7 @@ const employeeFormSchema = z.object({
   total_experience_years: z.coerce.number().min(0).optional(),
   firm_experience_years: z.coerce.number().min(0).optional(),
   career_objective: z.string().optional(),
-  age: z.coerce.number().min(18).max(100).optional(),
+  birth_date: z.string().optional(),
 });
 
 export type EmployeeFormData = z.infer<typeof employeeFormSchema>;
@@ -64,7 +65,7 @@ interface EditingEmployee {
   total_experience_years: number | null;
   firm_experience_years: number | null;
   career_objective: string | null;
-  age: number | null;
+  birth_date: string | null;
 }
 
 interface EmployeeFormDialogProps {
@@ -79,6 +80,16 @@ interface EmployeeFormDialogProps {
 }
 
 const NONE_VALUE = "__none__";
+
+/** Calculate age from ISO date string, returns null if no date */
+function calcAge(birthDate: string | undefined | null): number | null {
+  if (!birthDate) return null;
+  try {
+    return differenceInYears(new Date(), parseISO(birthDate));
+  } catch {
+    return null;
+  }
+}
 
 export function EmployeeFormDialog({
   open,
@@ -101,13 +112,15 @@ export function EmployeeFormDialog({
       total_experience_years: undefined,
       firm_experience_years: undefined,
       career_objective: "",
-      age: undefined,
+      birth_date: "",
     },
   });
 
+  const birthDateValue = form.watch("birth_date");
+  const previewAge = calcAge(birthDateValue);
+
   // Track previous open state to detect when dialog opens
   const prevOpenRef = useRef(open);
-  // Store editingEmployee in a ref so we can access it without adding to dependencies
   const editingEmployeeRef = useRef(editingEmployee);
   editingEmployeeRef.current = editingEmployee;
 
@@ -128,7 +141,7 @@ export function EmployeeFormDialog({
           total_experience_years: emp.total_experience_years ?? undefined,
           firm_experience_years: emp.firm_experience_years ?? undefined,
           career_objective: emp.career_objective || "",
-          age: emp.age ?? undefined,
+          birth_date: emp.birth_date || "",
         });
       } else {
         form.reset({
@@ -140,7 +153,7 @@ export function EmployeeFormDialog({
           total_experience_years: undefined,
           firm_experience_years: undefined,
           career_objective: "",
-          age: undefined,
+          birth_date: "",
         });
       }
     }
@@ -148,7 +161,6 @@ export function EmployeeFormDialog({
   }, [open]);
 
   const handleSubmit = async (data: EmployeeFormData) => {
-    // Convert NONE_VALUE back to empty string for team_id
     const submitData = {
       ...data,
       team_id: data.team_id === NONE_VALUE ? "" : data.team_id,
@@ -265,15 +277,24 @@ export function EmployeeFormDialog({
                 )}
               />
 
+              {/* Birth date field with live age preview */}
               <FormField
                 control={form.control}
-                name="age"
+                name="birth_date"
                 render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Alter</FormLabel>
-                    <FormControl>
-                      <Input type="number" min={18} max={100} placeholder="30" {...field} />
-                    </FormControl>
+                  <FormItem className="col-span-2">
+                    <FormLabel>Geburtsdatum</FormLabel>
+                    <div className="flex items-center gap-3">
+                      <FormControl>
+                        <Input type="date" {...field} className="flex-1" />
+                      </FormControl>
+                      {previewAge !== null && (
+                        <div className="flex items-center gap-1.5 px-3 py-2 rounded-md bg-primary/10 border border-primary/20 whitespace-nowrap">
+                          <span className="text-sm font-semibold text-primary">{previewAge}</span>
+                          <span className="text-xs text-muted-foreground">Jahre</span>
+                        </div>
+                      )}
+                    </div>
                     <FormMessage />
                   </FormItem>
                 )}

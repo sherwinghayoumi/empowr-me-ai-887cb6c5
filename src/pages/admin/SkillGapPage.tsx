@@ -13,7 +13,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { useEmployees } from "@/hooks/useOrgData";
 import {
   AlertTriangle, TrendingDown, Users, FileQuestion,
-  Search, X, Folder, LayoutGrid, List, Columns2,
+  Search, X, Folder, FolderOpen, LayoutGrid, List, Columns2,
   ChevronDown, ChevronRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -51,7 +51,7 @@ interface EmployeeGap {
   weightedGap: number;
 }
 
-type ViewMode = "folder" | "grid2" | "grid4" | "list";
+type ViewMode = "role-folder" | "folder" | "grid2" | "grid4" | "list";
 
 function getSeverityLabel(weightedGap: number): "critical" | "high" | "moderate" {
   if (weightedGap >= 30) return "critical";
@@ -103,7 +103,7 @@ function GapListRow({ gap }: { gap: EmployeeGap }) {
 const SkillGapPage = () => {
   const { data: employees, isLoading, error } = useEmployees();
 
-  const [viewMode, setViewMode] = useState<ViewMode>("folder");
+  const [viewMode, setViewMode] = useState<ViewMode>("role-folder");
   const [openFolders, setOpenFolders] = useState<Record<string, boolean>>({});
   const [searchQuery, setSearchQuery] = useState("");
   const [filterCluster, setFilterCluster] = useState("all");
@@ -163,7 +163,7 @@ const SkillGapPage = () => {
   const criticalCount    = filteredGaps.filter(g => g.weightedGap >= 30).length;
   const affectedCount    = new Set(filteredGaps.map(g => g.employee.id)).size;
 
-  // Group by cluster
+  // Group by cluster (for "folder" view)
   const grouped = useMemo(() => {
     const map: Record<string, EmployeeGap[]> = {};
     filteredGaps.forEach(g => { (map[g.clusterName] ??= []).push(g); });
@@ -171,6 +171,43 @@ const SkillGapPage = () => {
     return map;
   }, [filteredGaps]);
   const sortedClusters = Object.keys(grouped).sort();
+
+  // Group by role → cluster → competency (for "role-folder" view)
+  // Each role shows only gaps for employees with that role.
+  // Clusters that appear in multiple roles are duplicated per role.
+  const groupedByRole = useMemo(() => {
+    // roleId -> { roleTitle, clusters: { clusterName -> { compId -> EmployeeGap[] } } }
+    const roleMap: Record<string, {
+      roleTitle: string;
+      clusters: Record<string, Record<string, EmployeeGap[]>>;
+    }> = {};
+
+    filteredGaps.forEach(g => {
+      const roleId = g.employee.role_profile?.id ?? "__none__";
+      const roleTitle = g.employee.role_profile?.role_title ?? "Ohne Rolle";
+
+      if (!roleMap[roleId]) roleMap[roleId] = { roleTitle, clusters: {} };
+      const roleBucket = roleMap[roleId].clusters;
+
+      if (!roleBucket[g.clusterName]) roleBucket[g.clusterName] = {};
+      const clusterBucket = roleBucket[g.clusterName];
+
+      if (!clusterBucket[g.competencyId]) clusterBucket[g.competencyId] = [];
+      clusterBucket[g.competencyId].push(g);
+    });
+
+    // Sort competency gaps within each cluster by weightedGap desc
+    Object.values(roleMap).forEach(role => {
+      Object.values(role.clusters).forEach(cluster => {
+        Object.values(cluster).forEach(arr => arr.sort((a, b) => b.weightedGap - a.weightedGap));
+      });
+    });
+
+    return roleMap;
+  }, [filteredGaps]);
+  const sortedRoles = Object.keys(groupedByRole).sort((a, b) =>
+    groupedByRole[a].roleTitle.localeCompare(groupedByRole[b].roleTitle)
+  );
 
   // ── States ────────────────────────────────────────────────────────────────
   if (isLoading) {
@@ -219,10 +256,11 @@ const SkillGapPage = () => {
   }
 
   const viewButtons: { mode: ViewMode; icon: React.ReactNode; label: string }[] = [
-    { mode: "folder", icon: <Folder className="w-3.5 h-3.5" />,   label: "Cluster" },
-    { mode: "grid2",  icon: <Columns2 className="w-3.5 h-3.5" />, label: "2 Spalten" },
-    { mode: "grid4",  icon: <LayoutGrid className="w-3.5 h-3.5" />, label: "4 Spalten" },
-    { mode: "list",   icon: <List className="w-3.5 h-3.5" />,     label: "Liste" },
+    { mode: "role-folder", icon: <FolderOpen className="w-3.5 h-3.5" />, label: "Rollen" },
+    { mode: "folder",      icon: <Folder className="w-3.5 h-3.5" />,     label: "Cluster" },
+    { mode: "grid2",       icon: <Columns2 className="w-3.5 h-3.5" />,   label: "2 Spalten" },
+    { mode: "grid4",       icon: <LayoutGrid className="w-3.5 h-3.5" />, label: "4 Spalten" },
+    { mode: "list",        icon: <List className="w-3.5 h-3.5" />,       label: "Liste" },
   ];
 
   const renderCards = (gaps: EmployeeGap[], cls: string) => (
@@ -383,7 +421,126 @@ const SkillGapPage = () => {
 
         {/* ── Content ── */}
 
-        {/* Folder view */}
+        {/* Role-folder view (Rolle → Cluster → Kompetenz) */}
+        {viewMode === "role-folder" && (
+          <div className="space-y-3">
+            {sortedRoles.map((roleId) => {
+              const roleData = groupedByRole[roleId];
+              if (!roleData) return null;
+              const { roleTitle, clusters } = roleData;
+              const sortedRoleClusters = Object.keys(clusters).sort();
+              const totalRoleGaps = Object.values(clusters).flatMap(c => Object.values(c).flat()).length;
+              const critRoleGaps  = Object.values(clusters).flatMap(c => Object.values(c).flat()).filter(g => g.weightedGap >= 30).length;
+              const isRoleOpen = openFolders[`role-${roleId}`] ?? false;
+
+              return (
+                <Collapsible
+                  key={roleId}
+                  open={isRoleOpen}
+                  onOpenChange={(v) => setOpenFolders(prev => ({ ...prev, [`role-${roleId}`]: v }))}
+                >
+                  {/* Role header */}
+                  <CollapsibleTrigger asChild>
+                    <GlassCard className="cursor-pointer hover-lift border-primary/20">
+                      <GlassCardContent className="py-3.5 px-4">
+                        <div className="flex items-center gap-3">
+                          <div className="p-1.5 rounded-md bg-primary/15 shrink-0">
+                            <FolderOpen className="w-4 h-4 text-primary" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-semibold text-foreground text-sm truncate">{roleTitle}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {sortedRoleClusters.length} Cluster · {totalRoleGaps} Gaps
+                            </p>
+                          </div>
+                          {critRoleGaps > 0 && (
+                            <Badge variant="outline" className="text-xs bg-destructive/15 text-destructive border-destructive/25 shrink-0">
+                              {critRoleGaps}× kritisch
+                            </Badge>
+                          )}
+                          <Badge variant="secondary" className="text-xs shrink-0">{totalRoleGaps}</Badge>
+                          {isRoleOpen
+                            ? <ChevronDown className="w-4 h-4 text-muted-foreground shrink-0" />
+                            : <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />}
+                        </div>
+                      </GlassCardContent>
+                    </GlassCard>
+                  </CollapsibleTrigger>
+
+                  {/* Role content: cluster sub-folders */}
+                  <CollapsibleContent>
+                    <div className="mt-2 ml-5 space-y-2 border-l border-border/40 pl-4">
+                      {sortedRoleClusters.map((clusterName) => {
+                        const byComp = clusters[clusterName];
+                        const clusterGaps = Object.values(byComp).flat();
+                        const critInCluster = clusterGaps.filter(g => g.weightedGap >= 30).length;
+                        const isClusterOpen = openFolders[`cluster-${roleId}-${clusterName}`] ?? false;
+
+                        return (
+                          <Collapsible
+                            key={clusterName}
+                            open={isClusterOpen}
+                            onOpenChange={(v) => setOpenFolders(prev => ({ ...prev, [`cluster-${roleId}-${clusterName}`]: v }))}
+                          >
+                            <CollapsibleTrigger asChild>
+                              <GlassCard className="cursor-pointer hover-lift">
+                                <GlassCardContent className="py-2.5 px-4">
+                                  <div className="flex items-center gap-3">
+                                    <Folder className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                                    <span className="text-sm text-foreground flex-1 truncate">{clusterName}</span>
+                                    {critInCluster > 0 && (
+                                      <Badge variant="outline" className="text-xs bg-destructive/15 text-destructive border-destructive/25">
+                                        {critInCluster}× kritisch
+                                      </Badge>
+                                    )}
+                                    <Badge variant="secondary" className="text-xs">{clusterGaps.length}</Badge>
+                                    {isClusterOpen
+                                      ? <ChevronDown className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                                      : <ChevronRight className="w-3.5 h-3.5 text-muted-foreground shrink-0" />}
+                                  </div>
+                                </GlassCardContent>
+                              </GlassCard>
+                            </CollapsibleTrigger>
+                            <CollapsibleContent>
+                              <div className="mt-2 ml-4 space-y-4 border-l border-border/30 pl-4">
+                                {Object.entries(byComp).map(([compId, gaps]) => {
+                                  const compName = gaps[0]?.competencyName ?? "";
+                                  return (
+                                    <div key={compId} className="space-y-2">
+                                      <p className="text-xs font-medium text-muted-foreground">
+                                        {compName}
+                                        <span className="ml-1 opacity-50">({gaps.length})</span>
+                                      </p>
+                                      <ScrollArea className="w-full whitespace-nowrap">
+                                        <div className="flex gap-3 pb-3">
+                                          {gaps.map((gap, idx) => (
+                                            <SkillGapCardDb
+                                              key={`${gap.employee.id}-${gap.competencyId}`}
+                                              employee={{ id: gap.employee.id, full_name: gap.employee.full_name, role_profile: gap.employee.role_profile }}
+                                              competency={{ id: gap.competencyId, name: gap.competencyName, currentLevel: gap.currentLevel, demandedLevel: gap.demandedLevel, futureLevel: gap.futureLevel }}
+                                              delay={idx * 30}
+                                            />
+                                          ))}
+                                        </div>
+                                        <ScrollBar orientation="horizontal" />
+                                      </ScrollArea>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </CollapsibleContent>
+                          </Collapsible>
+                        );
+                      })}
+                    </div>
+                  </CollapsibleContent>
+                </Collapsible>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Cluster-folder view */}
         {viewMode === "folder" && (
           <div className="space-y-2">
             {sortedClusters.map((cluster) => {

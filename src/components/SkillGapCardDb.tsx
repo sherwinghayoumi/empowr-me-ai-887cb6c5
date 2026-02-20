@@ -1,12 +1,11 @@
 import { useState, useEffect } from "react";
-import { GlassCard, GlassCardContent, GlassCardHeader, GlassCardTitle } from "@/components/GlassCard";
+import { GlassCard, GlassCardContent } from "@/components/GlassCard";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { LearningPathGeneratorModal } from "./LearningPathGeneratorModal";
 import { AdminNotesModal } from "./AdminNotesModal";
-import { AlertTriangle, TrendingDown, ChevronRight, Sparkles, StickyNote } from "lucide-react";
+import { Sparkles, StickyNote } from "lucide-react";
 
-// Props interface with DB types
 interface SkillGapCardDbProps {
   employee: {
     id: string;
@@ -31,49 +30,38 @@ interface SkillGapCardDbProps {
 type GapSeverity = "critical" | "high" | "moderate";
 
 function getGapSeverity(currentLevel: number, demandedLevel: number, futureLevel: number): GapSeverity {
-  const currentGap = demandedLevel - currentLevel;
-  const futureGap = futureLevel - currentLevel;
-  
-  // Weight future gap more heavily
-  const weightedGap = currentGap * 0.4 + futureGap * 0.6;
-  
+  const weightedGap = (demandedLevel - currentLevel) * 0.4 + (futureLevel - currentLevel) * 0.6;
   if (weightedGap >= 30) return "critical";
   if (weightedGap >= 15) return "high";
   return "moderate";
 }
 
-function getSeverityStyles(severity: GapSeverity) {
-  switch (severity) {
-    case "critical":
-      return {
-        badge: "bg-destructive/20 text-destructive border-destructive/30",
-        bar: "bg-destructive",
-        icon: "text-destructive",
-        label: "Critical",
-      };
-    case "high":
-      return {
-        badge: "bg-orange-500/20 text-orange-400 border-orange-500/30",
-        bar: "bg-orange-500",
-        icon: "text-orange-400",
-        label: "High",
-      };
-    case "moderate":
-      return {
-        badge: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30",
-        bar: "bg-yellow-500",
-        icon: "text-yellow-400",
-        label: "Moderate",
-      };
-  }
-}
+const severityConfig: Record<GapSeverity, { badge: string; bar: string; label: string; dot: string }> = {
+  critical: {
+    badge: "bg-destructive/15 text-destructive border-destructive/25",
+    bar: "bg-destructive",
+    label: "Kritisch",
+    dot: "bg-destructive",
+  },
+  high: {
+    badge: "bg-orange-500/15 text-orange-400 border-orange-500/25",
+    bar: "bg-orange-500",
+    label: "Hoch",
+    dot: "bg-orange-500",
+  },
+  moderate: {
+    badge: "bg-yellow-500/15 text-yellow-400 border-yellow-500/25",
+    bar: "bg-yellow-500",
+    label: "Moderat",
+    dot: "bg-yellow-500",
+  },
+};
 
 export function SkillGapCardDb({ employee, competency, subskills = [], delay = 0 }: SkillGapCardDbProps) {
   const [showAIModal, setShowAIModal] = useState(false);
   const [showNotesModal, setShowNotesModal] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
-  
-  // Animate in
+
   useEffect(() => {
     const timer = setTimeout(() => setIsVisible(true), delay);
     return () => clearTimeout(timer);
@@ -81,137 +69,112 @@ export function SkillGapCardDb({ employee, competency, subskills = [], delay = 0
 
   const { currentLevel, demandedLevel, futureLevel } = competency;
   const severity = getGapSeverity(currentLevel, demandedLevel, futureLevel);
-  const styles = getSeverityStyles(severity);
-  
-  const currentGap = demandedLevel - currentLevel;
-  const futureGap = futureLevel - currentLevel;
+  const cfg = severityConfig[severity];
+  const gap = demandedLevel - currentLevel;
 
-  // Get problematic sub-skills (those below 50% rating)
   const problematicSubSkills = subskills
     .filter((ss) => ss.currentLevel !== null && ss.currentLevel < 50)
     .sort((a, b) => (a.currentLevel ?? 0) - (b.currentLevel ?? 0));
 
   return (
     <>
-      <GlassCard 
-        className={`min-w-[320px] max-w-[360px] whitespace-normal hover-lift transition-all duration-500 ${
+      <GlassCard
+        className={`w-[300px] shrink-0 whitespace-normal transition-all duration-500 ${
           isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
         }`}
       >
-        <GlassCardHeader className="pb-2">
-          <div className="flex items-start justify-between gap-2">
-            <div className="flex-1 min-w-0">
-              <GlassCardTitle className="text-foreground text-base truncate">
+        <GlassCardContent className="p-4 space-y-4">
+
+          {/* Header */}
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <p className="font-semibold text-foreground text-sm leading-tight truncate">
                 {employee.full_name}
-              </GlassCardTitle>
-              <p className="text-xs text-muted-foreground truncate">{competency.name}</p>
+              </p>
+              <p className="text-xs text-muted-foreground mt-0.5 truncate">
+                {employee.role_profile?.role_title || "Keine Rolle"}
+              </p>
             </div>
-            <Badge variant="outline" className={styles.badge}>
-              <AlertTriangle className={`w-3 h-3 mr-1 ${styles.icon}`} />
-              {styles.label}
+            <Badge variant="outline" className={`shrink-0 text-xs ${cfg.badge}`}>
+              <span className={`w-1.5 h-1.5 rounded-full mr-1.5 inline-block ${cfg.dot}`} />
+              {cfg.label}
             </Badge>
           </div>
-        </GlassCardHeader>
-        
-        <GlassCardContent className="space-y-4">
-          {/* Gap Visualization */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between text-xs">
-              <span className="text-muted-foreground">Current</span>
-              <span className="text-foreground font-medium">{currentLevel}%</span>
-            </div>
-            <div className="relative h-2 bg-secondary/50 rounded-full overflow-hidden">
+
+          {/* Competency + Gap number */}
+          <div className="flex items-center justify-between">
+            <p className="text-xs text-muted-foreground truncate flex-1 mr-2">{competency.name}</p>
+            <span className="text-sm font-bold text-destructive shrink-0">−{gap}%</span>
+          </div>
+
+          {/* Progress bar */}
+          <div className="space-y-1.5">
+            <div className="relative h-2 bg-secondary/40 rounded-full overflow-visible">
+              {/* Current fill */}
               <div
-                className="absolute h-full bg-primary/60 rounded-full transition-all duration-700"
-                style={{ width: `${currentLevel}%` }}
+                className="absolute h-full bg-primary/50 rounded-full"
+                style={{ width: `${Math.min(currentLevel, 100)}%` }}
               />
               {/* Demanded marker */}
               <div
-                className="absolute top-0 h-full w-0.5 bg-foreground/70"
+                className="absolute top-1/2 -translate-y-1/2 w-0.5 h-4 bg-foreground/50 rounded-full"
                 style={{ left: `${Math.min(demandedLevel, 100)}%` }}
               />
               {/* Future marker */}
               <div
-                className="absolute top-0 h-full w-0.5 bg-primary"
+                className="absolute top-1/2 -translate-y-1/2 w-0.5 h-4 bg-primary rounded-full"
                 style={{ left: `${Math.min(futureLevel, 100)}%` }}
               />
             </div>
-            
-            <div className="flex justify-between text-xs">
-              <div className="flex items-center gap-1">
-                <div className="w-2 h-2 bg-foreground/70 rounded-sm" />
-                <span className="text-muted-foreground">Demanded: {demandedLevel}%</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <div className="w-2 h-2 bg-primary rounded-sm" />
-                <span className="text-muted-foreground">Future: {futureLevel}%</span>
-              </div>
+            {/* Labels below bar */}
+            <div className="flex justify-between text-[10px] text-muted-foreground">
+              <span>Ist: {currentLevel}%</span>
+              <span>Soll: {demandedLevel}% · Ziel: {futureLevel}%</span>
             </div>
           </div>
 
-          {/* Gap Stats */}
-          <div className="grid grid-cols-2 gap-2">
-            <div className="bg-secondary/30 rounded-lg p-2 text-center">
-              <p className="text-xs text-muted-foreground">Current Gap</p>
-              <p className={`text-lg font-bold ${currentGap > 0 ? "text-destructive" : "text-emerald-400"}`}>
-                {currentGap > 0 ? `-${currentGap}%` : `+${Math.abs(currentGap)}%`}
-              </p>
-            </div>
-            <div className="bg-secondary/30 rounded-lg p-2 text-center">
-              <p className="text-xs text-muted-foreground">Future Gap</p>
-              <p className={`text-lg font-bold ${futureGap > 0 ? "text-destructive" : "text-emerald-400"}`}>
-                {futureGap > 0 ? `-${futureGap}%` : `+${Math.abs(futureGap)}%`}
-              </p>
-            </div>
-          </div>
-
-          {/* Problematic Sub-Skills */}
+          {/* Weak subskills (compact) */}
           {problematicSubSkills.length > 0 && (
-            <div className="space-y-2">
-              <p className="text-xs font-medium text-muted-foreground flex items-center gap-1">
-                <TrendingDown className="w-3 h-3" />
-                Weak Sub-Skills
+            <div className="space-y-1">
+              <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">
+                Schwache Subskills
               </p>
-              <div className="space-y-1">
-                {problematicSubSkills.slice(0, 3).map((ss) => (
-                  <div
-                    key={ss.id}
-                    className="flex items-center justify-between text-xs bg-destructive/10 rounded px-2 py-1"
-                  >
-                    <span className="text-foreground/80 truncate flex-1">{ss.name}</span>
-                    <span className="text-destructive font-medium ml-2">{ss.currentLevel}%</span>
-                  </div>
-                ))}
-                {problematicSubSkills.length > 3 && (
-                  <p className="text-xs text-muted-foreground text-center">
-                    +{problematicSubSkills.length - 3} more
-                  </p>
-                )}
-              </div>
+              {problematicSubSkills.slice(0, 2).map((ss) => (
+                <div
+                  key={ss.id}
+                  className="flex items-center justify-between text-xs"
+                >
+                  <span className="text-foreground/70 truncate flex-1">{ss.name}</span>
+                  <span className="text-destructive font-medium ml-2 shrink-0">{ss.currentLevel}%</span>
+                </div>
+              ))}
+              {problematicSubSkills.length > 2 && (
+                <p className="text-[10px] text-muted-foreground">
+                  +{problematicSubSkills.length - 2} weitere
+                </p>
+              )}
             </div>
           )}
 
-          {/* Action Buttons */}
-          <div className="space-y-2">
+          {/* Actions */}
+          <div className="flex gap-2 pt-1">
             <Button
               variant="default"
               size="sm"
-              className="w-full group overflow-hidden"
+              className="flex-1 h-8 text-xs gap-1.5"
               onClick={() => setShowAIModal(true)}
             >
-              <Sparkles className="w-4 h-4 mr-2 shrink-0" />
-              <span className="truncate">AI Lernpfad</span>
-              <ChevronRight className="w-4 h-4 ml-auto shrink-0 transition-transform group-hover:translate-x-1" />
+              <Sparkles className="w-3.5 h-3.5" />
+              Lernpfad
             </Button>
             <Button
               variant="outline"
               size="sm"
-              className="w-full group overflow-hidden"
+              className="h-8 w-8 p-0 shrink-0"
               onClick={() => setShowNotesModal(true)}
+              title="Notiz hinzufügen"
             >
-              <StickyNote className="w-4 h-4 mr-2 shrink-0" />
-              <span className="truncate">Notiz</span>
-              <ChevronRight className="w-4 h-4 ml-auto shrink-0 transition-transform group-hover:translate-x-1" />
+              <StickyNote className="w-3.5 h-3.5" />
             </Button>
           </div>
         </GlassCardContent>
@@ -224,9 +187,9 @@ export function SkillGapCardDb({ employee, competency, subskills = [], delay = 0
           competencyId: competency.id,
           competencyName: competency.name,
           competencyDefinition: competency.name,
-          subskills: problematicSubSkills.map(ss => ({ 
-            name: ss.name, 
-            currentLevel: ss.currentLevel ?? 0 
+          subskills: problematicSubSkills.map((ss) => ({
+            name: ss.name,
+            currentLevel: ss.currentLevel ?? 0,
           })),
           currentLevel,
           targetLevel: Math.max(demandedLevel, futureLevel),

@@ -4,7 +4,9 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { LearningPathGeneratorModal } from "./LearningPathGeneratorModal";
 import { AdminNotesModal } from "./AdminNotesModal";
-import { Sparkles, StickyNote } from "lucide-react";
+import { Sparkles, StickyNote, Info, Wrench } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { getCompetencyDescription } from "@/data/competencyDescriptions";
 
 interface SkillGapCardDbProps {
   employee: {
@@ -103,12 +105,64 @@ export function SkillGapCardDb({ employee, competency, subskills = [], delay = 0
           </div>
 
           {/* Competency + achieved % */}
-          <div className="flex items-center justify-between">
-            <p className="text-xs text-muted-foreground truncate flex-1 mr-2">{competency.name}</p>
-            <span className="text-sm font-semibold text-foreground shrink-0">
-              {demandedLevel > 0 ? Math.round((currentLevel / demandedLevel) * 100) : 0}% erreicht
-            </span>
-          </div>
+          {(() => {
+            const desc = getCompetencyDescription(competency.name);
+            const displayName = desc?.labelDE ?? competency.name;
+            return (
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-1 min-w-0 flex-1">
+                  <p className="text-xs text-muted-foreground truncate">{displayName}</p>
+                  {desc && (
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <button
+                          className="shrink-0 text-muted-foreground hover:text-foreground transition-colors"
+                          aria-label="Kompetenz-Info"
+                        >
+                          <Info className="w-3 h-3" />
+                        </button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-80 text-sm space-y-3 z-50" side="bottom" align="start">
+                        <p className="font-semibold text-foreground">{desc.labelDE}</p>
+                        <div className="space-y-2">
+                          <div>
+                            <p className="text-xs font-semibold text-primary uppercase tracking-wider mb-0.5">Schwerpunkt</p>
+                            <p className="text-xs text-muted-foreground leading-relaxed">{desc.focus}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs font-semibold text-primary uppercase tracking-wider mb-0.5">Einsatzbereich</p>
+                            <p className="text-xs text-muted-foreground leading-relaxed">{desc.usageContext}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs font-semibold text-primary uppercase tracking-wider mb-0.5">Relevanz</p>
+                            <p className="text-xs text-muted-foreground leading-relaxed">{desc.relevance}</p>
+                          </div>
+                          {desc.tools && desc.tools.length > 0 && (
+                            <div>
+                              <div className="flex items-center gap-1 mb-1">
+                                <Wrench className="w-3 h-3 text-primary" />
+                                <p className="text-xs font-semibold text-primary uppercase tracking-wider">Tools</p>
+                              </div>
+                              <div className="flex flex-wrap gap-1">
+                                {desc.tools.map((tool) => (
+                                  <span key={tool} className="text-[10px] px-1.5 py-0.5 rounded bg-secondary/60 text-muted-foreground border border-border/40">
+                                    {tool}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+                  )}
+                </div>
+                <span className="text-sm font-semibold text-foreground shrink-0">
+                  {demandedLevel > 0 ? Math.round((currentLevel / demandedLevel) * 100) : 0}% erreicht
+                </span>
+              </div>
+            );
+          })()}
 
           {/* Progress bar */}
           <div className="space-y-1.5">

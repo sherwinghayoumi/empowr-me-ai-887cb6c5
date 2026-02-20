@@ -11,10 +11,13 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useEmployees } from "@/hooks/useOrgData";
+import { useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
 import {
   AlertTriangle, TrendingUp, Users, FileQuestion,
   Search, X, Folder, FolderOpen,
-  ChevronDown, ChevronRight, Target,
+  ChevronDown, ChevronRight, Target, Sparkles, Loader2,
 } from "lucide-react";
 
 interface DbEmployee {
@@ -64,6 +67,7 @@ function getSeverityLabel(weightedGap: number, demandedLevel: number): "focus" |
 // ── Main page ─────────────────────────────────────────────────────────────────
 const SkillGapPage = () => {
   const { data: employees, isLoading, error } = useEmployees();
+  const queryClient = useQueryClient();
 
   const [openFolders, setOpenFolders] = useState<Record<string, boolean>>({});
   const [searchQuery, setSearchQuery] = useState("");
@@ -71,6 +75,7 @@ const SkillGapPage = () => {
   const [filterSeverity, setFilterSeverity] = useState("all");
   const [filterEmployee, setFilterEmployee] = useState("all");
   const [filterRole, setFilterRole] = useState("all");
+  const [isGenerating, setIsGenerating] = useState(false);
 
   // Build all gaps
   const allGaps = useMemo<EmployeeGap[]>(() => {
@@ -123,6 +128,77 @@ const SkillGapPage = () => {
   const totalGaps     = filteredGaps.length;
   const focusCount    = filteredGaps.filter(g => getSeverityLabel(g.weightedGap, g.demandedLevel) === "focus").length;
   const affectedCount = new Set(filteredGaps.map(g => g.employee.id)).size;
+
+  // ── Fehlende Beschreibungen generieren ───────────────────────────────────────
+  const handleGenerateDescriptions = async () => {
+    if (!employees?.length) return;
+    setIsGenerating(true);
+
+    try {
+      // 1. Alle einzigartigen Kompetenz-Namen aus den Mitarbeiterdaten sammeln
+      const allCompetencyNames = new Set<string>();
+      const allSubskillNames = new Set<string>();
+
+      (employees as DbEmployee[]).forEach((emp) => {
+        (emp.competencies || []).forEach((comp) => {
+          if (comp.competency?.name) allCompetencyNames.add(comp.competency.name);
+        });
+      });
+
+      // 2. Prüfen welche bereits in der DB sind
+      const { data: existing } = await supabase
+        .from("competency_descriptions")
+        .select("name_key");
+
+      const existingKeys = new Set((existing ?? []).map((e: { name_key: string }) => e.name_key.toLowerCase()));
+
+      // 3. Fehlende herausfiltern
+      const missingCompetencies = [...allCompetencyNames]
+        .filter((n) => !existingKeys.has(n.toLowerCase()))
+        .map((name) => ({ name, type: "competency" as const }));
+
+      if (missingCompetencies.length === 0) {
+        toast({
+          title: "Alles aktuell",
+          description: "Alle Kompetenzen haben bereits eine Beschreibung.",
+        });
+        setIsGenerating(false);
+        return;
+      }
+
+      // 4. In Batches von max. 20 generieren
+      const BATCH_SIZE = 20;
+      let totalGenerated = 0;
+
+      for (let i = 0; i < missingCompetencies.length; i += BATCH_SIZE) {
+        const batch = missingCompetencies.slice(i, i + BATCH_SIZE);
+        const { data, error: fnError } = await supabase.functions.invoke(
+          "generate-competency-descriptions",
+          { body: { competencies: batch } }
+        );
+
+        if (fnError) throw fnError;
+        totalGenerated += data?.generated ?? 0;
+      }
+
+      // 5. Cache invalidieren damit UI sich aktualisiert
+      queryClient.invalidateQueries({ queryKey: ["competency_descriptions"] });
+
+      toast({
+        title: "Beschreibungen generiert",
+        description: `${totalGenerated} neue Beschreibungen wurden KI-generiert und gespeichert.`,
+      });
+    } catch (err) {
+      console.error("Generierungsfehler:", err);
+      toast({
+        title: "Fehler",
+        description: "Beschreibungen konnten nicht generiert werden.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGenerating(false);
+    }
+  };
 
   // Group by role → cluster → competency
   const groupedByRole = useMemo(() => {
@@ -211,9 +287,24 @@ const SkillGapPage = () => {
 
         {/* ── Title ── */}
         <ScrollReveal>
-          <div>
-            <h1 className="text-2xl font-bold text-foreground">Skill Gap Analyse</h1>
-            <p className="text-sm text-muted-foreground mt-0.5">Kompetenzlücken erkennen und gezielte Lernpfade einleiten</p>
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <h1 className="text-2xl font-bold text-foreground">Skill Gap Analyse</h1>
+              <p className="text-sm text-muted-foreground mt-0.5">Kompetenzlücken erkennen und gezielte Lernpfade einleiten</p>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleGenerateDescriptions}
+              disabled={isGenerating}
+              className="shrink-0 gap-2 h-9"
+              title="Prüft alle Kompetenzen und generiert fehlende deutsche Beschreibungen automatisch per KI"
+            >
+              {isGenerating
+                ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                : <Sparkles className="w-3.5 h-3.5" />}
+              {isGenerating ? "Generiere..." : "Beschreibungen aktualisieren"}
+            </Button>
           </div>
         </ScrollReveal>
 

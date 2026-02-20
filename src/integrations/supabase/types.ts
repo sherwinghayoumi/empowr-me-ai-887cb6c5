@@ -264,6 +264,51 @@ export type Database = {
         }
         Relationships: []
       }
+      competency_descriptions: {
+        Row: {
+          created_at: string | null
+          description_type: string
+          focus: string
+          generated_at: string | null
+          id: string
+          is_ai_generated: boolean | null
+          label_de: string
+          name_key: string
+          relevance: string
+          tools: string[] | null
+          updated_at: string | null
+          usage_context: string
+        }
+        Insert: {
+          created_at?: string | null
+          description_type?: string
+          focus: string
+          generated_at?: string | null
+          id?: string
+          is_ai_generated?: boolean | null
+          label_de: string
+          name_key: string
+          relevance: string
+          tools?: string[] | null
+          updated_at?: string | null
+          usage_context: string
+        }
+        Update: {
+          created_at?: string | null
+          description_type?: string
+          focus?: string
+          generated_at?: string | null
+          id?: string
+          is_ai_generated?: boolean | null
+          label_de?: string
+          name_key?: string
+          relevance?: string
+          tools?: string[] | null
+          updated_at?: string | null
+          usage_context?: string
+        }
+        Relationships: []
+      }
       content_changelog: {
         Row: {
           affected_employees: number | null

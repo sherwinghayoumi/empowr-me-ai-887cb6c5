@@ -6,7 +6,7 @@ import { LearningPathGeneratorModal } from "./LearningPathGeneratorModal";
 import { AdminNotesModal } from "./AdminNotesModal";
 import { Sparkles, StickyNote, Info, Wrench } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { getCompetencyDescription } from "@/data/competencyDescriptions";
+import { useCompetencyDescriptions, resolveDescription } from "@/hooks/useCompetencyDescriptions";
 
 interface SkillGapCardDbProps {
   employee: {
@@ -64,6 +64,7 @@ export function SkillGapCardDb({ employee, competency, subskills = [], delay = 0
   const [showAIModal, setShowAIModal] = useState(false);
   const [showNotesModal, setShowNotesModal] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
+  const { data: dbDescriptions } = useCompetencyDescriptions();
 
   useEffect(() => {
     const timer = setTimeout(() => setIsVisible(true), delay);
@@ -106,7 +107,7 @@ export function SkillGapCardDb({ employee, competency, subskills = [], delay = 0
 
           {/* Competency + achieved % */}
           {(() => {
-            const desc = getCompetencyDescription(competency.name);
+            const desc = resolveDescription(competency.name, dbDescriptions, "competency");
             const displayName = desc?.labelDE ?? competency.name;
             return (
               <div className="flex items-center justify-between gap-2">

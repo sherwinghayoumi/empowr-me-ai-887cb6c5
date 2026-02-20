@@ -2,3 +2,6 @@ project_id = "pgbsbvwqjoxqpexoorff"
 
 [functions.generate-learning-path]
 verify_jwt = false
+
+[functions.generate-competency-descriptions]
+verify_jwt = false

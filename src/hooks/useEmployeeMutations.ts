@@ -80,10 +80,10 @@ export function useCreateEmployee() {
           total_experience_years: data.total_experience_years || null,
           firm_experience_years: data.firm_experience_years || null,
           career_objective: data.career_objective || null,
-          age: data.age || null,
+          birth_date: data.birth_date || null,
           data_source: "admin_upload",
           is_active: true,
-        })
+        } as any)
         .select()
         .single();
 
@@ -134,7 +134,7 @@ export function useUpdateEmployee() {
       if (data.total_experience_years !== undefined) updateData.total_experience_years = data.total_experience_years;
       if (data.firm_experience_years !== undefined) updateData.firm_experience_years = data.firm_experience_years;
       if (data.career_objective !== undefined) updateData.career_objective = data.career_objective || null;
-      if (data.age !== undefined) updateData.age = data.age;
+      if (data.birth_date !== undefined) updateData.birth_date = data.birth_date || null;
 
       const { error } = await supabase
         .from("employees")

@@ -68,7 +68,7 @@ export function AdminNotesModal({
       <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <StickyNote className="w-5 h-5 text-primary" />
+            <StickyNote className="w-5 h-5 text-primary transition-transform duration-300 hover:rotate-6" />
             Admin Notizen
           </DialogTitle>
           <DialogDescription>

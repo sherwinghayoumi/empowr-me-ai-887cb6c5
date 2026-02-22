@@ -170,18 +170,18 @@ export function SkillGapCardDb({ employee, competency, subskills = [], delay = 0
             <div className="relative h-2 bg-secondary/40 rounded-full overflow-visible">
               {/* Current fill */}
               <div
-                className="absolute h-full bg-primary/50 rounded-full"
+                className="absolute h-full bg-primary/50 rounded-full animate-progress-fill transition-all duration-700 ease-out"
                 style={{ width: `${Math.min(currentLevel, 100)}%` }}
               />
               {/* Demanded marker */}
               <div
-                className="absolute top-1/2 -translate-y-1/2 w-0.5 h-4 bg-foreground/50 rounded-full"
-                style={{ left: `${Math.min(demandedLevel, 100)}%` }}
+                className="absolute top-1/2 -translate-y-1/2 w-0.5 h-4 bg-foreground/50 rounded-full transition-all duration-500"
+                style={{ left: `${Math.min(demandedLevel, 100)}%`, transitionDelay: '300ms' }}
               />
               {/* Future marker */}
               <div
-                className="absolute top-1/2 -translate-y-1/2 w-0.5 h-4 bg-primary rounded-full"
-                style={{ left: `${Math.min(futureLevel, 100)}%` }}
+                className="absolute top-1/2 -translate-y-1/2 w-0.5 h-4 bg-primary rounded-full transition-all duration-500"
+                style={{ left: `${Math.min(futureLevel, 100)}%`, transitionDelay: '500ms' }}
               />
             </div>
             {/* Labels below bar */}
@@ -217,12 +217,12 @@ export function SkillGapCardDb({ employee, competency, subskills = [], delay = 0
           {/* Actions */}
           <div className="flex gap-2 pt-1">
             <Button
-              variant="default"
+              variant="ai"
               size="sm"
               className="flex-1 h-8 text-xs gap-1.5"
               onClick={() => setShowAIModal(true)}
             >
-              <Sparkles className="w-3.5 h-3.5" />
+              <Sparkles className="w-3.5 h-3.5 animate-ai-sparkle-icon" />
               Lernpfad
             </Button>
             <Button

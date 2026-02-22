@@ -64,8 +64,8 @@ export function Header({ variant }: HeaderProps) {
                 className={cn(
                   "px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 flex items-center gap-2 group",
                   isActive
-                    ? "bg-primary text-primary-foreground"
-                    : "text-muted-foreground hover:text-foreground hover:bg-secondary"
+                    ? "bg-primary text-primary-foreground shadow-[0_0_16px_hsl(var(--primary)/0.3)]"
+                    : "text-muted-foreground hover:text-foreground hover:bg-secondary hover:shadow-[0_0_12px_hsl(var(--primary)/0.1)]"
                 )}
               >
                 <Icon 

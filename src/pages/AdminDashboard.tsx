@@ -94,14 +94,41 @@ const AdminDashboard = () => {
       <div className="min-h-screen bg-background">
         <Header variant="admin" />
         <main className="container py-8">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-            {[1, 2, 3].map(i => (
-              <Skeleton key={i} className="h-32 rounded-xl" />
+          <div className="flex items-center gap-3 mb-6 animate-skeleton-pulse">
+            <Skeleton className="w-10 h-10 rounded-lg" />
+            <div className="space-y-1.5">
+              <Skeleton className="h-6 w-48" />
+              <Skeleton className="h-4 w-32" />
+            </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+            {[1, 2, 3, 4].map(i => (
+              <div key={i} className="glass-card p-6 animate-skeleton-pulse" style={{ animationDelay: `${i * 100}ms` }}>
+                <div className="flex items-center justify-between">
+                  <div className="space-y-2">
+                    <Skeleton className="h-4 w-20" />
+                    <Skeleton className="h-8 w-12" />
+                  </div>
+                  <Skeleton className="w-12 h-12 rounded-lg" />
+                </div>
+              </div>
             ))}
           </div>
           <div className="grid lg:grid-cols-3 gap-6">
-            <Skeleton className="h-96 rounded-xl" />
-            <Skeleton className="h-96 rounded-xl lg:col-span-2" />
+            <div className="glass-card p-6 animate-skeleton-pulse" style={{ animationDelay: '500ms' }}>
+              <Skeleton className="h-5 w-40 mb-4" />
+              <Skeleton className="h-48 w-full rounded-lg" />
+            </div>
+            <div className="glass-card p-6 lg:col-span-2 animate-skeleton-pulse" style={{ animationDelay: '600ms' }}>
+              <Skeleton className="h-5 w-48 mb-4" />
+              {[1, 2, 3].map(i => (
+                <div key={i} className="flex items-center gap-4 mb-3">
+                  <Skeleton className="w-8 h-8 rounded-full" />
+                  <Skeleton className="h-3 flex-1 rounded-full" />
+                  <Skeleton className="h-4 w-12" />
+                </div>
+              ))}
+            </div>
           </div>
         </main>
       </div>

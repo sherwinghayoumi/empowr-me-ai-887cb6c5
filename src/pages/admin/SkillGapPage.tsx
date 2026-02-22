@@ -240,10 +240,39 @@ const SkillGapPage = () => {
       <div className="min-h-screen bg-background">
         <Header variant="admin" />
         <main className="container py-8 space-y-6">
-          <Skeleton className="h-9 w-56" />
-          <div className="grid grid-cols-3 gap-4">{[1,2,3].map(i => <Skeleton key={i} className="h-20 rounded-xl" />)}</div>
-          <Skeleton className="h-10 w-full max-w-sm" />
-          {[1,2].map(i => <Skeleton key={i} className="h-16 rounded-xl" />)}
+          <div className="flex items-start justify-between">
+            <div className="space-y-2">
+              <Skeleton className="h-7 w-56" />
+              <Skeleton className="h-4 w-80" />
+            </div>
+            <Skeleton className="h-9 w-52 rounded-md" />
+          </div>
+          <div className="grid grid-cols-3 gap-4">
+            {[1,2,3].map(i => (
+              <div key={i} className="glass-card p-4 animate-skeleton-pulse" style={{ animationDelay: `${i * 150}ms` }}>
+                <div className="flex items-center gap-3">
+                  <Skeleton className="w-10 h-10 rounded-lg" />
+                  <div className="space-y-1.5 flex-1">
+                    <Skeleton className="h-5 w-12" />
+                    <Skeleton className="h-3 w-28" />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+          <Skeleton className="h-9 w-72 rounded-md" />
+          {[1,2].map(i => (
+            <div key={i} className="glass-card p-4 animate-skeleton-pulse" style={{ animationDelay: `${i * 200}ms` }}>
+              <div className="flex items-center gap-3">
+                <Skeleton className="w-8 h-8 rounded-md" />
+                <div className="flex-1 space-y-1.5">
+                  <Skeleton className="h-4 w-48" />
+                  <Skeleton className="h-3 w-32" />
+                </div>
+                <Skeleton className="h-5 w-24 rounded-full" />
+              </div>
+            </div>
+          ))}
         </main>
       </div>
     );
@@ -293,7 +322,7 @@ const SkillGapPage = () => {
               <p className="text-sm text-muted-foreground mt-0.5">Kompetenzlücken erkennen und gezielte Lernpfade einleiten</p>
             </div>
             <Button
-              variant="outline"
+              variant="ai"
               size="sm"
               onClick={handleGenerateDescriptions}
               disabled={isGenerating}
@@ -302,7 +331,7 @@ const SkillGapPage = () => {
             >
               {isGenerating
                 ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                : <Sparkles className="w-3.5 h-3.5" />}
+                : <Sparkles className="w-3.5 h-3.5 animate-ai-sparkle-icon" />}
               {isGenerating ? "Generiere..." : "Beschreibungen aktualisieren"}
             </Button>
           </div>

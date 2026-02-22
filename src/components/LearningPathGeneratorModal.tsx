@@ -197,7 +197,7 @@ export function LearningPathGeneratorModal({
       <DialogContent className="max-w-2xl h-[85vh] flex flex-col overflow-hidden">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Sparkles className="w-5 h-5 text-primary" />
+            <Sparkles className="w-5 h-5 text-primary animate-ai-sparkle-icon" />
             AI Lernpfad-Generator
           </DialogTitle>
           <DialogDescription>
@@ -239,6 +239,7 @@ export function LearningPathGeneratorModal({
                 size="lg" 
                 onClick={handleGenerate}
                 disabled={isGenerating}
+                variant="ai"
                 className="gap-2"
               >
                 {isGenerating ? (
@@ -248,7 +249,7 @@ export function LearningPathGeneratorModal({
                   </>
                 ) : (
                   <>
-                    <Sparkles className="w-4 h-4" />
+                    <Sparkles className="w-4 h-4 animate-ai-sparkle-icon" />
                     Lernpfad generieren
                   </>
                 )}

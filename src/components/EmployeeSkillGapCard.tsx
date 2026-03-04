@@ -4,8 +4,10 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { LearningPathGeneratorModal } from "./LearningPathGeneratorModal";
 import { AdminNotesModal } from "./AdminNotesModal";
-import { AlertTriangle, ChevronRight, Sparkles, StickyNote } from "lucide-react";
+import { Sparkles, StickyNote, Info, Wrench } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { capLevel } from "@/lib/utils";
+import { useCompetencyDescriptions, resolveDescription } from "@/hooks/useCompetencyDescriptions";
 
 interface EmployeeSkillGapCardProps {
   skillId: string;
@@ -18,45 +20,36 @@ interface EmployeeSkillGapCardProps {
   delay?: number;
 }
 
-type GapSeverity = "critical" | "high" | "moderate";
+type GapSeverity = "focus" | "building" | "ontrack";
 
 function getGapSeverity(currentLevel: number, demandedLevel: number, futureLevel: number): GapSeverity {
-  const currentGap = demandedLevel - currentLevel;
-  const futureGap = futureLevel - currentLevel;
-  
-  // Weight future gap more heavily
-  const weightedGap = currentGap * 0.4 + futureGap * 0.6;
-  
-  if (weightedGap >= 30) return "critical";
-  if (weightedGap >= 15) return "high";
-  return "moderate";
+  const weightedGap = (demandedLevel - currentLevel) * 0.4 + (futureLevel - currentLevel) * 0.6;
+  const ratio = demandedLevel > 0 ? weightedGap / demandedLevel : 0;
+  if (ratio >= 0.5) return "focus";
+  if (ratio >= 0.25) return "building";
+  return "ontrack";
 }
 
-function getSeverityStyles(severity: GapSeverity) {
-  switch (severity) {
-    case "critical":
-      return {
-        badge: "bg-destructive/20 text-destructive border-destructive/30",
-        icon: "text-destructive",
-        label: "Kritisch",
-        border: "border-l-destructive",
-      };
-    case "high":
-      return {
-        badge: "bg-orange-500/20 text-orange-400 border-orange-500/30",
-        icon: "text-orange-400",
-        label: "Hohe Priorität",
-        border: "border-l-orange-500",
-      };
-    case "moderate":
-      return {
-        badge: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30",
-        icon: "text-yellow-400",
-        label: "Moderat",
-        border: "border-l-yellow-500",
-      };
-  }
-}
+const severityConfig: Record<GapSeverity, { badge: string; bar: string; label: string; dot: string }> = {
+  focus: {
+    badge: "bg-amber-500/15 text-amber-500 border-amber-500/25",
+    bar: "bg-amber-500",
+    label: "Großes Potenzial",
+    dot: "bg-amber-500",
+  },
+  building: {
+    badge: "bg-sky-500/15 text-sky-400 border-sky-500/25",
+    bar: "bg-sky-500",
+    label: "Im Wachstum",
+    dot: "bg-sky-400",
+  },
+  ontrack: {
+    badge: "bg-emerald-500/15 text-emerald-500 border-emerald-500/25",
+    bar: "bg-emerald-500",
+    label: "Gut aufgestellt",
+    dot: "bg-emerald-500",
+  },
+};
 
 export function EmployeeSkillGapCard({ 
   skillId,
@@ -71,6 +64,7 @@ export function EmployeeSkillGapCard({
   const [showNotesModal, setShowNotesModal] = useState(false);
   const [showAIModal, setShowAIModal] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
+  const { data: dbDescriptions } = useCompetencyDescriptions();
   
   // Cap all levels at 100% for display
   const currentLevel = capLevel(rawCurrentLevel);
@@ -84,62 +78,115 @@ export function EmployeeSkillGapCard({
 
   const displayName = skillName || skillId;
   const severity = getGapSeverity(currentLevel, demandedLevel, futureLevel);
-  const styles = getSeverityStyles(severity);
+  const cfg = severityConfig[severity];
   
-  const currentGap = demandedLevel - currentLevel;
-  const futureGap = futureLevel - currentLevel;
+  const desc = resolveDescription(displayName, dbDescriptions, "competency");
+  const localizedName = desc?.labelDE ?? displayName;
 
   return (
     <>
       <GlassCard 
-        className={`border-l-4 ${styles.border} hover-lift transition-all duration-500 ${
+        className={`transition-all duration-500 ${
           isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
         }`}
       >
-        <GlassCardHeader className="pb-2">
+        <GlassCardContent className="p-4 space-y-4">
+          {/* Header */}
           <div className="flex items-start justify-between gap-2">
-            <div className="flex-1 min-w-0">
-              <GlassCardTitle className="text-foreground text-lg">
-                {displayName}
+            <div className="flex items-center gap-1.5 min-w-0 flex-1">
+              <GlassCardTitle className="text-foreground text-sm leading-tight truncate">
+                {localizedName}
               </GlassCardTitle>
+              {desc && (
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <button
+                      className="shrink-0 text-muted-foreground hover:text-foreground transition-colors"
+                      aria-label="Kompetenz-Info"
+                    >
+                      <Info className="w-3 h-3" />
+                    </button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-80 text-sm space-y-3 z-50" side="bottom" align="start">
+                    <p className="font-semibold text-foreground">{desc.labelDE}</p>
+                    <div className="space-y-2">
+                      <div>
+                        <p className="text-xs font-semibold text-primary uppercase tracking-wider mb-0.5">Schwerpunkt</p>
+                        <p className="text-xs text-muted-foreground leading-relaxed">{desc.focus}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs font-semibold text-primary uppercase tracking-wider mb-0.5">Einsatzbereich</p>
+                        <p className="text-xs text-muted-foreground leading-relaxed">{desc.usageContext}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs font-semibold text-primary uppercase tracking-wider mb-0.5">Relevanz</p>
+                        <p className="text-xs text-muted-foreground leading-relaxed">{desc.relevance}</p>
+                      </div>
+                      {desc.tools && desc.tools.length > 0 && (
+                        <div>
+                          <div className="flex items-center gap-1 mb-1">
+                            <Wrench className="w-3 h-3 text-primary" />
+                            <p className="text-xs font-semibold text-primary uppercase tracking-wider">Tools</p>
+                          </div>
+                          <div className="flex flex-wrap gap-1">
+                            {desc.tools.map((tool) => (
+                              <span key={tool} className="text-[10px] px-1.5 py-0.5 rounded bg-secondary/60 text-muted-foreground border border-border/40">
+                                {tool}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </PopoverContent>
+                </Popover>
+              )}
             </div>
-            <Badge variant="outline" className={styles.badge}>
-              <AlertTriangle className={`w-3 h-3 mr-1 ${styles.icon}`} />
-              {styles.label}
+            <Badge variant="outline" className={`shrink-0 text-xs ${cfg.badge}`}>
+              <span className={`w-1.5 h-1.5 rounded-full mr-1.5 inline-block ${cfg.dot}`} />
+              {cfg.label}
             </Badge>
           </div>
-        </GlassCardHeader>
-        
-        <GlassCardContent className="space-y-4">
-          {/* Gap Visualization */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between text-xs">
-              <span className="text-muted-foreground">Aktuelles Level</span>
-              <span className="text-foreground font-medium">{currentLevel}%</span>
-            </div>
-            <div className="relative h-3 bg-secondary/50 rounded-full overflow-hidden">
+
+          {/* Achievement percentage */}
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-muted-foreground">Aktuelles Level</span>
+            <span className="text-sm font-semibold text-foreground">
+              {demandedLevel > 0 ? Math.round((currentLevel / demandedLevel) * 100) : 0}% erreicht
+            </span>
+          </div>
+
+          {/* Progress bar with clear demand/future markers */}
+          <div className="space-y-1.5">
+            <div className="relative h-2.5 bg-secondary/40 rounded-full overflow-visible">
+              {/* Current fill */}
               <div
-                className="absolute h-full bg-primary/60 rounded-full transition-all duration-700"
+                className="absolute h-full bg-primary/50 rounded-full animate-progress-fill transition-all duration-700 ease-out"
                 style={{ width: `${currentLevel}%` }}
               />
+              {/* Current Demand marker */}
               <div
-                className="absolute top-0 h-full w-1 bg-foreground/70 rounded"
-                style={{ left: `${demandedLevel}%` }}
+                className="absolute top-1/2 -translate-y-1/2 w-0.5 h-5 bg-foreground/70 rounded-full z-10 transition-all duration-500"
+                style={{ left: `${demandedLevel}%`, transitionDelay: '300ms' }}
+                title={`Aktuelle Anforderung: ${demandedLevel}%`}
               />
+              {/* Future Demand marker */}
               <div
-                className="absolute top-0 h-full w-1 bg-primary rounded"
-                style={{ left: `${futureLevel}%` }}
+                className="absolute top-1/2 -translate-y-1/2 w-0.5 h-5 bg-primary rounded-full z-10 transition-all duration-500"
+                style={{ left: `${futureLevel}%`, transitionDelay: '500ms' }}
+                title={`Zukünftige Anforderung: ${futureLevel}%`}
               />
             </div>
-            
-            <div className="flex justify-between text-xs">
-              <div className="flex items-center gap-1">
-                <div className="w-2 h-2 bg-foreground/70 rounded-sm" />
-                <span className="text-muted-foreground">Gefordert: {demandedLevel}%</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <div className="w-2 h-2 bg-primary rounded-sm" />
-                <span className="text-muted-foreground">Zukunft: {futureLevel}%</span>
+            {/* Legend below bar */}
+            <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+              <span>Aktuell: {currentLevel}%</span>
+              <div className="flex items-center gap-3">
+                <span className="flex items-center gap-1">
+                  <span className="w-2 h-0.5 bg-foreground/70 inline-block rounded" /> Demand: {demandedLevel}%
+                </span>
+                <span className="flex items-center gap-1">
+                  <span className="w-2 h-0.5 bg-primary inline-block rounded" /> Zukunft: {futureLevel}%
+                </span>
               </div>
             </div>
           </div>
@@ -148,39 +195,37 @@ export function EmployeeSkillGapCard({
           <div className="grid grid-cols-2 gap-3">
             <div className="bg-secondary/30 rounded-lg p-3 text-center">
               <p className="text-xs text-muted-foreground mb-1">Aktuelle Lücke</p>
-              <p className={`text-xl font-bold ${currentGap > 0 ? "text-destructive" : "text-emerald-400"}`}>
-                {currentGap > 0 ? `-${currentGap}%` : `+${Math.abs(currentGap)}%`}
+              <p className={`text-xl font-bold ${(demandedLevel - currentLevel) > 0 ? "text-destructive" : "text-emerald-400"}`}>
+                {(demandedLevel - currentLevel) > 0 ? `-${demandedLevel - currentLevel}%` : `+${Math.abs(demandedLevel - currentLevel)}%`}
               </p>
             </div>
             <div className="bg-secondary/30 rounded-lg p-3 text-center">
               <p className="text-xs text-muted-foreground mb-1">Zukunfts-Lücke</p>
-              <p className={`text-xl font-bold ${futureGap > 0 ? "text-destructive" : "text-emerald-400"}`}>
-                {futureGap > 0 ? `-${futureGap}%` : `+${Math.abs(futureGap)}%`}
+              <p className={`text-xl font-bold ${(futureLevel - currentLevel) > 0 ? "text-destructive" : "text-emerald-400"}`}>
+                {(futureLevel - currentLevel) > 0 ? `-${futureLevel - currentLevel}%` : `+${Math.abs(futureLevel - currentLevel)}%`}
               </p>
             </div>
           </div>
 
-          {/* Action Buttons */}
-          <div className="space-y-2">
+          {/* Actions */}
+          <div className="flex gap-2 pt-1">
             <Button
-              variant="default"
+              variant="ai"
               size="sm"
-              className="w-full group overflow-hidden"
+              className="flex-1 h-8 text-xs gap-1.5"
               onClick={() => setShowAIModal(true)}
             >
-              <Sparkles className="w-4 h-4 mr-2 shrink-0" />
-              <span className="truncate">AI Lernpfad generieren</span>
-              <ChevronRight className="w-4 h-4 ml-auto shrink-0 transition-transform group-hover:translate-x-1" />
+              <Sparkles className="w-3.5 h-3.5 animate-ai-sparkle-icon" />
+              Lernpfad
             </Button>
             <Button
               variant="outline"
               size="sm"
-              className="w-full group overflow-hidden"
+              className="h-8 w-8 p-0 shrink-0"
               onClick={() => setShowNotesModal(true)}
+              title="Notiz hinzufügen"
             >
-              <StickyNote className="w-4 h-4 mr-2 shrink-0" />
-              <span className="truncate">Admin Notizen</span>
-              <ChevronRight className="w-4 h-4 ml-auto shrink-0 transition-transform group-hover:translate-x-1" />
+              <StickyNote className="w-3.5 h-3.5" />
             </Button>
           </div>
         </GlassCardContent>

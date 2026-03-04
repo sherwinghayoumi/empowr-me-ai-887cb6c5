@@ -138,38 +138,64 @@ export function CompetencyBar({
             style={{ width: `${animatedLevel}%` }}
           />
 
-        {/* Current Demanded Marker */}
-          <div
-            className="absolute top-1/2 -translate-y-1/2 w-1 h-5 bg-foreground/70 rounded-full z-10 transition-all duration-500"
-            style={{ left: `${demandedLevel}%`, opacity: showMarkers ? 1 : 0, transform: `translateY(-50%) scale(${showMarkers ? 1 : 0})` }}
-            title={`Aktuelle Anforderung: ${demandedLevel}%`}
-          >
-            <div className="absolute -top-5 left-1/2 -translate-x-1/2 whitespace-nowrap text-[9px] font-medium text-muted-foreground">
-              Demand
+          {Math.abs(demandedLevel - futureLevel) <= 3 ? (
+            /* Merged marker when demand ≈ future */
+            <div
+              className="absolute top-1/2 -translate-y-1/2 z-10 flex flex-col items-center transition-all duration-500"
+              style={{
+                left: `${Math.round((demandedLevel + futureLevel) / 2)}%`,
+                opacity: showMarkers ? 1 : 0,
+                transform: `translateY(-50%) scale(${showMarkers ? 1 : 0})`,
+              }}
+            >
+              <div className="absolute -top-5 left-1/2 -translate-x-1/2 whitespace-nowrap text-[9px] font-medium text-primary">
+                Ziel
+              </div>
+              <div className="w-1.5 h-5 rounded-full bg-gradient-to-b from-primary to-foreground/70" />
             </div>
-          </div>
-
-          {/* Future Demanded Marker */}
-          <div
-            className="absolute top-1/2 -translate-y-1/2 w-1 h-5 bg-primary rounded-full z-10 transition-all duration-500"
-            style={{ left: `${futureLevel}%`, opacity: showMarkers ? 1 : 0, transform: `translateY(-50%) scale(${showMarkers ? 1 : 0})` }}
-            title={`Zukünftige Anforderung: ${futureLevel}%`}
-          >
-            <div className="absolute -top-5 left-1/2 -translate-x-1/2 whitespace-nowrap text-[9px] font-medium text-primary">
-              Zukunft
-            </div>
-          </div>
+          ) : (
+            <>
+              {/* Current Demanded Marker */}
+              <div
+                className="absolute top-1/2 -translate-y-1/2 w-1 h-5 bg-foreground/70 rounded-full z-10 transition-all duration-500"
+                style={{ left: `${demandedLevel}%`, opacity: showMarkers ? 1 : 0, transform: `translateY(-50%) scale(${showMarkers ? 1 : 0})` }}
+                title={`Aktuelle Anforderung: ${demandedLevel}%`}
+              >
+                <div className="absolute -top-5 left-1/2 -translate-x-1/2 whitespace-nowrap text-[9px] font-medium text-muted-foreground">
+                  Demand
+                </div>
+              </div>
+              {/* Future Demanded Marker */}
+              <div
+                className="absolute top-1/2 -translate-y-1/2 w-1 h-5 bg-primary rounded-full z-10 transition-all duration-500"
+                style={{ left: `${futureLevel}%`, opacity: showMarkers ? 1 : 0, transform: `translateY(-50%) scale(${showMarkers ? 1 : 0})` }}
+                title={`Zukünftige Anforderung: ${futureLevel}%`}
+              >
+                <div className="absolute -top-5 left-1/2 -translate-x-1/2 whitespace-nowrap text-[9px] font-medium text-primary">
+                  Zukunft
+                </div>
+              </div>
+            </>
+          )}
         </div>
         {/* Legend */}
         <div className="flex items-center justify-between text-[10px] text-muted-foreground mt-1">
           <span>0%</span>
           <div className="flex items-center gap-3">
-            <span className="flex items-center gap-1">
-              <span className="w-2 h-2 rounded-full bg-foreground/70" /> Demand: {demandedLevel}%
-            </span>
-            <span className="flex items-center gap-1">
-              <span className="w-2 h-2 rounded-full bg-primary" /> Zukunft: {futureLevel}%
-            </span>
+            {Math.abs(demandedLevel - futureLevel) <= 3 ? (
+              <span className="flex items-center gap-1">
+                <span className="w-2 h-2 rounded-full bg-primary" /> Ziel: {demandedLevel}%
+              </span>
+            ) : (
+              <>
+                <span className="flex items-center gap-1">
+                  <span className="w-2 h-2 rounded-full bg-foreground/70" /> Demand: {demandedLevel}%
+                </span>
+                <span className="flex items-center gap-1">
+                  <span className="w-2 h-2 rounded-full bg-primary" /> Zukunft: {futureLevel}%
+                </span>
+              </>
+            )}
           </div>
           <span>100%</span>
         </div>

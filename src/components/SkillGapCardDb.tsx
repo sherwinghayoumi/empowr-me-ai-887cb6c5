@@ -173,21 +173,44 @@ export function SkillGapCardDb({ employee, competency, subskills = [], delay = 0
                 className="absolute h-full bg-primary/50 rounded-full animate-progress-fill transition-all duration-700 ease-out"
                 style={{ width: `${Math.min(currentLevel, 100)}%` }}
               />
-              {/* Demanded marker */}
-              <div
-                className="absolute top-1/2 -translate-y-1/2 w-0.5 h-4 bg-foreground/50 rounded-full transition-all duration-500"
-                style={{ left: `${Math.min(demandedLevel, 100)}%`, transitionDelay: '300ms' }}
-              />
-              {/* Future marker */}
-              <div
-                className="absolute top-1/2 -translate-y-1/2 w-0.5 h-4 bg-primary rounded-full transition-all duration-500"
-                style={{ left: `${Math.min(futureLevel, 100)}%`, transitionDelay: '500ms' }}
-              />
+              {Math.abs(demandedLevel - futureLevel) <= 3 ? (
+                <div
+                  className="absolute top-1/2 -translate-y-1/2 z-10 transition-all duration-500"
+                  style={{ left: `${Math.round((demandedLevel + futureLevel) / 2)}%`, transitionDelay: '300ms' }}
+                  title={`Ziel: ${demandedLevel}%`}
+                >
+                  <div className="w-1.5 h-4 rounded-full bg-gradient-to-b from-primary to-foreground/70" />
+                </div>
+              ) : (
+                <>
+                  <div
+                    className="absolute top-1/2 -translate-y-1/2 w-0.5 h-4 bg-foreground/50 rounded-full transition-all duration-500"
+                    style={{ left: `${Math.min(demandedLevel, 100)}%`, transitionDelay: '300ms' }}
+                  />
+                  <div
+                    className="absolute top-1/2 -translate-y-1/2 w-0.5 h-4 bg-primary rounded-full transition-all duration-500"
+                    style={{ left: `${Math.min(futureLevel, 100)}%`, transitionDelay: '500ms' }}
+                  />
+                </>
+              )}
             </div>
             {/* Labels below bar */}
             <div className="flex justify-between text-[10px] text-muted-foreground">
               <span>Aktuell: {currentLevel}%</span>
-              <span>Ziel: {demandedLevel}%</span>
+              {Math.abs(demandedLevel - futureLevel) <= 3 ? (
+                <span className="flex items-center gap-1">
+                  <span className="w-2 h-0.5 bg-primary inline-block rounded" /> Ziel: {demandedLevel}%
+                </span>
+              ) : (
+                <div className="flex items-center gap-3">
+                  <span className="flex items-center gap-1">
+                    <span className="w-2 h-0.5 bg-foreground/50 inline-block rounded" /> Demand: {demandedLevel}%
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <span className="w-2 h-0.5 bg-primary inline-block rounded" /> Zukunft: {futureLevel}%
+                  </span>
+                </div>
+              )}
             </div>
           </div>
 

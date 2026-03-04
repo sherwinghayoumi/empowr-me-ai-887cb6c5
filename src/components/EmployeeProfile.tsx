@@ -482,11 +482,11 @@ export function EmployeeProfile({ employeeId, onClose }: EmployeeProfileProps) {
             <GlassCard>
               <GlassCardHeader>
                 <GlassCardTitle className="flex items-center gap-2">
-                  <AlertTriangle className="w-5 h-5 text-destructive" />
-                  Skill Gaps & Lernempfehlungen
+                  <AlertTriangle className="w-5 h-5 text-primary" />
+                  Kompetenz-Gaps
                 </GlassCardTitle>
                 <p className="text-sm text-muted-foreground">
-                  {skillGaps.length} Kompetenz{skillGaps.length === 1 ? '' : 'en'} unter Zielniveau
+                  {skillGaps.length} Kompetenz{skillGaps.length === 1 ? '' : 'en'} mit Entwicklungspotenzial
                 </p>
               </GlassCardHeader>
               <GlassCardContent className="space-y-4">

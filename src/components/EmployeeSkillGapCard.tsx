@@ -164,30 +164,49 @@ export function EmployeeSkillGapCard({
                 className="absolute h-full bg-primary/50 rounded-full animate-progress-fill transition-all duration-700 ease-out"
                 style={{ width: `${currentLevel}%` }}
               />
-              {/* Current Demand marker */}
-              <div
-                className="absolute top-1/2 -translate-y-1/2 w-0.5 h-5 bg-foreground/70 rounded-full z-10 transition-all duration-500"
-                style={{ left: `${demandedLevel}%`, transitionDelay: '300ms' }}
-                title={`Aktuelle Anforderung: ${demandedLevel}%`}
-              />
-              {/* Future Demand marker */}
-              <div
-                className="absolute top-1/2 -translate-y-1/2 w-0.5 h-5 bg-primary rounded-full z-10 transition-all duration-500"
-                style={{ left: `${futureLevel}%`, transitionDelay: '500ms' }}
-                title={`Zukünftige Anforderung: ${futureLevel}%`}
-              />
+              {Math.abs(demandedLevel - futureLevel) <= 3 ? (
+                /* Merged marker when demand ≈ future */
+                <div
+                  className="absolute top-1/2 -translate-y-1/2 z-10 transition-all duration-500"
+                  style={{ left: `${Math.round((demandedLevel + futureLevel) / 2)}%`, transitionDelay: '300ms' }}
+                  title={`Ziel: ${demandedLevel}%`}
+                >
+                  <div className="w-1.5 h-5 rounded-full bg-gradient-to-b from-primary to-foreground/70" />
+                </div>
+              ) : (
+                <>
+                  {/* Current Demand marker */}
+                  <div
+                    className="absolute top-1/2 -translate-y-1/2 w-0.5 h-5 bg-foreground/70 rounded-full z-10 transition-all duration-500"
+                    style={{ left: `${demandedLevel}%`, transitionDelay: '300ms' }}
+                    title={`Aktuelle Anforderung: ${demandedLevel}%`}
+                  />
+                  {/* Future Demand marker */}
+                  <div
+                    className="absolute top-1/2 -translate-y-1/2 w-0.5 h-5 bg-primary rounded-full z-10 transition-all duration-500"
+                    style={{ left: `${futureLevel}%`, transitionDelay: '500ms' }}
+                    title={`Zukünftige Anforderung: ${futureLevel}%`}
+                  />
+                </>
+              )}
             </div>
             {/* Legend below bar */}
             <div className="flex items-center justify-between text-[10px] text-muted-foreground">
               <span>Aktuell: {currentLevel}%</span>
-              <div className="flex items-center gap-3">
+              {Math.abs(demandedLevel - futureLevel) <= 3 ? (
                 <span className="flex items-center gap-1">
-                  <span className="w-2 h-0.5 bg-foreground/70 inline-block rounded" /> Demand: {demandedLevel}%
+                  <span className="w-2 h-0.5 bg-primary inline-block rounded" /> Ziel: {demandedLevel}%
                 </span>
-                <span className="flex items-center gap-1">
-                  <span className="w-2 h-0.5 bg-primary inline-block rounded" /> Zukunft: {futureLevel}%
-                </span>
-              </div>
+              ) : (
+                <div className="flex items-center gap-3">
+                  <span className="flex items-center gap-1">
+                    <span className="w-2 h-0.5 bg-foreground/70 inline-block rounded" /> Demand: {demandedLevel}%
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <span className="w-2 h-0.5 bg-primary inline-block rounded" /> Zukunft: {futureLevel}%
+                  </span>
+                </div>
+              )}
             </div>
           </div>
 

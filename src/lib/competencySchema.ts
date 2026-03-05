@@ -178,7 +178,7 @@ export const COMPETENCY_SCHEMA: Record<string, Record<string, string[]>> = {
   },
 
   // ═══════════════════════════════════════════════════════════════════════════════
-  // SENIOR ASSOCIATE / COUNSEL (SA) CLUSTERS
+  // SENIOR ASSOCIATE (SA) CLUSTERS
   // ═══════════════════════════════════════════════════════════════════════════════
 
   "Negotiation, Commercial Judgment & Stakeholder Management": {

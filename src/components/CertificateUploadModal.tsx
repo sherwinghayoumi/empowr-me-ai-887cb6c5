@@ -15,6 +15,7 @@ interface CertificateUploadModalProps {
   onClose: () => void;
   currentProfile: GeneratedProfile;
   onUpdateConfirmed: (result: CertificateUpdateResult) => void;
+  practiceGroup?: string;
 }
 
 type AnalysisState = "idle" | "analyzing" | "done";

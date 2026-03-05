@@ -9,7 +9,8 @@ import { supabase } from '@/integrations/supabase/client';
 export async function analyzeCertificate(
   currentProfile: GeneratedProfile,
   documentContent: string,
-  fileName: string
+  fileName: string,
+  practiceGroup?: string
 ): Promise<CertificateUpdateResult> {
   const { data, error } = await supabase.functions.invoke('analyze-certificate', {
     body: {
@@ -17,6 +18,7 @@ export async function analyzeCertificate(
       currentProfile,
       documentContent,
       fileName,
+      practiceGroup,
     },
   });
 

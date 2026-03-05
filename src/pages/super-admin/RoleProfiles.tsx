@@ -43,6 +43,7 @@ const RoleProfiles = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [quarterFilter, setQuarterFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [practiceGroupFilter, setPracticeGroupFilter] = useState<string>('all');
   
   const [uploadWizardOpen, setUploadWizardOpen] = useState(false);
   const [publishDialogOpen, setPublishDialogOpen] = useState(false);

@@ -387,7 +387,7 @@ Setze in diesem Fall die Confidence auf "LOW" und erkläre in der Evidence, wora
 KRITISCH: Du bewertest einen ${roleDisplayName} (normalisiert: ${normalizedRole})
 Kompetenz-Quelle: ${schemaSource}
 
-BEWERTUNGSPRINZIP: Alle Ratings sind RELATIV zur Rolle "${roleKey}".
+BEWERTUNGSPRINZIP: Alle Ratings sind RELATIV zur Rolle "${roleDisplayName}".
 Eine 5 bedeutet: herausragend FUER DIESE ROLLE.
 Eine 3 bedeutet: solide auf dem erwarteten Niveau DIESER ROLLE.
 Absolute Berufserfahrung oder Senioritaet duerfen das Rating

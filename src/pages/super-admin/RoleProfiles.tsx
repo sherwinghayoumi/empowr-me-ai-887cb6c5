@@ -85,15 +85,18 @@ const RoleProfiles = () => {
     return roleProfiles?.filter(profile => {
       const matchesSearch = 
         profile.role_title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        profile.role_key.toLowerCase().includes(searchQuery.toLowerCase());
+        profile.role_key.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (profile.practice_group || '').toLowerCase().includes(searchQuery.toLowerCase());
       const matchesQuarter = quarterFilter === 'all' || 
         `${profile.quarter} ${profile.year}` === quarterFilter;
       const matchesStatus = statusFilter === 'all' ||
         (statusFilter === 'published' && profile.is_published) ||
         (statusFilter === 'draft' && !profile.is_published);
-      return matchesSearch && matchesQuarter && matchesStatus;
+      const matchesPracticeGroup = practiceGroupFilter === 'all' ||
+        profile.practice_group === practiceGroupFilter;
+      return matchesSearch && matchesQuarter && matchesStatus && matchesPracticeGroup;
     }) || [];
-  }, [roleProfiles, searchQuery, quarterFilter, statusFilter]);
+  }, [roleProfiles, searchQuery, quarterFilter, statusFilter, practiceGroupFilter]);
 
   // Group by quarter/year
   const groupedProfiles = useMemo(() => {

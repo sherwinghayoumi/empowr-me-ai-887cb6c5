@@ -13,7 +13,6 @@ import {
   Clock,
   AlertTriangle,
   Activity,
-  HardDrive,
   MoreHorizontal,
   Eye,
   Edit,

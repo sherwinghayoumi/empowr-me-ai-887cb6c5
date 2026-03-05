@@ -55,6 +55,7 @@ const breadcrumbLabels: Record<string, string> = {
   'role-profiles': 'Role Profiles',
   'users': 'Users',
   'audit-log': 'Audit Log',
+  'system-health': 'System Health',
   'settings': 'Einstellungen',
 };
 

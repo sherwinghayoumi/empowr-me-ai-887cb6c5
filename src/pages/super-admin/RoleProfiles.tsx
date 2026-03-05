@@ -57,6 +57,15 @@ const RoleProfiles = () => {
     return Array.from(set).sort().reverse();
   }, [roleProfiles]);
 
+  // Get unique practice groups for filter
+  const practiceGroups = useMemo(() => {
+    const set = new Set<string>();
+    roleProfiles?.forEach(rp => {
+      if (rp.practice_group) set.add(rp.practice_group);
+    });
+    return Array.from(set).sort();
+  }, [roleProfiles]);
+
   // Current quarter/year for publishing
   const currentQuarter = useMemo(() => {
     if (quarterFilter !== 'all') {

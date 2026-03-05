@@ -910,7 +910,7 @@ employees.forEach(emp => {
 export const teams: Team[] = [
   { 
     id: "team-ma", 
-    name: "M&A Practice Group", 
+    name: "Corporate Practice Group", 
     leaderId: "emp-4", 
     memberIds: ["emp-1", "emp-2", "emp-5", "emp-7", "emp-9", "emp-12", "emp-17", "emp-19", "emp-21", "emp-23", "emp-26", "emp-29", "emp-30", "emp-31"], 
     averageScore: 0

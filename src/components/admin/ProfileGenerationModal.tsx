@@ -146,7 +146,8 @@ export function ProfileGenerationModal({
       const profile = await generateProfile(
         parsedDocs,
         roleKey,
-        dbCompetencySchema.length > 0 ? dbCompetencySchema : undefined
+        dbCompetencySchema.length > 0 ? dbCompetencySchema : undefined,
+        employee.role_profile?.practice_group || undefined
       );
 
       // Validate profile structure

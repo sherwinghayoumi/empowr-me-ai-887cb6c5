@@ -122,7 +122,8 @@ export function BulkReProfileModal({ open, onClose, employees, onComplete }: Bul
         const profile = await generateProfile(
           parsedDocs,
           roleKey,
-          dbCompetencySchema.length > 0 ? dbCompetencySchema : undefined
+          dbCompetencySchema.length > 0 ? dbCompetencySchema : undefined,
+          emp.role_profile?.practice_group || undefined
         );
 
         if (!profile || !profile.analysis || typeof profile.analysis.overallScore !== 'number') {

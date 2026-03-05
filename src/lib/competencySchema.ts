@@ -437,7 +437,13 @@ export const COMPETENCY_SCHEMA: Record<string, Record<string, string[]>> = {
   },
 
   // ═══════════════════════════════════════════════════════════════════════════════
-  // PARTNER-LEVEL CLUSTERS (for reference/future)
+  // COUNSEL CLUSTERS
+  // Counsel nutzt SA-Cluster + ausgewählte Partner-Cluster.
+  // Zuordnung erfolgt in generate-profile/index.ts → ROLE_CLUSTERS["counsel"]
+  // ═══════════════════════════════════════════════════════════════════════════════
+
+  // ═══════════════════════════════════════════════════════════════════════════════
+  // PARTNER-LEVEL CLUSTERS
   // ═══════════════════════════════════════════════════════════════════════════════
 
   "Deal Strategy, Risk Ownership & Structuring Judgment": {

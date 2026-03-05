@@ -59,6 +59,7 @@ const ReportsPage = () => {
 
   // Get unique years for filter
   const years = [...new Set(publishedReports.map(r => r.year))].sort((a, b) => b - a);
+  const practiceGroups = [...new Set(publishedReports.map(r => r.practice_group).filter(Boolean))].sort() as string[];
 
   // Find the latest/main report
   const mainReport = filteredReports.length > 0 ? filteredReports[0] : null;

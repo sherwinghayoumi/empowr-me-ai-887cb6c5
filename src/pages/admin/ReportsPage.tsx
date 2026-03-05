@@ -39,6 +39,7 @@ const ReportsPage = () => {
   const { reports, isLoading } = useReports();
   const [searchQuery, setSearchQuery] = useState("");
   const [yearFilter, setYearFilter] = useState<string>("all");
+  const [practiceGroupFilter, setPracticeGroupFilter] = useState<string>("all");
   const [selectedReport, setSelectedReport] = useState<Report | null>(null);
 
   // Filter only published reports for org admins

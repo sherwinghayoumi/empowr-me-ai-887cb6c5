@@ -24,6 +24,7 @@ import SuperAdminRoleProfiles from "@/pages/super-admin/RoleProfiles";
 import SuperAdminUsers from "@/pages/super-admin/Users";
 import SuperAdminAuditLog from "@/pages/super-admin/AuditLog";
 import SuperAdminSettings from "@/pages/super-admin/Settings";
+import SuperAdminSystemHealth from "@/pages/super-admin/SystemHealth";
 
 // Org Admin Pages
 import AdminDashboard from "@/pages/AdminDashboard";
@@ -64,6 +65,7 @@ function AppRoutes() {
         <Route path="role-profiles" element={<SuperAdminRoleProfiles />} />
         <Route path="users" element={<SuperAdminUsers />} />
         <Route path="audit-log" element={<SuperAdminAuditLog />} />
+        <Route path="system-health" element={<SuperAdminSystemHealth />} />
         <Route path="settings" element={<SuperAdminSettings />} />
       </Route>
 

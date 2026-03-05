@@ -19,6 +19,7 @@ import {
   X,
   Plus,
   Shield,
+  HeartPulse,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -43,6 +44,7 @@ const navItems = [
   { label: 'Role Profiles', href: '/super-admin/role-profiles', icon: ClipboardList },
   { label: 'Users', href: '/super-admin/users', icon: Users },
   { label: 'Audit Log', href: '/super-admin/audit-log', icon: ScrollText },
+  { label: 'System Health', href: '/super-admin/system-health', icon: HeartPulse },
   { label: 'Settings', href: '/super-admin/settings', icon: Settings },
 ];
 
@@ -53,6 +55,7 @@ const breadcrumbLabels: Record<string, string> = {
   'role-profiles': 'Role Profiles',
   'users': 'Users',
   'audit-log': 'Audit Log',
+  'system-health': 'System Health',
   'settings': 'Einstellungen',
 };
 

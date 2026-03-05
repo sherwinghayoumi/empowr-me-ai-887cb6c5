@@ -13,7 +13,6 @@ import {
   Clock,
   AlertTriangle,
   Activity,
-  HardDrive,
   MoreHorizontal,
   Eye,
   Edit,
@@ -434,7 +433,7 @@ const Dashboard = () => {
 
         {/* Right Sidebar */}
         <div className="space-y-6">
-          {/* System Health */}
+          {/* System Health — link to dedicated page */}
           <Card className="glass">
             <CardHeader className="pb-3">
               <CardTitle className="text-lg flex items-center gap-2">
@@ -442,33 +441,14 @@ const Dashboard = () => {
                 System Health
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <HardDrive className="w-4 h-4 text-muted-foreground" />
-                  <span className="text-sm">Storage</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Progress value={34} className="w-20 h-1.5" />
-                  <span className="text-xs text-muted-foreground">34%</span>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Users className="w-4 h-4 text-muted-foreground" />
-                  <span className="text-sm">Aktive Sessions</span>
-                </div>
-                <Badge variant="outline">12</Badge>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <AlertTriangle className="w-4 h-4 text-muted-foreground" />
-                  <span className="text-sm">Fehler (24h)</span>
-                </div>
-                <Badge variant="outline" className="text-emerald-500 border-emerald-500/30">0</Badge>
-              </div>
+            <CardContent className="text-center py-4">
+              <Button variant="outline" asChild>
+                <Link to="/super-admin/system-health" className="gap-2">
+                  <Activity className="w-4 h-4" />
+                  Detaillierte Systemanalyse öffnen
+                  <ChevronRight className="w-4 h-4" />
+                </Link>
+              </Button>
             </CardContent>
           </Card>
 

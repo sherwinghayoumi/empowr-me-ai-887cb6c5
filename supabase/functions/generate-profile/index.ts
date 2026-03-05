@@ -510,9 +510,10 @@ serve(async (req) => {
   try {
     const { cvText, selfText, managerText, roleTitle, dbCompetencySchema, practiceGroup } = await req.json();
     
+    const roleDisplayName = ROLE_DISPLAY_NAMES[normalizeRoleKey(roleTitle)] || roleTitle;
 
     const userPrompt = `
-ROLLE: ${roleTitle}
+ROLLE: ${roleDisplayName}
 
 === CV ===
 ${cvText}

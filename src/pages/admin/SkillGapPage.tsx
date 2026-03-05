@@ -25,7 +25,7 @@ interface DbEmployee {
   full_name: string;
   overall_score: number | null;
   avatar_url: string | null;
-  role_profile: { id: string; role_title: string; role_key: string } | null;
+  role_profile: { id: string; role_title: string; role_key: string; practice_group: string | null } | null;
   team: { id: string; name: string } | null;
   competencies: Array<{
     id: string;

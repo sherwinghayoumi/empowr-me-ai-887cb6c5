@@ -64,6 +64,7 @@ interface DbEmployee {
     id: string;
     role_title: string;
     role_key: string;
+    practice_group: string | null;
   } | null;
   team: {
     id: string;

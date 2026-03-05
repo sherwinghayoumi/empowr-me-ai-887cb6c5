@@ -41,7 +41,8 @@ export async function analyzeCertificateImage(
   currentProfile: GeneratedProfile,
   imageBase64: string,
   mimeType: string,
-  fileName: string
+  fileName: string,
+  practiceGroup?: string
 ): Promise<CertificateUpdateResult> {
   const { data, error } = await supabase.functions.invoke('analyze-certificate', {
     body: {
@@ -50,6 +51,7 @@ export async function analyzeCertificateImage(
       imageBase64,
       mimeType,
       fileName,
+      practiceGroup,
     },
   });
 

@@ -174,7 +174,7 @@ export const competencyDescriptions: SkillDescription[] = [
     tools: ["Bundeskartellamt-Portal", "EU Commission DG COMP", "KPMG FDI Screening Tool", "Lexis+ Regulatory Compliance"],
   },
 
-  // ── Senior Associate / Counsel ────────────────────────────────────────────────
+  // ── Senior Associate ────────────────────────────────────────────────────────
   {
     nameKey: "Sanctions, Export Controls & Trade Compliance",
     labelDE: "Sanktionen, Exportkontrolle & Handels-Compliance",

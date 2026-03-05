@@ -178,7 +178,7 @@ export const COMPETENCY_SCHEMA: Record<string, Record<string, string[]>> = {
   },
 
   // ═══════════════════════════════════════════════════════════════════════════════
-  // SENIOR ASSOCIATE / COUNSEL (SA) CLUSTERS
+  // SENIOR ASSOCIATE (SA) CLUSTERS
   // ═══════════════════════════════════════════════════════════════════════════════
 
   "Negotiation, Commercial Judgment & Stakeholder Management": {
@@ -438,6 +438,7 @@ export const COMPETENCY_SCHEMA: Record<string, Record<string, string[]>> = {
 
   // ═══════════════════════════════════════════════════════════════════════════════
   // COUNSEL CLUSTERS
+  // Counsel ist eine EIGENSTÄNDIGE Rolle zwischen SA und Partner.
   // Counsel nutzt SA-Cluster + ausgewählte Partner-Cluster.
   // Zuordnung erfolgt in generate-profile/index.ts → ROLE_CLUSTERS["counsel"]
   // ═══════════════════════════════════════════════════════════════════════════════

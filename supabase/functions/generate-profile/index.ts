@@ -384,7 +384,7 @@ Setze in diesem Fall die Confidence auf "LOW" und erkläre in der Evidence, wora
 "NB" (Nicht bewertbar) ist KEINE gültige Antwort – es muss IMMER ein Rating von 1-5 vergeben werden.
 
 ═══════════════════════════════════════════════════════════════════════════════
-KRITISCH: Du bewertest einen ${roleKey} (normalisiert: ${normalizedRole})
+KRITISCH: Du bewertest einen ${roleDisplayName} (normalisiert: ${normalizedRole})
 Kompetenz-Quelle: ${schemaSource}
 
 BEWERTUNGSPRINZIP: Alle Ratings sind RELATIV zur Rolle "${roleKey}".

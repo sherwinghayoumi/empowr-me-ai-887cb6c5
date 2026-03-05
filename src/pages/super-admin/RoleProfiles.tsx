@@ -98,7 +98,7 @@ const RoleProfiles = () => {
     }) || [];
   }, [roleProfiles, searchQuery, quarterFilter, statusFilter, practiceGroupFilter]);
 
-  // Group by quarter/year
+  // Group by quarter/year, sorted by practice_group then role_title
   const groupedProfiles = useMemo(() => {
     const groups: Record<string, RoleProfile[]> = {};
     filteredProfiles.forEach(profile => {
@@ -108,6 +108,14 @@ const RoleProfiles = () => {
       }
       groups[key].push(profile);
     });
+    // Sort within each group
+    for (const key of Object.keys(groups)) {
+      groups[key].sort((a, b) => {
+        const pgCompare = (a.practice_group || '').localeCompare(b.practice_group || '');
+        if (pgCompare !== 0) return pgCompare;
+        return a.role_title.localeCompare(b.role_title);
+      });
+    }
     return groups;
   }, [filteredProfiles]);
 

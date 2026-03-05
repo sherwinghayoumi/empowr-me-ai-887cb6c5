@@ -364,7 +364,7 @@ Deine Aufgabe:
 3. Kompetenzen bewerten (Rating 1-5)
 4. Stärken und Entwicklungsfelder identifizieren
 
-BEWERTUNGSMASSSTAB: Rollenrelativ fuer ${roleKey}
+BEWERTUNGSMASSSTAB: Rollenrelativ fuer ${roleDisplayName}
 Die Bewertung bezieht sich AUSSCHLIESSLICH auf die Erwartungen der aktuellen Rolle.
 Ein Junior Associate, der alle JA-Kompetenzen perfekt beherrscht, verdient eine 5.
 Ein Senior Associate, der SA-Kompetenzen nur teilweise beherrscht, kann eine 2 bekommen.

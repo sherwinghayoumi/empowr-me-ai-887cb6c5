@@ -16,6 +16,7 @@ interface SkillGapInput {
   targetLevel: number;
   employeeRole?: string;
   employeeExperience?: number;
+  practiceGroup?: string;
 }
 
 interface ModuleFromClaude {
@@ -106,7 +107,6 @@ function generateFallbackSearchUrl(title: string, provider: string): string {
   } else if (providerLower.includes('udacity')) {
     return `https://www.udacity.com/catalog?searchValue=${encodedTitle}`;
   } else {
-    // Google search as ultimate fallback
     return `https://www.google.com/search?q=${encodedTitle}+${encodeURIComponent(provider)}+course`;
   }
 }
@@ -197,7 +197,6 @@ async function enrichModulesWithUrls(modules: ModuleFromClaude[]): Promise<Enric
       verifiedUrl,
       isUrlVerified: isVerified,
       searchFallbackUrl,
-      // Use verified URL as contentUrl if available, otherwise keep original or use fallback
       contentUrl: verifiedUrl || module.contentUrl || null,
     };
   });
@@ -224,7 +223,8 @@ serve(async (req) => {
       currentLevel, 
       targetLevel,
       employeeRole,
-      employeeExperience 
+      employeeExperience,
+      practiceGroup
     } = input;
 
     // Build context for subskills with gaps
@@ -240,7 +240,9 @@ serve(async (req) => {
       ? `\nBerufserfahrung: ${employeeExperience} Jahre`
       : '';
 
-    const systemPrompt = `Du bist ein erfahrener L&D (Learning & Development) Experte spezialisiert auf M&A-Rechtsanwälte und Unternehmensberater im deutschsprachigen Raum.
+    const practiceArea = practiceGroup || "M&A-Rechtsanwälte";
+
+    const systemPrompt = `Du bist ein erfahrener L&D (Learning & Development) Experte spezialisiert auf ${practiceArea} und Unternehmensberater im deutschsprachigen Raum.
 
 Deine Aufgabe ist es, personalisierte Lernpfade zu erstellen, die:
 1. Anerkannte Zertifizierungen priorisieren (z.B. NCMA, PMI, CFA, CAIA, legal-spezifische Zertifikate)

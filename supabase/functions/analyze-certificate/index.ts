@@ -5,11 +5,14 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const CERTIFICATE_SYSTEM_PROMPT = `Du bist ein HR-Analytics-Assistent. Du analysierst Zertifikate und Qualifikationsnachweise.
+function getCertificateSystemPrompt(practiceGroup?: string): string {
+  const practiceArea = practiceGroup || "M&A / Corporate Law";
+  
+  return `Du bist ein HR-Analytics-Assistent. Du analysierst Zertifikate und Qualifikationsnachweise.
 
 DEINE AUFGABE:
 1. Dokument analysieren (Typ, Aussteller, Datum, Fachgebiet)
-2. Relevanz für M&A / Corporate Law bewerten
+2. Relevanz für ${practiceArea} bewerten
 3. Rating-Änderungen vorschlagen
 
 MAPPING-REGELN:
@@ -65,6 +68,7 @@ Antworte NUR mit validem JSON im folgenden Format:
   },
   "warnings": ["string"]
 }`;
+}
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -77,7 +81,7 @@ serve(async (req) => {
       throw new Error("ANTHROPIC_API_KEY is not configured");
     }
 
-    const { type, currentProfile, documentContent, imageBase64, mimeType, fileName } = await req.json();
+    const { type, currentProfile, documentContent, imageBase64, mimeType, fileName, practiceGroup } = await req.json();
 
     let messages;
 
@@ -144,7 +148,7 @@ Antworte als JSON mit: documentAnalysis, isRelevant, relevanceReason, ratingChan
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
         max_tokens: 4000,
-        system: CERTIFICATE_SYSTEM_PROMPT,
+        system: getCertificateSystemPrompt(practiceGroup),
         messages
       })
     });

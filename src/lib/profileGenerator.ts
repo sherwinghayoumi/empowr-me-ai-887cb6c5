@@ -11,7 +11,8 @@ import { GeneratedProfile } from '@/types/profileGeneration';
 export async function generateProfile(
   documents: { cvText: string; selfText: string; managerText: string },
   roleTitle: string,
-  dbCompetencySchema?: Array<{ clusterName: string; competencyName: string; subskills: string[] }>
+  dbCompetencySchema?: Array<{ clusterName: string; competencyName: string; subskills: string[] }>,
+  practiceGroup?: string
 ): Promise<GeneratedProfile> {
   const { data, error } = await supabase.functions.invoke('generate-profile', {
     body: {
@@ -20,6 +21,7 @@ export async function generateProfile(
       managerText: documents.managerText,
       roleTitle,
       dbCompetencySchema,
+      practiceGroup,
     },
   });
 

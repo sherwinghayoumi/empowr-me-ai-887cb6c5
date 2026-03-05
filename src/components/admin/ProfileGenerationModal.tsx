@@ -19,7 +19,7 @@ interface ProfileGenerationModalProps {
     id: string;
     full_name: string;
     organization_id: string;
-    role_profile: { id: string; role_key: string } | null;
+    role_profile: { id: string; role_key: string; practice_group?: string | null } | null;
     cv_storage_path?: string | null;
     self_assessment_path?: string | null;
     manager_assessment_path?: string | null;
@@ -146,7 +146,8 @@ export function ProfileGenerationModal({
       const profile = await generateProfile(
         parsedDocs,
         roleKey,
-        dbCompetencySchema.length > 0 ? dbCompetencySchema : undefined
+        dbCompetencySchema.length > 0 ? dbCompetencySchema : undefined,
+        employee.role_profile?.practice_group || undefined
       );
 
       // Validate profile structure

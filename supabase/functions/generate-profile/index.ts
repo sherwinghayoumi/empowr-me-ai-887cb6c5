@@ -243,6 +243,14 @@ const ROLE_KEY_ALIASES: Record<string, string> = {
   "practice_lead": "partner"
 };
 
+const ROLE_DISPLAY_NAMES: Record<string, string> = {
+  "junior_associate": "Junior Associate",
+  "mid-level_associate_(mla)": "Mid-Level Associate",
+  "senior_associate_(sa)": "Senior Associate",
+  "counsel": "Counsel",
+  "partner": "Partner / Practice Lead"
+};
+
 function normalizeRoleKey(roleTitle: string): string {
   const normalized = roleTitle.toLowerCase().trim();
 

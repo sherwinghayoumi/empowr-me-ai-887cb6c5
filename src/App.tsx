@@ -24,6 +24,7 @@ import SuperAdminRoleProfiles from "@/pages/super-admin/RoleProfiles";
 import SuperAdminUsers from "@/pages/super-admin/Users";
 import SuperAdminAuditLog from "@/pages/super-admin/AuditLog";
 import SuperAdminSettings from "@/pages/super-admin/Settings";
+import SuperAdminSystemHealth from "@/pages/super-admin/SystemHealth";
 
 // Org Admin Pages
 import AdminDashboard from "@/pages/AdminDashboard";

@@ -1,4 +1,4 @@
-// SkillShift Mock Data for Corporate Law - London Office
+// SkillShift Mock Data for Corporate Practice
 import { getSkillLevel, type SkillLevel } from "@/lib/utils";
 
 // Re-export for backwards compatibility

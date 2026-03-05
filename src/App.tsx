@@ -65,6 +65,7 @@ function AppRoutes() {
         <Route path="role-profiles" element={<SuperAdminRoleProfiles />} />
         <Route path="users" element={<SuperAdminUsers />} />
         <Route path="audit-log" element={<SuperAdminAuditLog />} />
+        <Route path="system-health" element={<SuperAdminSystemHealth />} />
         <Route path="settings" element={<SuperAdminSettings />} />
       </Route>
 

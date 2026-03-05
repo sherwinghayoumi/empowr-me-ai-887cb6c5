@@ -48,6 +48,7 @@ interface RoleProfile {
   id: string;
   role_title: string;
   role_key: string;
+  practice_group?: string | null;
 }
 
 interface Team {

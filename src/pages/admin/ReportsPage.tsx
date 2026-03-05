@@ -52,7 +52,9 @@ const ReportsPage = () => {
       report.practice_group?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       report.executive_summary?.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesYear = yearFilter === "all" || report.year.toString() === yearFilter;
-    return matchesSearch && matchesYear;
+    const matchesPracticeGroup = practiceGroupFilter === "all" || 
+      report.practice_group === practiceGroupFilter;
+    return matchesSearch && matchesYear && matchesPracticeGroup;
   });
 
   // Get unique years for filter

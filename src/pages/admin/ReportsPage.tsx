@@ -39,6 +39,7 @@ const ReportsPage = () => {
   const { reports, isLoading } = useReports();
   const [searchQuery, setSearchQuery] = useState("");
   const [yearFilter, setYearFilter] = useState<string>("all");
+  const [practiceGroupFilter, setPracticeGroupFilter] = useState<string>("all");
   const [selectedReport, setSelectedReport] = useState<Report | null>(null);
 
   // Filter only published reports for org admins
@@ -51,11 +52,14 @@ const ReportsPage = () => {
       report.practice_group?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       report.executive_summary?.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesYear = yearFilter === "all" || report.year.toString() === yearFilter;
-    return matchesSearch && matchesYear;
+    const matchesPracticeGroup = practiceGroupFilter === "all" || 
+      report.practice_group === practiceGroupFilter;
+    return matchesSearch && matchesYear && matchesPracticeGroup;
   });
 
   // Get unique years for filter
   const years = [...new Set(publishedReports.map(r => r.year))].sort((a, b) => b - a);
+  const practiceGroups = [...new Set(publishedReports.map(r => r.practice_group).filter(Boolean))].sort() as string[];
 
   // Find the latest/main report
   const mainReport = filteredReports.length > 0 ? filteredReports[0] : null;
@@ -155,6 +159,17 @@ const ReportsPage = () => {
                 <SelectItem value="all">Alle Jahre</SelectItem>
                 {years.map(year => (
                   <SelectItem key={year} value={year.toString()}>{year}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={practiceGroupFilter} onValueChange={setPracticeGroupFilter}>
+              <SelectTrigger className="w-full sm:w-52">
+                <SelectValue placeholder="Practice Group" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Alle Practice Groups</SelectItem>
+                {practiceGroups.map(pg => (
+                  <SelectItem key={pg} value={pg}>{pg}</SelectItem>
                 ))}
               </SelectContent>
             </Select>

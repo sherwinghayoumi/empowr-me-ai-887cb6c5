@@ -289,6 +289,9 @@ const AdminDashboard = () => {
                     {roleProfiles?.map((role) => (
                       <SelectItem key={role.id} value={role.role_key}>
                         {role.role_title}
+                        {role.practice_group ? (
+                          <span className="text-muted-foreground ml-1 text-xs">— {role.practice_group}</span>
+                        ) : null}
                       </SelectItem>
                     ))}
                   </SelectContent>

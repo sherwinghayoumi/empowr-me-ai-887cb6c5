@@ -453,7 +453,17 @@ export async function importRoleProfile(
   userId: string
 ): Promise<{ success: boolean; roleProfileId?: string; error?: string }> {
   try {
-    const roleKey = parsedData.roleTitle.toLowerCase().replace(/\s+/g, '_');
+    const practiceSlug = (parsedData.practiceGroup || 'general')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '_')
+      .replace(/_+/g, '_')
+      .replace(/^_|_$/g, '');
+    const roleSlug = parsedData.roleTitle
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '_')
+      .replace(/_+/g, '_')
+      .replace(/^_|_$/g, '');
+    const roleKey = `${roleSlug}__${practiceSlug}`;
     
     // 1. Create/Update Role Profile
     const { data: roleProfile, error: rpError } = await supabase

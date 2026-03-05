@@ -43,6 +43,7 @@ const RoleProfiles = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [quarterFilter, setQuarterFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [practiceGroupFilter, setPracticeGroupFilter] = useState<string>('all');
   
   const [uploadWizardOpen, setUploadWizardOpen] = useState(false);
   const [publishDialogOpen, setPublishDialogOpen] = useState(false);
@@ -54,6 +55,15 @@ const RoleProfiles = () => {
     const set = new Set<string>();
     roleProfiles?.forEach(rp => set.add(`${rp.quarter} ${rp.year}`));
     return Array.from(set).sort().reverse();
+  }, [roleProfiles]);
+
+  // Get unique practice groups for filter
+  const practiceGroups = useMemo(() => {
+    const set = new Set<string>();
+    roleProfiles?.forEach(rp => {
+      if (rp.practice_group) set.add(rp.practice_group);
+    });
+    return Array.from(set).sort();
   }, [roleProfiles]);
 
   // Current quarter/year for publishing
@@ -75,17 +85,20 @@ const RoleProfiles = () => {
     return roleProfiles?.filter(profile => {
       const matchesSearch = 
         profile.role_title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        profile.role_key.toLowerCase().includes(searchQuery.toLowerCase());
+        profile.role_key.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (profile.practice_group || '').toLowerCase().includes(searchQuery.toLowerCase());
       const matchesQuarter = quarterFilter === 'all' || 
         `${profile.quarter} ${profile.year}` === quarterFilter;
       const matchesStatus = statusFilter === 'all' ||
         (statusFilter === 'published' && profile.is_published) ||
         (statusFilter === 'draft' && !profile.is_published);
-      return matchesSearch && matchesQuarter && matchesStatus;
+      const matchesPracticeGroup = practiceGroupFilter === 'all' ||
+        profile.practice_group === practiceGroupFilter;
+      return matchesSearch && matchesQuarter && matchesStatus && matchesPracticeGroup;
     }) || [];
-  }, [roleProfiles, searchQuery, quarterFilter, statusFilter]);
+  }, [roleProfiles, searchQuery, quarterFilter, statusFilter, practiceGroupFilter]);
 
-  // Group by quarter/year
+  // Group by quarter/year, sorted by practice_group then role_title
   const groupedProfiles = useMemo(() => {
     const groups: Record<string, RoleProfile[]> = {};
     filteredProfiles.forEach(profile => {
@@ -95,6 +108,14 @@ const RoleProfiles = () => {
       }
       groups[key].push(profile);
     });
+    // Sort within each group
+    for (const key of Object.keys(groups)) {
+      groups[key].sort((a, b) => {
+        const pgCompare = (a.practice_group || '').localeCompare(b.practice_group || '');
+        if (pgCompare !== 0) return pgCompare;
+        return a.role_title.localeCompare(b.role_title);
+      });
+    }
     return groups;
   }, [filteredProfiles]);
 
@@ -237,6 +258,17 @@ const RoleProfiles = () => {
             <SelectItem value="all">Alle Status</SelectItem>
             <SelectItem value="published">Veröffentlicht</SelectItem>
             <SelectItem value="draft">Entwurf</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={practiceGroupFilter} onValueChange={setPracticeGroupFilter}>
+          <SelectTrigger className="w-full sm:w-52">
+            <SelectValue placeholder="Practice Group" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Alle Practice Groups</SelectItem>
+            {practiceGroups.map(pg => (
+              <SelectItem key={pg} value={pg}>{pg}</SelectItem>
+            ))}
           </SelectContent>
         </Select>
       </div>

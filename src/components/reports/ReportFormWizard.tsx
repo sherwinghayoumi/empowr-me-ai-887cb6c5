@@ -36,12 +36,12 @@ import type { Report, ReportFormData } from '@/hooks/useReports';
 const QUARTERS = ['Q1', 'Q2', 'Q3', 'Q4'];
 const PRACTICE_GROUPS = [
   'Corporate Law / M&A',
-  'Litigation',
-  'Employment Law',
+  'Banking & Finance',
+  'Dispute Resolution / Litigation',
   'Real Estate',
+  'Employment / Labour Law',
   'IP / Tech',
   'Tax',
-  'Banking & Finance',
 ];
 const REGIONS = ['EU', 'US', 'UK', 'APAC', 'LATAM', 'MEA'];
 

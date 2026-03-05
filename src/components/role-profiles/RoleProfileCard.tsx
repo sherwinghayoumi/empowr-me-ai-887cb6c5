@@ -57,6 +57,11 @@ export function RoleProfileCard({
             <Badge variant="outline" className="text-xs">
               {profile.quarter} {profile.year}
             </Badge>
+            {profile.practice_group && (
+              <Badge variant="secondary" className="text-xs">
+                {profile.practice_group}
+              </Badge>
+            )}
             {profile.experience_level && (
               <span className="text-sm text-muted-foreground">{profile.experience_level}</span>
             )}

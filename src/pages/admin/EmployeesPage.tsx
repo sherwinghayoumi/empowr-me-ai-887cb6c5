@@ -697,7 +697,7 @@ const EmployeesPage = () => {
         onOpenChange={(open) => { setFormDialogOpen(open); if (!open) setEditingEmployee(null); }}
         onSubmit={editingEmployee ? handleUpdateEmployee : handleCreateEmployee}
         isLoading={createEmployee.isPending || updateEmployee.isPending}
-        roleProfiles={roleProfiles?.map((r) => ({ id: r.id, role_title: r.role_title, role_key: r.role_key })) || []}
+        roleProfiles={roleProfiles?.map((r) => ({ id: r.id, role_title: r.role_title, role_key: r.role_key, practice_group: r.practice_group })) || []}
         teams={teams?.map((t) => ({ id: t.id, name: t.name })) || []}
         editingEmployee={editingEmployee}
         mode={editingEmployee ? "edit" : "create"}

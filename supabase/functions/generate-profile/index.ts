@@ -246,14 +246,19 @@ const ROLE_KEY_ALIASES: Record<string, string> = {
 function normalizeRoleKey(roleTitle: string): string {
   const normalized = roleTitle.toLowerCase().trim();
 
+  // If the roleTitle has the compound key format (e.g. "senior_associate__banking_finance"),
+  // extract the role part (before the double underscore)
+  const rolePart = normalized.includes('__') ? normalized.split('__')[0] : normalized;
+
   // Exakter Match
-  if (ROLE_KEY_ALIASES[normalized]) {
-    return ROLE_KEY_ALIASES[normalized];
+  if (ROLE_KEY_ALIASES[rolePart]) {
+    return ROLE_KEY_ALIASES[rolePart];
   }
 
   // Fuzzy Match: Prüfe ob einer der Alias-Keys im Input enthalten ist
+  // Only match aliases longer than 2 chars to avoid false positives with "ja", "sa", "cn"
   for (const [alias, roleKey] of Object.entries(ROLE_KEY_ALIASES)) {
-    if (normalized.includes(alias) || alias.includes(normalized)) {
+    if (alias.length > 2 && (rolePart.includes(alias) || alias.includes(rolePart))) {
       return roleKey;
     }
   }

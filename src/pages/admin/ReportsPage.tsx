@@ -162,6 +162,17 @@ const ReportsPage = () => {
                 ))}
               </SelectContent>
             </Select>
+            <Select value={practiceGroupFilter} onValueChange={setPracticeGroupFilter}>
+              <SelectTrigger className="w-full sm:w-52">
+                <SelectValue placeholder="Practice Group" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Alle Practice Groups</SelectItem>
+                {practiceGroups.map(pg => (
+                  <SelectItem key={pg} value={pg}>{pg}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </ScrollReveal>
 

@@ -237,11 +237,29 @@ export function EmployeeFormDialog({
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {roleProfiles.map((role) => (
-                          <SelectItem key={role.id} value={role.id}>
-                            {role.role_title}
-                          </SelectItem>
-                        ))}
+                        {Object.entries(
+                          roleProfiles.reduce<Record<string, RoleProfile[]>>((groups, role) => {
+                            const pg = role.practice_group || 'Sonstige';
+                            if (!groups[pg]) groups[pg] = [];
+                            groups[pg].push(role);
+                            return groups;
+                          }, {})
+                        )
+                          .sort(([a], [b]) => a.localeCompare(b))
+                          .map(([practiceGroup, roles]) => (
+                            <div key={practiceGroup}>
+                              <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">
+                                {practiceGroup}
+                              </div>
+                              {roles
+                                .sort((a, b) => a.role_title.localeCompare(b.role_title))
+                                .map((role) => (
+                                  <SelectItem key={role.id} value={role.id}>
+                                    {role.role_title}
+                                  </SelectItem>
+                                ))}
+                            </div>
+                          ))}
                       </SelectContent>
                     </Select>
                     <FormMessage />

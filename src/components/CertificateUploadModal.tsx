@@ -25,6 +25,7 @@ export function CertificateUploadModal({
   onClose,
   currentProfile,
   onUpdateConfirmed,
+  practiceGroup,
 }: CertificateUploadModalProps) {
   const [file, setFile] = useState<File | null>(null);
   const [analysisState, setAnalysisState] = useState<AnalysisState>("idle");

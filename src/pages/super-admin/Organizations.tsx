@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
@@ -10,7 +11,6 @@ import {
   Eye,
   Edit,
   Users,
-  UserCog,
   Pause,
   Play,
   Trash2,
@@ -19,7 +19,10 @@ import {
   ChevronLeft,
   ChevronRight,
   ChevronsLeft,
-  ChevronsRight
+  ChevronsRight,
+  X,
+  Shield,
+  FileText,
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -29,6 +32,8 @@ import { Label } from '@/components/ui/label';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Progress } from '@/components/ui/progress';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Textarea } from '@/components/ui/textarea';
+import { Separator } from '@/components/ui/separator';
 import {
   Table,
   TableBody,
@@ -71,8 +76,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import type { Tables } from '@/integrations/supabase/types';
 
 const ITEMS_PER_PAGE = 10;
+
+type Organization = Tables<'organizations'>;
 
 interface CreateOrgFormData {
   name: string;
@@ -83,6 +91,15 @@ interface CreateOrgFormData {
   adminEmail: string;
   adminName: string;
   dpaSigned: boolean;
+}
+
+interface EditOrgFormData {
+  name: string;
+  slug: string;
+  maxEmployees: number;
+  subscriptionStatus: 'trial' | 'active' | 'paused' | 'cancelled';
+  dpaSigned: boolean;
+  dataRetentionDays: number;
 }
 
 const initialFormData: CreateOrgFormData = {
@@ -98,12 +115,16 @@ const initialFormData: CreateOrgFormData = {
 
 export default function SuperAdminOrganizations() {
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [currentPage, setCurrentPage] = useState(1);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [formData, setFormData] = useState<CreateOrgFormData>(initialFormData);
   const [deleteOrgId, setDeleteOrgId] = useState<string | null>(null);
+  const [detailOrg, setDetailOrg] = useState<Organization | null>(null);
+  const [editOrg, setEditOrg] = useState<Organization | null>(null);
+  const [editFormData, setEditFormData] = useState<EditOrgFormData | null>(null);
 
   // Fetch organizations
   const { data: organizations, isLoading } = useQuery({
@@ -166,7 +187,6 @@ export default function SuperAdminOrganizations() {
       const trialEndDate = new Date();
       trialEndDate.setDate(trialEndDate.getDate() + data.trialEndDays);
 
-      // Create organization
       const { data: newOrg, error: orgError } = await supabase
         .from('organizations')
         .insert({
@@ -182,7 +202,6 @@ export default function SuperAdminOrganizations() {
 
       if (orgError) throw orgError;
 
-      // Log audit event
       await supabase.rpc('log_audit_event', {
         p_action: 'organization_created',
         p_entity_type: 'organization',
@@ -202,9 +221,7 @@ export default function SuperAdminOrganizations() {
       queryClient.invalidateQueries({ queryKey: ['super-admin-organizations'] });
       setIsCreateModalOpen(false);
       setFormData(initialFormData);
-      toast.success('Organisation erfolgreich erstellt', {
-        description: 'Der Admin-Benutzer muss manuell über das Supabase Dashboard eingeladen werden.',
-      });
+      toast.success('Organisation erfolgreich erstellt');
     },
     onError: (error: Error) => {
       toast.error('Fehler beim Erstellen der Organisation', {
@@ -213,7 +230,28 @@ export default function SuperAdminOrganizations() {
     },
   });
 
-  // Update organization status mutation
+  // Update organization mutation
+  const updateOrgMutation = useMutation({
+    mutationFn: async ({ id, updates }: { id: string; updates: Partial<Tables<'organizations'>> }) => {
+      const { error } = await supabase
+        .from('organizations')
+        .update({ ...updates, updated_at: new Date().toISOString() })
+        .eq('id', id);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['super-admin-organizations'] });
+      setEditOrg(null);
+      setEditFormData(null);
+      toast.success('Organisation aktualisiert');
+    },
+    onError: (error: Error) => {
+      toast.error('Fehler beim Aktualisieren', { description: error.message });
+    },
+  });
+
+  // Update status mutation
   const updateStatusMutation = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: string }) => {
       const { error } = await supabase
@@ -228,7 +266,7 @@ export default function SuperAdminOrganizations() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['super-admin-organizations'] });
-      toast.success('Status erfolgreich aktualisiert');
+      toast.success('Status aktualisiert');
     },
     onError: (error: Error) => {
       toast.error('Fehler beim Aktualisieren', { description: error.message });
@@ -248,7 +286,6 @@ export default function SuperAdminOrganizations() {
 
       if (error) throw error;
 
-      // Log audit event
       await supabase.rpc('log_audit_event', {
         p_action: 'organization_deleted',
         p_entity_type: 'organization',
@@ -260,14 +297,13 @@ export default function SuperAdminOrganizations() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['super-admin-organizations'] });
       setDeleteOrgId(null);
-      toast.success('Organisation erfolgreich gelöscht');
+      toast.success('Organisation gelöscht');
     },
     onError: (error: Error) => {
       toast.error('Fehler beim Löschen', { description: error.message });
     },
   });
 
-  // Generate slug from name
   const generateSlug = (name: string) => {
     return name
       .toLowerCase()
@@ -279,13 +315,42 @@ export default function SuperAdminOrganizations() {
       .replace(/^-|-$/g, '');
   };
 
-  // Handle form input
   const handleNameChange = (name: string) => {
-    setFormData(prev => ({
-      ...prev,
-      name,
-      slug: generateSlug(name),
-    }));
+    setFormData(prev => ({ ...prev, name, slug: generateSlug(name) }));
+  };
+
+  const openEditDialog = (org: Organization) => {
+    setEditOrg(org);
+    setEditFormData({
+      name: org.name,
+      slug: org.slug,
+      maxEmployees: org.max_employees || 50,
+      subscriptionStatus: (org.subscription_status || 'trial') as EditOrgFormData['subscriptionStatus'],
+      dpaSigned: !!org.data_processing_agreement_signed_at,
+      dataRetentionDays: org.data_retention_days || 2555,
+    });
+  };
+
+  const handleSaveEdit = () => {
+    if (!editOrg || !editFormData) return;
+    updateOrgMutation.mutate({
+      id: editOrg.id,
+      updates: {
+        name: editFormData.name,
+        slug: editFormData.slug,
+        max_employees: editFormData.maxEmployees,
+        subscription_status: editFormData.subscriptionStatus,
+        data_processing_agreement_signed_at: editFormData.dpaSigned
+          ? (editOrg.data_processing_agreement_signed_at || new Date().toISOString())
+          : null,
+        data_retention_days: editFormData.dataRetentionDays,
+      },
+    });
+  };
+
+  const handleViewUsers = (orgId: string) => {
+    // Navigate to users page with org filter as search param
+    navigate(`/super-admin/users?org=${orgId}`);
   };
 
   // Filter and paginate
@@ -322,7 +387,6 @@ export default function SuperAdminOrganizations() {
     return new Date(date).toLocaleDateString('de-DE');
   };
 
-  // Stats
   const stats = {
     total: organizations?.length || 0,
     active: organizations?.filter(o => o.subscription_status === 'active').length || 0,
@@ -363,7 +427,6 @@ export default function SuperAdminOrganizations() {
                     onChange={(e) => handleNameChange(e.target.value)}
                   />
                 </div>
-
                 <div className="grid gap-2">
                   <Label htmlFor="org-slug">Slug *</Label>
                   <Input
@@ -374,7 +437,6 @@ export default function SuperAdminOrganizations() {
                   />
                   <p className="text-xs text-muted-foreground">Wird in URLs verwendet</p>
                 </div>
-
                 <div className="grid grid-cols-2 gap-4">
                   <div className="grid gap-2">
                     <Label htmlFor="max-employees">Max. Mitarbeiter</Label>
@@ -385,7 +447,6 @@ export default function SuperAdminOrganizations() {
                       onChange={(e) => setFormData(prev => ({ ...prev, maxEmployees: parseInt(e.target.value) || 50 }))}
                     />
                   </div>
-
                   <div className="grid gap-2">
                     <Label htmlFor="subscription-status">Status</Label>
                     <Select 
@@ -402,7 +463,6 @@ export default function SuperAdminOrganizations() {
                     </Select>
                   </div>
                 </div>
-
                 {formData.subscriptionStatus === 'trial' && (
                   <div className="grid gap-2">
                     <Label htmlFor="trial-days">Trial-Dauer (Tage)</Label>
@@ -414,7 +474,6 @@ export default function SuperAdminOrganizations() {
                     />
                   </div>
                 )}
-
                 <div className="border-t pt-4 mt-2">
                   <p className="text-sm font-medium mb-3">Admin-Benutzer</p>
                   <div className="grid gap-4">
@@ -427,7 +486,6 @@ export default function SuperAdminOrganizations() {
                         onChange={(e) => setFormData(prev => ({ ...prev, adminName: e.target.value }))}
                       />
                     </div>
-
                     <div className="grid gap-2">
                       <Label htmlFor="admin-email">Admin E-Mail *</Label>
                       <Input
@@ -437,13 +495,9 @@ export default function SuperAdminOrganizations() {
                         value={formData.adminEmail}
                         onChange={(e) => setFormData(prev => ({ ...prev, adminEmail: e.target.value }))}
                       />
-                      <p className="text-xs text-muted-foreground">
-                        Der Admin muss manuell über Supabase Dashboard eingeladen werden.
-                      </p>
                     </div>
                   </div>
                 </div>
-
                 <div className="flex items-start space-x-3 pt-2">
                   <Checkbox 
                     id="dpa-signed"
@@ -454,29 +508,20 @@ export default function SuperAdminOrganizations() {
                     <Label htmlFor="dpa-signed" className="cursor-pointer">
                       Auftragsverarbeitungsvertrag (DPA) unterzeichnet
                     </Label>
-                    <p className="text-xs text-muted-foreground">
-                      DSGVO-Konformität bestätigt
-                    </p>
+                    <p className="text-xs text-muted-foreground">DSGVO-Konformität bestätigt</p>
                   </div>
                 </div>
               </div>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setIsCreateModalOpen(false)}>
-                Abbrechen
-              </Button>
+              <Button variant="outline" onClick={() => setIsCreateModalOpen(false)}>Abbrechen</Button>
               <Button 
                 onClick={() => createOrgMutation.mutate(formData)}
                 disabled={!formData.name || !formData.slug || !formData.adminEmail || !formData.adminName || createOrgMutation.isPending}
               >
                 {createOrgMutation.isPending ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Erstellen...
-                  </>
-                ) : (
-                  'Organisation erstellen'
-                )}
+                  <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Erstellen...</>
+                ) : 'Organisation erstellen'}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -548,17 +593,11 @@ export default function SuperAdminOrganizations() {
               <Input
                 placeholder="Organisation suchen..."
                 value={searchQuery}
-                onChange={(e) => {
-                  setSearchQuery(e.target.value);
-                  setCurrentPage(1);
-                }}
+                onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
                 className="pl-10"
               />
             </div>
-            <Select value={statusFilter} onValueChange={(value) => {
-              setStatusFilter(value);
-              setCurrentPage(1);
-            }}>
+            <Select value={statusFilter} onValueChange={(value) => { setStatusFilter(value); setCurrentPage(1); }}>
               <SelectTrigger className="w-full sm:w-[180px]">
                 <SelectValue placeholder="Status filtern" />
               </SelectTrigger>
@@ -648,21 +687,17 @@ export default function SuperAdminOrganizations() {
                           <DropdownMenuContent align="end" className="w-48">
                             <DropdownMenuLabel>Aktionen</DropdownMenuLabel>
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => setDetailOrg(org)}>
                               <Eye className="w-4 h-4 mr-2" />
                               Details anzeigen
                             </DropdownMenuItem>
-                            <DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => openEditDialog(org)}>
                               <Edit className="w-4 h-4 mr-2" />
                               Bearbeiten
                             </DropdownMenuItem>
-                            <DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleViewUsers(org.id)}>
                               <Users className="w-4 h-4 mr-2" />
                               Benutzer verwalten
-                            </DropdownMenuItem>
-                            <DropdownMenuItem>
-                              <UserCog className="w-4 h-4 mr-2" />
-                              Als Admin einloggen
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
                             {org.subscription_status === 'paused' ? (
@@ -670,12 +705,12 @@ export default function SuperAdminOrganizations() {
                                 <Play className="w-4 h-4 mr-2" />
                                 Aktivieren
                               </DropdownMenuItem>
-                            ) : (
+                            ) : org.subscription_status === 'active' || org.subscription_status === 'trial' ? (
                               <DropdownMenuItem onClick={() => updateStatusMutation.mutate({ id: org.id, status: 'paused' })}>
                                 <Pause className="w-4 h-4 mr-2" />
                                 Pausieren
                               </DropdownMenuItem>
-                            )}
+                            ) : null}
                             <DropdownMenuSeparator />
                             <DropdownMenuItem 
                               className="text-destructive focus:text-destructive"
@@ -701,39 +736,17 @@ export default function SuperAdminOrganizations() {
                 Zeige {((currentPage - 1) * ITEMS_PER_PAGE) + 1} - {Math.min(currentPage * ITEMS_PER_PAGE, filteredOrgs.length)} von {filteredOrgs.length}
               </p>
               <div className="flex items-center gap-1">
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => setCurrentPage(1)}
-                  disabled={currentPage === 1}
-                >
+                <Button variant="outline" size="icon" onClick={() => setCurrentPage(1)} disabled={currentPage === 1}>
                   <ChevronsLeft className="w-4 h-4" />
                 </Button>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => setCurrentPage(prev => prev - 1)}
-                  disabled={currentPage === 1}
-                >
+                <Button variant="outline" size="icon" onClick={() => setCurrentPage(prev => prev - 1)} disabled={currentPage === 1}>
                   <ChevronLeft className="w-4 h-4" />
                 </Button>
-                <span className="px-3 text-sm">
-                  Seite {currentPage} von {totalPages}
-                </span>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => setCurrentPage(prev => prev + 1)}
-                  disabled={currentPage === totalPages}
-                >
+                <span className="px-3 text-sm">Seite {currentPage} von {totalPages}</span>
+                <Button variant="outline" size="icon" onClick={() => setCurrentPage(prev => prev + 1)} disabled={currentPage === totalPages}>
                   <ChevronRight className="w-4 h-4" />
                 </Button>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => setCurrentPage(totalPages)}
-                  disabled={currentPage === totalPages}
-                >
+                <Button variant="outline" size="icon" onClick={() => setCurrentPage(totalPages)} disabled={currentPage === totalPages}>
                   <ChevronsRight className="w-4 h-4" />
                 </Button>
               </div>
@@ -741,6 +754,180 @@ export default function SuperAdminOrganizations() {
           )}
         </CardContent>
       </Card>
+
+      {/* Detail Dialog */}
+      <Dialog open={!!detailOrg} onOpenChange={() => setDetailOrg(null)}>
+        <DialogContent className="max-w-lg">
+          {detailOrg && (
+            <>
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-3">
+                  <Avatar className="h-8 w-8">
+                    <AvatarImage src={detailOrg.logo_url || undefined} />
+                    <AvatarFallback className="bg-primary/10 text-primary text-xs">
+                      {detailOrg.name.substring(0, 2).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  {detailOrg.name}
+                </DialogTitle>
+                <DialogDescription>Organisation Details & Konfiguration</DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4 py-2">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-1">Status</p>
+                    {getStatusBadge(detailOrg.subscription_status)}
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-1">Slug</p>
+                    <p className="text-sm font-mono">{detailOrg.slug}</p>
+                  </div>
+                </div>
+                <Separator />
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-1">Mitarbeiter</p>
+                    <p className="text-sm font-medium">{employeeCounts?.[detailOrg.id] || 0} / {detailOrg.max_employees}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-1">Admins</p>
+                    <p className="text-sm font-medium">{adminCounts?.[detailOrg.id] || 0}</p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-1">Abo-Start</p>
+                    <p className="text-sm">{formatDate(detailOrg.subscription_started_at)}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-1">Abo-Ende</p>
+                    <p className="text-sm">{formatDate(detailOrg.subscription_ends_at)}</p>
+                  </div>
+                </div>
+                <Separator />
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-1">DPA unterzeichnet</p>
+                    <p className="text-sm">
+                      {detailOrg.data_processing_agreement_signed_at ? (
+                        <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30">
+                          <Shield className="w-3 h-3 mr-1" />
+                          {formatDate(detailOrg.data_processing_agreement_signed_at)}
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="text-muted-foreground">Ausstehend</Badge>
+                      )}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-1">Datenaufbewahrung</p>
+                    <p className="text-sm">{detailOrg.data_retention_days} Tage</p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-1">Erstellt am</p>
+                    <p className="text-sm">{formatDate(detailOrg.created_at)}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-1">Zuletzt aktualisiert</p>
+                    <p className="text-sm">{formatDate(detailOrg.updated_at)}</p>
+                  </div>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setDetailOrg(null)}>Schließen</Button>
+                <Button onClick={() => { setDetailOrg(null); openEditDialog(detailOrg); }}>
+                  <Edit className="w-4 h-4 mr-2" />
+                  Bearbeiten
+                </Button>
+              </DialogFooter>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Dialog */}
+      <Dialog open={!!editOrg} onOpenChange={() => { setEditOrg(null); setEditFormData(null); }}>
+        <DialogContent className="max-w-lg">
+          {editOrg && editFormData && (
+            <>
+              <DialogHeader>
+                <DialogTitle>Organisation bearbeiten</DialogTitle>
+                <DialogDescription>{editOrg.name}</DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4 py-4">
+                <div className="grid gap-2">
+                  <Label>Name</Label>
+                  <Input
+                    value={editFormData.name}
+                    onChange={(e) => setEditFormData(prev => prev ? { ...prev, name: e.target.value } : prev)}
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label>Slug</Label>
+                  <Input
+                    value={editFormData.slug}
+                    onChange={(e) => setEditFormData(prev => prev ? { ...prev, slug: e.target.value } : prev)}
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="grid gap-2">
+                    <Label>Max. Mitarbeiter</Label>
+                    <Input
+                      type="number"
+                      value={editFormData.maxEmployees}
+                      onChange={(e) => setEditFormData(prev => prev ? { ...prev, maxEmployees: parseInt(e.target.value) || 50 } : prev)}
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label>Status</Label>
+                    <Select 
+                      value={editFormData.subscriptionStatus} 
+                      onValueChange={(value: EditOrgFormData['subscriptionStatus']) => setEditFormData(prev => prev ? { ...prev, subscriptionStatus: value } : prev)}
+                    >
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="trial">Trial</SelectItem>
+                        <SelectItem value="active">Aktiv</SelectItem>
+                        <SelectItem value="paused">Pausiert</SelectItem>
+                        <SelectItem value="cancelled">Gekündigt</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="grid gap-2">
+                  <Label>Datenaufbewahrung (Tage)</Label>
+                  <Input
+                    type="number"
+                    value={editFormData.dataRetentionDays}
+                    onChange={(e) => setEditFormData(prev => prev ? { ...prev, dataRetentionDays: parseInt(e.target.value) || 2555 } : prev)}
+                  />
+                </div>
+                <div className="flex items-start space-x-3">
+                  <Checkbox 
+                    id="edit-dpa"
+                    checked={editFormData.dpaSigned}
+                    onCheckedChange={(checked) => setEditFormData(prev => prev ? { ...prev, dpaSigned: checked === true } : prev)}
+                  />
+                  <Label htmlFor="edit-dpa" className="cursor-pointer">DPA unterzeichnet</Label>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => { setEditOrg(null); setEditFormData(null); }}>Abbrechen</Button>
+                <Button 
+                  onClick={handleSaveEdit}
+                  disabled={!editFormData.name || !editFormData.slug || updateOrgMutation.isPending}
+                >
+                  {updateOrgMutation.isPending ? (
+                    <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Speichern...</>
+                  ) : 'Speichern'}
+                </Button>
+              </DialogFooter>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={!!deleteOrgId} onOpenChange={() => setDeleteOrgId(null)}>
@@ -759,13 +946,8 @@ export default function SuperAdminOrganizations() {
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               {deleteOrgMutation.isPending ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Löschen...
-                </>
-              ) : (
-                'Löschen'
-              )}
+                <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Löschen...</>
+              ) : 'Löschen'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

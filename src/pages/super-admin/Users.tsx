@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { 
   Users, 
@@ -68,10 +69,19 @@ export default function SuperAdminUsers() {
   const { profile: currentUser } = useAuth();
   const { users, isLoading, updateUser, deleteUser } = useUsers();
   const { data: organizations } = useOrganizations();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState<string>('all');
-  const [orgFilter, setOrgFilter] = useState<string>('all');
+  const [orgFilter, setOrgFilter] = useState<string>(searchParams.get('org') || 'all');
+
+  // Sync org filter from URL params
+  useEffect(() => {
+    const orgParam = searchParams.get('org');
+    if (orgParam && orgParam !== orgFilter) {
+      setOrgFilter(orgParam);
+    }
+  }, [searchParams]);
 
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);

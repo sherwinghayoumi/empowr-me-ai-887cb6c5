@@ -265,39 +265,10 @@ export function SuperAdminLayout() {
                 </DropdownMenuContent>
               </DropdownMenu>
 
-              {/* Notifications */}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="relative">
-                    <Bell className="w-5 h-5" />
-                    <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-destructive text-destructive-foreground text-[10px] font-bold rounded-full flex items-center justify-center">
-                      2
-                    </span>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-80">
-                  <DropdownMenuLabel>Benachrichtigungen</DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem className="flex flex-col items-start gap-1 py-3">
-                    <div className="flex items-center gap-2">
-                      <Shield className="w-4 h-4 text-primary" />
-                      <span className="font-medium">GDPR Anfrage</span>
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      Neue Löschanfrage von Müller & Partner
-                    </p>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem className="flex flex-col items-start gap-1 py-3">
-                    <div className="flex items-center gap-2">
-                      <Building2 className="w-4 h-4 text-primary" />
-                      <span className="font-medium">Trial läuft ab</span>
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      Kanzlei Becker - Trial endet in 3 Tagen
-                    </p>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              {/* Notifications — placeholder, no mock data */}
+              <Button variant="ghost" size="icon" className="relative">
+                <Bell className="w-5 h-5" />
+              </Button>
 
               {/* User Dropdown */}
               <DropdownMenu>

@@ -18,7 +18,7 @@ interface BulkEmployee {
   cv_storage_path: string | null;
   self_assessment_path: string | null;
   manager_assessment_path: string | null;
-  role_profile: { id: string; role_key: string } | null;
+  role_profile: { id: string; role_key: string; practice_group?: string | null } | null;
 }
 
 type EmployeeStatus = 'waiting' | 'processing' | 'done' | 'error' | 'skipped';

@@ -111,6 +111,57 @@ const COMPETENCY_SCHEMA: Record<string, Record<string, string[]>> = {
     "Delegation, Coaching & Feedback Loops": ["Knowledge transfer", "Performance calibration", "Coaching on drafting/negotiation", "Review & feedback routines", "Task scoping & briefing"],
     "Resource Planning & Utilization Management": ["Crunch-time triage", "Burnout risk management", "Specialist scheduling", "Capacity planning", "Leverage model design"],
     "Mentoring on Professional Responsibility & Privilege": ["Incident response", "AI acceptable-use enforcement", "Recordkeeping & audit trails", "Privilege protocol design", "Confidentiality & clean team rules"]
+  },
+  // PARTNER CLUSTERS
+  "Deal Strategy, Risk Ownership & Structuring Judgment": {
+    "Deal Strategy Development & Risk Ownership": ["Deal thesis articulation & strategic positioning", "Risk tolerance calibration & client alignment", "Value creation narrative & deal story", "Board/stakeholder risk presentation", "Go/no-go recommendation & escalation"],
+    "Deal Structuring & Risk Allocation Mastery": ["Alternative structure generation (asset/share, carve-out, JV)", "Locked-box vs completion accounts strategic selection", "Warranty/indemnity architecture design", "Seller-friendly vs buyer-friendly strategy", "Step-plan & pre-signing restructuring"],
+    "Due Diligence Scoping & Prioritization": ["Due diligence prioritization & materiality thresholds", "Risk-based scoping (red flag vs full DD)", "Integrating financial/tax/employment findings into deal terms", "DD report ownership & risk summary authorship", "Issue escalation & deal team alignment"],
+    "Regulatory & Antitrust Strategy Oversight": ["Antitrust strategy & remedy planning oversight", "FDI/national security exposure assessment", "Regulatory timeline integration into deal structure", "Authority relationship management", "Condition precedent design (approval risk)"],
+    "Cross-Border M&A Coordination & Multi-Jurisdictional Strategy": ["Local counsel selection & instruction", "Harmonizing closing mechanics across jurisdictions", "Managing translation, notarization, apostilles", "Multi-jurisdiction issue matrix & tracking", "Regulatory sequencing across geographies"]
+  },
+  "Negotiation Leadership & Stakeholder Power Management": {
+    "High-Stakes Negotiation Leadership": ["Leading principal-level negotiations", "Managing multi-party dynamics (sponsors, co-investors)", "Bridging commercial vs legal gaps", "Handling walk-away scenarios & brinkmanship", "Term sheet / MoU negotiation leadership"],
+    "Stakeholder Power Management (Board, Sponsors, Management, Lenders)": ["Managing sponsor/lender expectations", "Board reporting & governance alignment", "Management retention/incentive negotiation interface", "Seller management & trust-building", "Multi-party alignment in consortium deals"],
+    "Crisis Management & Client Escalation Handling": ["Managing deal-threatening issues", "Rapid response coordination (regulatory, media, legal)", "Client de-escalation & expectation reset", "Insurance & claims management interface", "Reputation protection & media coordination"],
+    "Dispute Avoidance & Deal-Edge Conflict Resolution": ["Purchase price dispute resolution (expert, arbitration)", "Breach/termination risk assessment", "Post-closing dispute prevention", "Claims process design & escrow release", "Earn-out dispute mitigation"]
+  },
+  "Client Leadership, Origination & Relationship Strategy": {
+    "Strategic Client Relationship Management & Cross-Selling": ["Handling sensitive conversations & fee disputes", "Cross-selling orchestration across practices", "Client issue spotting & proactive advice", "Managing expectations on scope/fees/timelines", "Value delivery cadence (QBRs, post-matter reviews)", "Stakeholder mapping (GC/CFO/board/in-house team)"],
+    "Client Origination & Business Development Execution": ["Referral cultivation (bankers, PE, accountants, boutiques)", "Strategic networking & relationship seeding", "CRM discipline (follow-ups, pipeline hygiene, conversion review)", "Thought leadership that converts (alerts, webinars, podcasts)", "Opportunity qualification & profitability screening", "Pitch development (problem diagnosis + ROI narrative)"],
+    "Client Panel & Procurement Navigation": ["Competitive tender strategy & differentiation", "Pricing grid strategy & rate architecture", "Diversity/ESG/tech capability positioning", "Panel relationship management & renewals", "Performance KPI reporting & scorecards", "RFP response leadership (narrative + evidence)"],
+    "Engagement Terms & Scope Control": ["Client onboarding & matter kickoff discipline", "Change control & scope creep management", "Assumptions & exclusions drafting", "Engagement letter negotiation (scope, limits, indemnities)", "Budget communication & variance explanation"],
+    "Thought Leadership Strategy & Reputation Building": ["Editorial calendar & themes tied to client pain", "Media engagement & quote readiness", "Authoring client-ready insights (not academic memos)", "Measuring content-to-pipeline conversion", "Speaking/panel participation strategy"],
+    "Client Experience Design & Service Model Tailoring": ["Client communication architecture (updates, escalation paths)", "Feedback loops & NPS-style measurement", "Client portal strategy & reporting formats", "Onboarding playbooks for new matters", "Service model selection (modular/unbundled/full-service)"]
+  },
+  "Practice Management, Pricing & Delivery Standards": {
+    "Alternative Fee Arrangement (AFA) Engineering & Pricing Strategy": ["Scope-based pricing design", "Risk/reward models (success fees, holdbacks)", "Fee estimation accuracy & variance analysis", "Pricing tool & benchmark utilization", "Profitability modeling per fee type"],
+    "Practice Profitability Management (PPEP, Leverage, Realization)": ["PPEP/realization analysis & intervention", "Leverage model optimization (senior/junior mix)", "Write-off prevention & root-cause analysis", "Billing discipline & WIP management", "Revenue forecasting & matter pipeline"],
+    "Legal Project Management (LPM) & Process Standardization": ["Matter scoping & checklist discipline", "Template selection & standardization", "Process mapping for recurring deal types", "SOP authorship & maintenance", "Lessons-learned capture & feedback loops"],
+    "Resourcing, Delegation & Matter Delivery Supervision": ["Resource allocation across matters", "Delegation matrix & decision rights", "Junior supervision & milestone review", "Escalation protocols", "Capacity planning & crunch-time management"],
+    "Quality Assurance, Sign-Off & Error Prevention": ["Senior review & sign-off protocols", "Error tracking & near-miss analysis", "Version control & document hygiene", "Risk flag identification & escalation", "Post-signing review discipline"]
+  },
+  "Tech-Enabled Practice Strategy (AI adoption + controls + differentiation)": {
+    "Legal Tech & AI Adoption Strategy (Partner Lens)": ["AI use-case prioritization for practice", "Change management & team buy-in", "Risk governance for new tools", "ROI evaluation & business-case development", "Pilot-to-scale roadmaps"],
+    "Vendor Evaluation & Procurement (AI and Legal Ops Tools)": ["Tool selection criteria & scoring", "Contract negotiation (SLA, data rights, exit)", "Security/compliance vetting", "Integration with existing tech stack", "Post-implementation performance monitoring"],
+    "Client Reporting, Dashboards & Transparency Infrastructure": ["KPI selection & reporting cadence", "Dashboard design for clients & partners", "Data quality & source integrity", "Automation of status updates", "Transparency as differentiation"]
+  },
+  "Governance, Ethics & Regulatory Oversight (incl. AI)": {
+    "AI Governance & Client Acceptability (EU-focused)": ["AI policy development for practice", "Client-specific AI use approvals", "EU AI Act practice implications", "Confidentiality & privilege in AI use", "AI output liability allocation"],
+    "Agentic AI Governance & Agent Supervisor": ["Designing multi-agent deal workflows", "Staffing teams around agentic systems", "Managing agent performance & exceptions"],
+    "AI Compliance & Regulatory Alignment": ["New contract language", "Liability frameworks", "IP ownership for agents' outputs"],
+    "Conflicts, Ethics & Professional Responsibility Oversight": ["Conflicts clearing & lateral hire vetting", "Chinese wall & information barrier enforcement", "Ethical issues escalation & bar referral", "Client confidentiality & privilege management", "Professional conduct training & culture"],
+    "Risk Management, Malpractice Prevention & Insurance Interface": ["Risk register maintenance", "Malpractice exposure identification", "Insurance notification protocols", "Claims management & defense coordination", "Post-incident learning & policy update"],
+    "Regulatory Horizon Scanning & Client-Facing Risk Updates": ["Regulatory change monitoring", "Client alert development", "Impact assessment for practice areas", "Proactive client communication", "Integration into deal playbooks"]
+  },
+  "Talent Leadership (coaching, delegation, performance, culture)": {
+    "Structured Talent Development & Mentoring": ["Career pathway design & communication", "Mentoring program oversight", "Training curriculum development", "Secondment & rotation planning", "Promotion readiness assessment"],
+    "Performance Management, Culture & Team Accountability": ["Performance review discipline & calibration", "Feedback culture & real-time coaching", "Underperformance intervention", "Culture modeling & values reinforcement", "Retention strategy & exit management"]
+  },
+  "Knowledge & Quality Systems (playbooks, precedent modernization, QA)": {
+    "Precedent & Playbook System Ownership": ["Precedent library governance", "Playbook authorship & version control", "Knowledge contribution incentives", "Cross-border precedent harmonization", "Retirement of outdated materials"],
+    "Document Automation & Clause Standardization Oversight": ["Clause bank curation", "Automation template ownership", "Exception handling & fallback drafting", "Quality audit for automated output", "Integration with DMS & intake systems"],
+    "Deal Data Capture & Lessons-Learned Loops": ["Post-deal debrief discipline", "Data capture for market intelligence", "Issue pattern recognition", "Playbook update triggers", "Benchmarking against peer deals"]
   }
 };
 
@@ -146,6 +197,30 @@ const ROLE_CLUSTERS: Record<string, string[]> = {
     "Client Advisory & Communication (Value + Risk Transparency)",
     "Knowledge Systems, Precedents & Quality Management",
     "Team Leadership, Coaching & Delegation"
+  ],
+  "counsel": [
+    // Aus SA übernommen (Kern-Arbeit):
+    "Negotiation, Commercial Judgment & Stakeholder Management",
+    "Deal Leadership, Strategy & Project Control",
+    "M&A Technical Mastery (Structure + Drafting Strategy)",
+    "Risk Allocation, Governance & Regulatory Awareness",
+    "Tech-Enabled Legal Delivery (AI workflows + QA + automation)",
+    "Client Advisory & Communication (Value + Risk Transparency)",
+    "Knowledge Systems, Precedents & Quality Management",
+    "Team Leadership, Coaching & Delegation",
+    // Aus Partner übernommen (Wachstumsrichtung):
+    "Practice Management, Pricing & Delivery Standards",
+    "Governance, Ethics & Regulatory Oversight (incl. AI)"
+  ],
+  "partner": [
+    "Deal Strategy, Risk Ownership & Structuring Judgment",
+    "Negotiation Leadership & Stakeholder Power Management",
+    "Client Leadership, Origination & Relationship Strategy",
+    "Practice Management, Pricing & Delivery Standards",
+    "Tech-Enabled Practice Strategy (AI adoption + controls + differentiation)",
+    "Governance, Ethics & Regulatory Oversight (incl. AI)",
+    "Talent Leadership (coaching, delegation, performance, culture)",
+    "Knowledge & Quality Systems (playbooks, precedent modernization, QA)"
   ]
 };
 
@@ -161,12 +236,31 @@ const ROLE_KEY_ALIASES: Record<string, string> = {
   "senior_associate_(sa)": "senior_associate_(sa)",
   "sa": "senior_associate_(sa)",
   "senior associate": "senior_associate_(sa)",
-  "counsel": "senior_associate_(sa)"
+  "counsel": "counsel",
+  "cn": "counsel",
+  "partner": "partner",
+  "partner_/_practice_lead": "partner",
+  "practice_lead": "partner"
 };
 
 function normalizeRoleKey(roleTitle: string): string {
   const normalized = roleTitle.toLowerCase().trim();
-  return ROLE_KEY_ALIASES[normalized] || "mid-level_associate_(mla)";
+
+  // Exakter Match
+  if (ROLE_KEY_ALIASES[normalized]) {
+    return ROLE_KEY_ALIASES[normalized];
+  }
+
+  // Fuzzy Match: Prüfe ob einer der Alias-Keys im Input enthalten ist
+  for (const [alias, roleKey] of Object.entries(ROLE_KEY_ALIASES)) {
+    if (normalized.includes(alias) || alias.includes(normalized)) {
+      return roleKey;
+    }
+  }
+
+  // Fallback mit Warning
+  console.warn(`Unknown role key: "${roleTitle}", falling back to mid-level_associate_(mla)`);
+  return "mid-level_associate_(mla)";
 }
 
 function getClustersForRole(roleKey: string): string[] {
@@ -236,12 +330,17 @@ function getCompetencySchemaForPrompt(roleKey: string, dbCompetencySchema?: Arra
 }
 
 // Generates the system prompt with role-specific competencies only
-function getSystemPrompt(roleKey: string, dbCompetencySchema?: Array<{ clusterName: string; competencyName: string; subskills: string[] }>): string {
+function getSystemPrompt(
+  roleKey: string,
+  dbCompetencySchema?: Array<{ clusterName: string; competencyName: string; subskills: string[] }>,
+  practiceGroup?: string
+): string {
   const normalizedRole = normalizeRoleKey(roleKey);
   const allowedClusters = dbCompetencySchema ? [] : getClustersForRole(roleKey);
   const schemaSource = dbCompetencySchema ? "Datenbank" : "statisches Schema";
+  const practiceArea = practiceGroup || "Corporate Law / M&A";
   
-  return `Du bist ein HR-Analytics-Assistent für eine Wirtschaftskanzlei im Bereich Corporate Law / M&A.
+  return `Du bist ein HR-Analytics-Assistent für eine Wirtschaftskanzlei im Bereich ${practiceArea}.
 
 Du erhältst 3 Dokumente: CV, Self-Assessment, Manager-Assessment.
 
@@ -395,7 +494,7 @@ serve(async (req) => {
   }
 
   try {
-    const { cvText, selfText, managerText, roleTitle, dbCompetencySchema } = await req.json();
+    const { cvText, selfText, managerText, roleTitle, dbCompetencySchema, practiceGroup } = await req.json();
     
 
     const userPrompt = `
@@ -413,10 +512,11 @@ ${managerText}
 Erstelle das Kompetenzprofil als JSON. Verwende EXAKT die im System definierten Kompetenz-Namen – zeichengenau, ohne Abweichungen!`;
 
     // Generate role-specific system prompt (use DB schema if available)
-    const systemPrompt = getSystemPrompt(roleTitle, dbCompetencySchema);
+    const systemPrompt = getSystemPrompt(roleTitle, dbCompetencySchema, practiceGroup);
     const allowedClusters = getClustersForRole(roleTitle);
 
     console.log("Using DB competency schema:", !!dbCompetencySchema, "count:", dbCompetencySchema?.length || 0);
+    console.log("Practice group:", practiceGroup || "default (Corporate Law / M&A)");
 
     console.log("Calling Anthropic API with role:", roleTitle);
     console.log("Normalized role:", normalizeRoleKey(roleTitle));

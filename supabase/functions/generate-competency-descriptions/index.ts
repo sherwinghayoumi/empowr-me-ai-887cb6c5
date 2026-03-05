@@ -39,7 +39,7 @@ serve(async (req) => {
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
     const body = await req.json();
-    const { competencies }: { competencies: CompetencyInput[] } = body;
+    const { competencies, practiceGroup }: { competencies: CompetencyInput[]; practiceGroup?: string } = body;
 
     if (!competencies?.length) {
       return new Response(JSON.stringify({ error: "Keine Kompetenzen übergeben" }), {
@@ -51,8 +51,10 @@ serve(async (req) => {
     // Maximal 20 auf einmal (Token-Limit)
     const batch = competencies.slice(0, 20);
 
-    const systemPrompt = `Du bist ein Experte für Anwalts- und M&A-Kompetenzen in Deutschland.
-Du erhältst eine Liste von Kompetenz- oder Subskill-Namen aus einem Corporate Law / M&A Kontext.
+    const practiceArea = practiceGroup || "Corporate Law / M&A";
+
+    const systemPrompt = `Du bist ein Experte für Anwalts-Kompetenzen im Bereich ${practiceArea} in Deutschland.
+Du erhältst eine Liste von Kompetenz- oder Subskill-Namen aus einem ${practiceArea} Kontext.
 Für jede Kompetenz generierst du eine strukturierte, professionelle deutschsprachige Beschreibung.
 
 WICHTIG:
@@ -75,7 +77,7 @@ Format:
   }
 ]`;
 
-    const userPrompt = `Generiere deutsche Beschreibungen für folgende Kompetenzen im Corporate Law / M&A Bereich:
+    const userPrompt = `Generiere deutsche Beschreibungen für folgende Kompetenzen im ${practiceArea} Bereich:
 
 ${batch
   .map(

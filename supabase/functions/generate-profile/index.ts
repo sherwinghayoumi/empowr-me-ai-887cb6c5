@@ -349,6 +349,7 @@ function getSystemPrompt(
   practiceGroup?: string
 ): string {
   const normalizedRole = normalizeRoleKey(roleKey);
+  const roleDisplayName = ROLE_DISPLAY_NAMES[normalizedRole] || roleKey;
   const allowedClusters = dbCompetencySchema ? [] : getClustersForRole(roleKey);
   const schemaSource = dbCompetencySchema ? "Datenbank" : "statisches Schema";
   const practiceArea = practiceGroup || "Corporate Law / M&A";

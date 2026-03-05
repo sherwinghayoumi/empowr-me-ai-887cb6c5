@@ -17,7 +17,7 @@ export function useEmployees() {
         .from('employees')
         .select(`
           *,
-          role_profile:role_profiles!employees_role_profile_id_fkey(id, role_title, role_key),
+          role_profile:role_profiles!employees_role_profile_id_fkey(id, role_title, role_key, practice_group),
           team:teams(id, name),
           competencies:employee_competencies(
             id,

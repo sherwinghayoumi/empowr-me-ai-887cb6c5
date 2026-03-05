@@ -20,6 +20,7 @@ export function useGenerateLearningPath() {
           targetLevel: input.targetLevel,
           employeeRole: input.employeeRole,
           employeeExperience: input.employeeExperience,
+          practiceGroup: input.practiceGroup,
         }
       });
 

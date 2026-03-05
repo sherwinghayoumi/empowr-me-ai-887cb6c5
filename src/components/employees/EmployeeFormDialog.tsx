@@ -23,7 +23,9 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
@@ -247,10 +249,8 @@ export function EmployeeFormDialog({
                         )
                           .sort(([a], [b]) => a.localeCompare(b))
                           .map(([practiceGroup, roles]) => (
-                            <div key={practiceGroup}>
-                              <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">
-                                {practiceGroup}
-                              </div>
+                            <SelectGroup key={practiceGroup}>
+                              <SelectLabel>{practiceGroup}</SelectLabel>
                               {roles
                                 .sort((a, b) => a.role_title.localeCompare(b.role_title))
                                 .map((role) => (
@@ -258,7 +258,7 @@ export function EmployeeFormDialog({
                                     {role.role_title}
                                   </SelectItem>
                                 ))}
-                            </div>
+                            </SelectGroup>
                           ))}
                       </SelectContent>
                     </Select>

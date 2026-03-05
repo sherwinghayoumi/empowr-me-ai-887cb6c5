@@ -15,6 +15,7 @@ interface CertificateUploadModalProps {
   onClose: () => void;
   currentProfile: GeneratedProfile;
   onUpdateConfirmed: (result: CertificateUpdateResult) => void;
+  practiceGroup?: string;
 }
 
 type AnalysisState = "idle" | "analyzing" | "done";
@@ -24,6 +25,7 @@ export function CertificateUploadModal({
   onClose,
   currentProfile,
   onUpdateConfirmed,
+  practiceGroup,
 }: CertificateUploadModalProps) {
   const [file, setFile] = useState<File | null>(null);
   const [analysisState, setAnalysisState] = useState<AnalysisState>("idle");
@@ -93,7 +95,7 @@ export function CertificateUploadModal({
       if (file.type === "application/pdf") {
         // PDF: Extract text and analyze
         const textContent = await extractTextFromPdf(file);
-        analysisResult = await analyzeCertificate(currentProfile, textContent, file.name);
+        analysisResult = await analyzeCertificate(currentProfile, textContent, file.name, practiceGroup);
       } else {
         // Image: Convert to base64 and analyze
         const base64 = await fileToBase64(file);
@@ -101,7 +103,8 @@ export function CertificateUploadModal({
           currentProfile,
           base64,
           file.type,
-          file.name
+          file.name,
+          practiceGroup
         );
       }
 

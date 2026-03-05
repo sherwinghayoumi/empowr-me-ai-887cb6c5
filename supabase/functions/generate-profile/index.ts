@@ -243,6 +243,14 @@ const ROLE_KEY_ALIASES: Record<string, string> = {
   "practice_lead": "partner"
 };
 
+const ROLE_DISPLAY_NAMES: Record<string, string> = {
+  "junior_associate": "Junior Associate",
+  "mid-level_associate_(mla)": "Mid-Level Associate",
+  "senior_associate_(sa)": "Senior Associate",
+  "counsel": "Counsel",
+  "partner": "Partner / Practice Lead"
+};
+
 function normalizeRoleKey(roleTitle: string): string {
   const normalized = roleTitle.toLowerCase().trim();
 
@@ -341,6 +349,7 @@ function getSystemPrompt(
   practiceGroup?: string
 ): string {
   const normalizedRole = normalizeRoleKey(roleKey);
+  const roleDisplayName = ROLE_DISPLAY_NAMES[normalizedRole] || roleKey;
   const allowedClusters = dbCompetencySchema ? [] : getClustersForRole(roleKey);
   const schemaSource = dbCompetencySchema ? "Datenbank" : "statisches Schema";
   const practiceArea = practiceGroup || "Corporate Law / M&A";
@@ -355,7 +364,7 @@ Deine Aufgabe:
 3. Kompetenzen bewerten (Rating 1-5)
 4. Stärken und Entwicklungsfelder identifizieren
 
-BEWERTUNGSMASSSTAB: Rollenrelativ fuer ${roleKey}
+BEWERTUNGSMASSSTAB: Rollenrelativ fuer ${roleDisplayName}
 Die Bewertung bezieht sich AUSSCHLIESSLICH auf die Erwartungen der aktuellen Rolle.
 Ein Junior Associate, der alle JA-Kompetenzen perfekt beherrscht, verdient eine 5.
 Ein Senior Associate, der SA-Kompetenzen nur teilweise beherrscht, kann eine 2 bekommen.
@@ -375,10 +384,10 @@ Setze in diesem Fall die Confidence auf "LOW" und erkläre in der Evidence, wora
 "NB" (Nicht bewertbar) ist KEINE gültige Antwort – es muss IMMER ein Rating von 1-5 vergeben werden.
 
 ═══════════════════════════════════════════════════════════════════════════════
-KRITISCH: Du bewertest einen ${roleKey} (normalisiert: ${normalizedRole})
+KRITISCH: Du bewertest einen ${roleDisplayName} (normalisiert: ${normalizedRole})
 Kompetenz-Quelle: ${schemaSource}
 
-BEWERTUNGSPRINZIP: Alle Ratings sind RELATIV zur Rolle "${roleKey}".
+BEWERTUNGSPRINZIP: Alle Ratings sind RELATIV zur Rolle "${roleDisplayName}".
 Eine 5 bedeutet: herausragend FUER DIESE ROLLE.
 Eine 3 bedeutet: solide auf dem erwarteten Niveau DIESER ROLLE.
 Absolute Berufserfahrung oder Senioritaet duerfen das Rating
@@ -501,9 +510,10 @@ serve(async (req) => {
   try {
     const { cvText, selfText, managerText, roleTitle, dbCompetencySchema, practiceGroup } = await req.json();
     
+    const roleDisplayName = ROLE_DISPLAY_NAMES[normalizeRoleKey(roleTitle)] || roleTitle;
 
     const userPrompt = `
-ROLLE: ${roleTitle}
+ROLLE: ${roleDisplayName}
 
 === CV ===
 ${cvText}

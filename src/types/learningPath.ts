@@ -36,6 +36,7 @@ export interface SkillGapInput {
   employeeName: string;
   employeeRole?: string;
   employeeExperience?: number;
+  practiceGroup?: string;
 }
 
 export interface SaveLearningPathParams {

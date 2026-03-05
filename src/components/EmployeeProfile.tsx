@@ -567,6 +567,7 @@ export function EmployeeProfile({ employeeId, onClose }: EmployeeProfileProps) {
           open={showCertModal}
           onClose={() => setShowCertModal(false)}
           currentProfile={currentProfile}
+          practiceGroup={employee.role_profile?.practice_group || undefined}
           onUpdateConfirmed={async (result) => {
             await applyRatingChanges(result);
             setShowCertModal(false);

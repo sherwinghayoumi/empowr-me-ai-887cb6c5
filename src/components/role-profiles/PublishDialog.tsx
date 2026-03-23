@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   Globe, 
   Building2, 
@@ -7,6 +7,8 @@ import {
   AlertTriangle,
   Check,
   RefreshCw,
+  ArrowRightLeft,
+  BarChart3,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -21,7 +23,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { publishRoleProfiles, propagateToEmployees } from '@/hooks/useRoleProfiles';
+import { 
+  publishRoleProfiles, 
+  propagateToEmployees, 
+  migrateEmployeeRatings, 
+  reassignEmployeesToNewQuarter 
+} from '@/hooks/useRoleProfiles';
+import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 
@@ -47,17 +55,57 @@ export function PublishDialog({
   const [progress, setProgress] = useState(0);
   const [propagate, setPropagate] = useState(true);
   const [result, setResult] = useState<{ orgs: number; employees: number } | null>(null);
+  const [migrateRatings, setMigrateRatings] = useState(true);
+  const [previousQuarter, setPreviousQuarter] = useState<{ quarter: string; year: number } | null>(null);
+  const [migrationResult, setMigrationResult] = useState<{
+    migrated: number;
+    unmigrated: string[];
+    employeesAffected: number;
+    reassigned: number;
+  } | null>(null);
+  const [publishStep, setPublishStep] = useState<
+    'publishing' | 'migrating' | 'reassigning' | 'propagating' | 'done'
+  >('publishing');
+
+  // Detect previous quarter with published profiles
+  useEffect(() => {
+    if (!open) return;
+    
+    const detectPreviousQuarter = async () => {
+      const qNum = parseInt(quarter.replace('Q', ''));
+      let prevQ: string;
+      let prevY = year;
+      if (qNum === 1) {
+        prevQ = 'Q4';
+        prevY = year - 1;
+      } else {
+        prevQ = `Q${qNum - 1}`;
+      }
+      
+      const { count } = await supabase
+        .from('role_profiles')
+        .select('*', { count: 'exact', head: true })
+        .eq('quarter', prevQ)
+        .eq('year', prevY)
+        .eq('is_published', true);
+      
+      setPreviousQuarter(count && count > 0 ? { quarter: prevQ, year: prevY } : null);
+    };
+    
+    detectPreviousQuarter();
+  }, [open, quarter, year]);
 
   const handlePublish = async () => {
     if (!profile?.id) return;
     
     setIsPublishing(true);
-    setProgress(20);
+    setPublishStep('publishing');
+    setProgress(10);
     
     try {
-      // Publish role profiles
+      // Step 1: Publish role profiles
       const publishResult = await publishRoleProfiles(quarter, year, profile.id);
-      setProgress(50);
+      setProgress(25);
       
       if (!publishResult.success) {
         throw new Error(publishResult.error);
@@ -65,19 +113,73 @@ export function PublishDialog({
       
       setResult(publishResult.affected || { orgs: 0, employees: 0 });
       
-      // Optionally propagate to employees
+      // Step 2: Migrate ratings from previous quarter
+      let migResult = { migrated: 0, unmigrated: [] as string[], employeesAffected: 0 };
+      let reassignResult = { reassigned: 0 };
+      
+      if (migrateRatings && previousQuarter) {
+        setPublishStep('migrating');
+        setProgress(40);
+        
+        const migResponse = await migrateEmployeeRatings(
+          previousQuarter.quarter, previousQuarter.year,
+          quarter, year
+        );
+        
+        if (!migResponse.success) {
+          console.error('Migration warning:', migResponse.error);
+          toast.warning('Bewertungs-Migration teilweise fehlgeschlagen', {
+            description: migResponse.error,
+          });
+        }
+        
+        migResult = {
+          migrated: migResponse.migrated,
+          unmigrated: migResponse.unmigrated,
+          employeesAffected: migResponse.employeesAffected,
+        };
+        
+        // Step 3: Reassign employees
+        setPublishStep('reassigning');
+        setProgress(60);
+        
+        const reassignResponse = await reassignEmployeesToNewQuarter(
+          previousQuarter.quarter, previousQuarter.year,
+          quarter, year
+        );
+        
+        if (!reassignResponse.success) {
+          console.error('Reassignment warning:', reassignResponse.error);
+          toast.warning('Mitarbeiter-Zuordnung teilweise fehlgeschlagen', {
+            description: reassignResponse.error,
+          });
+        }
+        
+        reassignResult = { reassigned: reassignResponse.reassigned };
+      }
+      
+      // Step 4: Propagate demands
       if (propagate) {
-        setProgress(70);
+        setPublishStep('propagating');
+        setProgress(80);
+        
         const propResult = await propagateToEmployees(quarter, year);
         
         if (!propResult.success) {
-          toast.warning('Teilweise erfolgreich', {
-            description: 'Veröffentlichung erfolgreich, aber Propagierung fehlgeschlagen.',
+          toast.warning('Anforderungs-Propagierung teilweise fehlgeschlagen', {
+            description: propResult.error,
           });
         }
       }
       
+      // Done
+      setPublishStep('done');
       setProgress(100);
+      
+      setMigrationResult({
+        ...migResult,
+        reassigned: reassignResult.reassigned,
+      });
       
       toast.success('Erfolgreich veröffentlicht', {
         description: `${draftCount} Role Profiles für ${quarter} ${year} veröffentlicht`,
@@ -86,7 +188,7 @@ export function PublishDialog({
       setTimeout(() => {
         onSuccess();
         handleClose();
-      }, 1000);
+      }, 3000);
     } catch (error) {
       toast.error('Veröffentlichung fehlgeschlagen', {
         description: (error as Error).message,
@@ -101,6 +203,8 @@ export function PublishDialog({
       setIsPublishing(false);
       setProgress(0);
       setResult(null);
+      setMigrationResult(null);
+      setPublishStep('publishing');
     }, 200);
   };
 
@@ -130,11 +234,11 @@ export function PublishDialog({
             </div>
             <Progress value={progress} />
             <p className="text-sm text-center text-muted-foreground">
-              {progress < 50 
-                ? 'Role Profiles werden veröffentlicht...'
-                : progress < 100
-                ? 'Änderungen werden propagiert...'
-                : 'Abgeschlossen!'}
+              {publishStep === 'publishing' && 'Role Profiles werden veröffentlicht...'}
+              {publishStep === 'migrating' && 'Bewertungen werden migriert...'}
+              {publishStep === 'reassigning' && 'Mitarbeiter werden zugeordnet...'}
+              {publishStep === 'propagating' && 'Anforderungen werden propagiert...'}
+              {publishStep === 'done' && 'Abgeschlossen!'}
             </p>
             
             {result && (
@@ -151,6 +255,39 @@ export function PublishDialog({
                 </div>
               </div>
             )}
+
+            {migrationResult && (migrationResult.migrated > 0 || migrationResult.reassigned > 0) && (
+              <div className="space-y-3 pt-2">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="p-4 rounded-lg bg-muted/30 text-center">
+                    <BarChart3 className="w-6 h-6 mx-auto text-primary mb-2" />
+                    <p className="text-xl font-bold">{migrationResult.migrated}</p>
+                    <p className="text-xs text-muted-foreground">Bewertungen migriert</p>
+                  </div>
+                  <div className="p-4 rounded-lg bg-muted/30 text-center">
+                    <ArrowRightLeft className="w-6 h-6 mx-auto text-primary mb-2" />
+                    <p className="text-xl font-bold">{migrationResult.reassigned}</p>
+                    <p className="text-xs text-muted-foreground">Mitarbeiter umgestellt</p>
+                  </div>
+                </div>
+                
+                {migrationResult.unmigrated.length > 0 && (
+                  <div className="p-3 rounded-lg bg-skill-moderate/10 border border-skill-moderate/20">
+                    <p className="text-xs font-medium text-skill-moderate mb-1">
+                      {migrationResult.unmigrated.length} Kompetenz(en) nicht migriert:
+                    </p>
+                    <div className="space-y-0.5">
+                      {migrationResult.unmigrated.slice(0, 5).map((name, i) => (
+                        <p key={i} className="text-xs text-skill-moderate/80">• {name} (neu oder umbenannt)</p>
+                      ))}
+                      {migrationResult.unmigrated.length > 5 && (
+                        <p className="text-xs text-skill-moderate/80">...und {migrationResult.unmigrated.length - 5} weitere</p>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         ) : (
           <>
@@ -165,6 +302,26 @@ export function PublishDialog({
                   </span>
                 </div>
               </div>
+
+              {previousQuarter && (
+                <div className="flex items-start space-x-3 p-4 rounded-lg bg-muted/30">
+                  <Checkbox 
+                    id="migrate" 
+                    checked={migrateRatings}
+                    onCheckedChange={(checked) => setMigrateRatings(checked as boolean)}
+                  />
+                  <div className="space-y-1">
+                    <Label htmlFor="migrate" className="text-sm font-medium cursor-pointer">
+                      <ArrowRightLeft className="w-4 h-4 inline mr-2" />
+                      Bewertungen aus {previousQuarter.quarter} {previousQuarter.year} übernehmen
+                    </Label>
+                    <p className="text-xs text-muted-foreground">
+                      Kopiert bestehende Mitarbeiter-Bewertungen auf die neuen Kompetenzen 
+                      und stellt Mitarbeiter auf die neuen Role Profiles um
+                    </p>
+                  </div>
+                </div>
+              )}
 
               <div className="flex items-start space-x-3 p-4 rounded-lg bg-muted/30">
                 <Checkbox 
@@ -186,7 +343,9 @@ export function PublishDialog({
               <div className="flex items-start gap-3 p-3 rounded-lg bg-skill-moderate/10 border border-skill-moderate/20">
                 <AlertTriangle className="w-5 h-5 text-skill-moderate shrink-0 mt-0.5" />
                 <p className="text-sm text-skill-moderate">
-                  Diese Aktion kann nicht rückgängig gemacht werden. Alle Organisationen sehen die neuen Kompetenzen.
+                  {previousQuarter && migrateRatings
+                    ? `Veröffentlicht ${draftCount} Profile, migriert Bewertungen aus ${previousQuarter.quarter} ${previousQuarter.year}, und stellt alle Mitarbeiter um. Bestehende Daten bleiben als Backup erhalten.`
+                    : 'Diese Aktion kann nicht rückgängig gemacht werden. Alle Organisationen sehen die neuen Kompetenzen.'}
                 </p>
               </div>
             </div>

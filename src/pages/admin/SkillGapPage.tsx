@@ -424,6 +424,19 @@ const SkillGapPage = () => {
         {/* ── Filters ── */}
         <ScrollReveal delay={130}>
           <div className="flex flex-wrap gap-2 items-center">
+            <Button
+              variant={groupByCategory ? "default" : "outline"}
+              size="sm"
+              className="h-8 text-xs"
+              onClick={() => {
+                setGroupByCategory(!groupByCategory);
+                setFilterCluster("all");
+              }}
+            >
+              <Layers className="w-3 h-3 mr-1" />
+              {groupByCategory ? "Kategorie-Gruppierung" : "Cluster-Gruppierung"}
+            </Button>
+
             <Select value={filterCluster} onValueChange={setFilterCluster}>
               <SelectTrigger className="h-8 w-40 text-xs"><SelectValue placeholder="Cluster" /></SelectTrigger>
               <SelectContent>

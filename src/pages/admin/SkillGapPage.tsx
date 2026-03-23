@@ -242,8 +242,12 @@ const SkillGapPage = () => {
       if (!roleMap[roleId]) roleMap[roleId] = { roleTitle, clusters: {} };
       const roleBucket = roleMap[roleId].clusters;
 
-      if (!roleBucket[g.clusterName]) roleBucket[g.clusterName] = {};
-      const clusterBucket = roleBucket[g.clusterName];
+      const clusterKey = groupByCategory && g.clusterCategory
+        ? (CATEGORY_LABELS[g.clusterCategory] || g.clusterCategory)
+        : g.clusterName;
+
+      if (!roleBucket[clusterKey]) roleBucket[clusterKey] = {};
+      const clusterBucket = roleBucket[clusterKey];
 
       if (!clusterBucket[g.competencyId]) clusterBucket[g.competencyId] = [];
       clusterBucket[g.competencyId].push(g);

@@ -612,6 +612,7 @@ export async function importRoleProfile(
           name: cluster.name,
           quarter,
           year,
+          cluster_category: detectClusterCategory(cluster.name),
         }, { onConflict: 'name,quarter,year' })
         .select()
         .single();

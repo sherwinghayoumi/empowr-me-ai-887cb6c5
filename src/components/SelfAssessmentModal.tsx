@@ -15,6 +15,17 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Star, AlertCircle, CheckCircle2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+/**
+ * Maps 1-5 star ratings to band midpoints on the 0-100 scale.
+ */
+const STAR_TO_SCORE: Record<number, number> = {
+  1: 15,
+  2: 35,
+  3: 55,
+  4: 75,
+  5: 95,
+};
+
 interface SelfAssessmentModalProps {
   open: boolean;
   onClose: () => void;

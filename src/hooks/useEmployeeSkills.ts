@@ -56,6 +56,7 @@ export interface ClusterGroup {
   clusterId: string;
   clusterName: string;
   clusterNameDe: string | null;
+  sortOrder: number;
   competencies: {
     competencyId: string;
     competencyName: string;

@@ -43,6 +43,7 @@ interface MappedCompetency {
   demandedLevel: number;
   futureLevel: number;
   gap: number;
+  migratedFrom: string | null;
   subskills: MappedSubskill[];
   clusterName: string;
 }

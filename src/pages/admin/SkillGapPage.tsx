@@ -38,7 +38,7 @@ interface DbEmployee {
       id: string;
       name: string;
       status: string | null;
-      cluster: { name: string } | null;
+      cluster: { name: string; cluster_category: string | null } | null;
     } | null;
   }>;
 }
@@ -48,11 +48,25 @@ interface EmployeeGap {
   competencyId: string;
   competencyName: string;
   clusterName: string;
+  clusterCategory: string | null;
   currentLevel: number;
   demandedLevel: number;
   futureLevel: number;
   weightedGap: number;
 }
+
+const CATEGORY_LABELS: Record<string, string> = {
+  deal_execution: "Deal Execution & Transaction Management",
+  due_diligence: "Due Diligence & Quality Control",
+  technical_lawyering: "Technical Lawyering & Negotiation",
+  regulatory_clearance: "Regulatory Clearance & Compliance",
+  ai_enabled: "AI-Enabled Legal Work",
+  legal_tech: "Legal Technology & Automation",
+  regulatory_governance: "Regulatory & AI Governance",
+  professional_skills: "Professional Skills & Client Delivery",
+  leadership: "Leadership & People Management",
+  business_development: "Business Development & Strategy",
+};
 
 function getGapRatio(weightedGap: number, demandedLevel: number): number {
   return demandedLevel > 0 ? weightedGap / demandedLevel : 0;

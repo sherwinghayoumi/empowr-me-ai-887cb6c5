@@ -250,7 +250,7 @@ export function CSVUploadWizard({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <FileSpreadsheet className="w-5 h-5 text-primary" />
-            Role Profile CSV Import
+            Role Profile Import
           </DialogTitle>
         </DialogHeader>
 

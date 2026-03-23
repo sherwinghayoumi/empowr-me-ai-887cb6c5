@@ -9,6 +9,21 @@ const normalizeCompetencyName = (name: string): string => {
     .trim();
 };
 
+/**
+ * Normalize rating to 0-100 scale.
+ * Handles both new format (0-100 direct) and legacy format (1-5 × 20).
+ */
+function normalizeRating(value: number | string | null | undefined): number | null {
+  if (value === null || value === undefined || value === 'NB') return null;
+  const num = typeof value === 'string' ? parseFloat(value) : value;
+  if (isNaN(num)) return null;
+  // Legacy 1-5 scale: convert to 0-100
+  if (num >= 1 && num <= 5 && Number.isInteger(num)) return num * 20;
+  // Already 0-100 scale
+  if (num >= 0 && num <= 100) return Math.round(num);
+  return null;
+}
+
 const findBestMatch = (
   aiName: string,
   dbCompetencies: Array<{ name: string; id: string; name_de?: string | null }>

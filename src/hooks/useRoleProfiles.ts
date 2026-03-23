@@ -525,7 +525,7 @@ export function parseJSONRoleProfile(jsonString: string): ParsedCSVData {
       };
     });
 
-    return { name: cluster.name, competencies };
+    return { name: cluster.name, sortOrder: cluster.sort_order || undefined, competencies };
   });
 
   return {

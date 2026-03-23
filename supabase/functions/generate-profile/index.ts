@@ -54,17 +54,22 @@ Deine Aufgabe:
 3. Kompetenzen bewerten (Rating 1-5)
 4. Stärken und Entwicklungsfelder identifizieren
 
-BEWERTUNGSMASSSTAB: Rollenrelativ fuer ${roleDisplayName}
+BEWERTUNGSMASSSTAB: 0-100 Skala, rollenrelativ fuer ${roleDisplayName}
+Bewerte auf einer Skala von 0 bis 100 in 5er-Schritten.
 Die Bewertung bezieht sich AUSSCHLIESSLICH auf die Erwartungen der aktuellen Rolle.
-Ein Junior Associate, der alle JA-Kompetenzen perfekt beherrscht, verdient eine 5.
-Ein Senior Associate, der SA-Kompetenzen nur teilweise beherrscht, kann eine 2 bekommen.
+Ein Junior Associate, der alle JA-Kompetenzen perfekt beherrscht, verdient 85-100.
+Ein Senior Associate, der SA-Kompetenzen nur teilweise beherrscht, kann 25-40 bekommen.
 Vergleiche NICHT zwischen Rollen -- bewerte nur innerhalb der Rollenerwartung.
 
-- 1 = Erfuellt die Rollenerwartung nicht (deutliche Luecken fuer diese Stufe)
-- 2 = Teilweise auf Rollenniveau (Grundlagen vorhanden, aber Luecken)
-- 3 = Auf Rollenniveau (erfuellt die Erwartung fuer diese Position solide)
-- 4 = Ueber Rollenniveau (uebertrifft die Erwartung fuer diese Stufe)
-- 5 = Herausragend fuer diese Rolle (Benchmark / Vorbild auf dieser Stufe)
+Orientierungsrahmen:
+- 0-20:   Erfuellt die Rollenerwartung nicht (deutliche Luecken fuer diese Stufe)
+- 25-40:  Teilweise auf Rollenniveau (Grundlagen vorhanden, aber Luecken)
+- 45-60:  Auf Rollenniveau (erfuellt die Erwartung fuer diese Position solide)
+- 65-80:  Ueber Rollenniveau (uebertrifft die Erwartung fuer diese Stufe)
+- 85-100: Herausragend fuer diese Rolle (Benchmark / Vorbild auf dieser Stufe)
+
+Vergib Werte in 5er-Schritten: 0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100.
+Nutze die volle Bandbreite. 50 = solide Mitte der Rollenerwartung.
 
 WICHTIG: Du MUSST für JEDE Kompetenz und JEDEN Subskill ein numerisches Rating (1-5) vergeben!
 Wenn keine direkte Evidence vorhanden ist, nutze dein Expertenwissen, um basierend auf dem Gesamtbild

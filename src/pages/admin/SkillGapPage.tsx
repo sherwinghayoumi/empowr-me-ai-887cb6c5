@@ -122,7 +122,13 @@ const SkillGapPage = () => {
   }, [employees]);
 
   // Filter options
-  const uniqueClusters  = useMemo(() => [...new Set(allGaps.map(g => g.clusterName))].sort(), [allGaps]);
+  const uniqueClusters = useMemo(() => {
+    if (groupByCategory) {
+      const cats = allGaps.map(g => g.clusterCategory ? (CATEGORY_LABELS[g.clusterCategory] || g.clusterCategory) : g.clusterName);
+      return [...new Set(cats)].sort();
+    }
+    return [...new Set(allGaps.map(g => g.clusterName))].sort();
+  }, [allGaps, groupByCategory]);
   const uniqueEmployees = useMemo(() => { const m = new Map<string,string>(); allGaps.forEach(g => m.set(g.employee.id, g.employee.full_name)); return [...m.entries()].sort(([,a],[,b]) => a.localeCompare(b)); }, [allGaps]);
   const uniqueRoles     = useMemo(() => { const m = new Map<string,string>(); allGaps.forEach(g => { if (g.employee.role_profile) m.set(g.employee.role_profile.id, g.employee.role_profile.role_title); }); return [...m.entries()].sort(([,a],[,b]) => a.localeCompare(b)); }, [allGaps]);
 

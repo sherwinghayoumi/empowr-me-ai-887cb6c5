@@ -11,7 +11,7 @@ import { GrowthJourneyChart } from "@/components/GrowthJourneyChart";
 import { StrengthsWeaknessesRadar } from "@/components/StrengthsWeaknessesRadar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { Target, TrendingUp, AlertTriangle, BookOpen, ClipboardEdit } from "lucide-react";
+import { Target, TrendingUp, AlertTriangle, BookOpen, ClipboardEdit, RefreshCw } from "lucide-react";
 import { 
   useEmployeeSkills, 
   groupByCluster, 

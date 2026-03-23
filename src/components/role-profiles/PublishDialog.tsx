@@ -7,8 +7,6 @@ import {
   AlertTriangle,
   Check,
   RefreshCw,
-  ArrowRightLeft,
-  BarChart3,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -256,16 +254,16 @@ export function PublishDialog({
               </div>
             )}
 
-            {migrationResult && (migrationResult.migrated > 0 || migrationResult.reassigned > 0) && (
+            {migrationResult && (
               <div className="space-y-3 pt-2">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="p-4 rounded-lg bg-muted/30 text-center">
-                    <BarChart3 className="w-6 h-6 mx-auto text-primary mb-2" />
+                    <RefreshCw className="w-6 h-6 mx-auto text-primary mb-2" />
                     <p className="text-xl font-bold">{migrationResult.migrated}</p>
                     <p className="text-xs text-muted-foreground">Bewertungen migriert</p>
                   </div>
                   <div className="p-4 rounded-lg bg-muted/30 text-center">
-                    <ArrowRightLeft className="w-6 h-6 mx-auto text-primary mb-2" />
+                    <Users className="w-6 h-6 mx-auto text-primary mb-2" />
                     <p className="text-xl font-bold">{migrationResult.reassigned}</p>
                     <p className="text-xs text-muted-foreground">Mitarbeiter umgestellt</p>
                   </div>
@@ -273,17 +271,17 @@ export function PublishDialog({
                 
                 {migrationResult.unmigrated.length > 0 && (
                   <div className="p-3 rounded-lg bg-skill-moderate/10 border border-skill-moderate/20">
-                    <p className="text-xs font-medium text-skill-moderate mb-1">
+                    <p className="text-sm font-medium text-skill-moderate mb-1">
                       {migrationResult.unmigrated.length} Kompetenz(en) nicht migriert:
                     </p>
-                    <div className="space-y-0.5">
+                    <ul className="text-xs text-muted-foreground space-y-0.5">
                       {migrationResult.unmigrated.slice(0, 5).map((name, i) => (
-                        <p key={i} className="text-xs text-skill-moderate/80">• {name} (neu oder umbenannt)</p>
+                        <li key={i}>• {name} (neu oder umbenannt)</li>
                       ))}
                       {migrationResult.unmigrated.length > 5 && (
-                        <p className="text-xs text-skill-moderate/80">...und {migrationResult.unmigrated.length - 5} weitere</p>
+                        <li>...und {migrationResult.unmigrated.length - 5} weitere</li>
                       )}
-                    </div>
+                    </ul>
                   </div>
                 )}
               </div>
@@ -304,7 +302,7 @@ export function PublishDialog({
               </div>
 
               {previousQuarter && (
-                <div className="flex items-start space-x-3 p-4 rounded-lg bg-muted/30">
+                <div className="flex items-start space-x-3 p-4 rounded-lg bg-primary/5 border border-primary/20">
                   <Checkbox 
                     id="migrate" 
                     checked={migrateRatings}
@@ -312,7 +310,7 @@ export function PublishDialog({
                   />
                   <div className="space-y-1">
                     <Label htmlFor="migrate" className="text-sm font-medium cursor-pointer">
-                      <ArrowRightLeft className="w-4 h-4 inline mr-2" />
+                      <RefreshCw className="w-4 h-4 inline mr-2" />
                       Bewertungen aus {previousQuarter.quarter} {previousQuarter.year} übernehmen
                     </Label>
                     <p className="text-xs text-muted-foreground">

@@ -430,6 +430,7 @@ export function parseCSVData(rows: RoleProfileCSVRow[]): ParsedCSVData {
     
     clusters.push({
       name: clusterName,
+      sortOrder: clusters.length + 1,
       competencies: comps,
     });
   });

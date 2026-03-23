@@ -29,6 +29,7 @@ export function CompetencyBar({
   currentLevel: rawCurrentLevel,
   demandedLevel: rawDemandedLevel,
   futureLevel: rawFutureLevel,
+  migratedFrom,
   className,
   delay = 0,
   onClick,

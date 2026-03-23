@@ -68,14 +68,19 @@ const CATEGORY_LABELS: Record<string, string> = {
   business_development: "Business Development & Strategy",
 };
 
+/** Tolerance zone (±points) for gap severity. Gaps within this range are treated as "on track". */
+const GAP_TOLERANCE = 10;
+
 function getGapRatio(weightedGap: number, demandedLevel: number): number {
   return demandedLevel > 0 ? weightedGap / demandedLevel : 0;
 }
 
 function getSeverityLabel(weightedGap: number, demandedLevel: number): "focus" | "building" | "ontrack" {
-  const ratio = getGapRatio(weightedGap, demandedLevel);
-  if (ratio >= 0.5) return "focus";
-  if (ratio >= 0.25) return "building";
+  // Apply tolerance: small gaps within the tolerance zone are not actionable
+  const effectiveGap = Math.max(0, weightedGap - GAP_TOLERANCE);
+  const ratio = demandedLevel > 0 ? effectiveGap / demandedLevel : 0;
+  if (ratio >= 0.4) return "focus";
+  if (ratio >= 0.2) return "building";
   return "ontrack";
 }
 
@@ -103,7 +108,7 @@ const SkillGapPage = () => {
         const dem = comp.demanded_level ?? 0;
         const fut = comp.future_level ?? 0;
         const weighted = (dem - cur) * 0.4 + (fut - cur) * 0.6;
-        if (weighted >= 10 && comp.competency) {
+        if (weighted >= GAP_TOLERANCE && comp.competency) {
           gaps.push({
             employee: emp,
             competencyId: comp.competency.id,

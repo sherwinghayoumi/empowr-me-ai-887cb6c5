@@ -101,6 +101,8 @@ export function useEmployeeSkills() {
             current_level,
             demanded_level,
             future_level,
+            migrated_from,
+            is_deprecated,
             competency:competencies(
               id,
               name,

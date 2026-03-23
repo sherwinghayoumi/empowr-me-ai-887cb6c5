@@ -132,7 +132,7 @@ export async function saveProfileToDatabase(
           // Process subskills
           if (comp.subskills && comp.subskills.length > 0) {
             for (const aiSubskill of comp.subskills) {
-              const subskillRating = aiSubskill.rating === 'NB' ? null : (aiSubskill.rating as number) * 20;
+              const subskillRating = normalizeRating(aiSubskill.rating);
 
               const extractTitle = (name: string) => {
                 const colonIndex = name.indexOf(':');

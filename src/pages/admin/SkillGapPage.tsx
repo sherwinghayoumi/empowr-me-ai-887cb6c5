@@ -147,7 +147,7 @@ const SkillGapPage = () => {
     if (filterEmployee !== "all" && g.employee.id !== filterEmployee) return false;
     if (filterRole     !== "all" && g.employee.role_profile?.id !== filterRole) return false;
     return true;
-  }), [allGaps, searchQuery, filterCluster, filterSeverity, filterEmployee, filterRole]);
+  }), [allGaps, searchQuery, filterCluster, filterSeverity, filterEmployee, filterRole, groupByCategory]);
 
   const hasFilters = filterCluster !== "all" || filterSeverity !== "all" || filterEmployee !== "all" || filterRole !== "all" || searchQuery !== "";
   const clearFilters = () => { setSearchQuery(""); setFilterCluster("all"); setFilterSeverity("all"); setFilterEmployee("all"); setFilterRole("all"); };

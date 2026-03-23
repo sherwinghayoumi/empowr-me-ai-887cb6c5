@@ -82,8 +82,8 @@ KRITISCH: Du bewertest einen ${roleDisplayName}
 Praxisgruppe: ${practiceGroup}
 
 BEWERTUNGSPRINZIP: Alle Ratings sind RELATIV zur Rolle "${roleDisplayName}".
-Eine 5 bedeutet: herausragend FUER DIESE ROLLE.
-Eine 3 bedeutet: solide auf dem erwarteten Niveau DIESER ROLLE.
+85-100 bedeutet: herausragend FUER DIESE ROLLE.
+45-60 bedeutet: solide auf dem erwarteten Niveau DIESER ROLLE.
 Absolute Berufserfahrung oder Senioritaet duerfen das Rating
 NICHT systematisch nach oben oder unten verzerren.
 ═══════════════════════════════════════════════════════════════════════════════

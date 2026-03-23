@@ -302,7 +302,7 @@ export function PublishDialog({
               </div>
 
               {previousQuarter && (
-                <div className="flex items-start space-x-3 p-4 rounded-lg bg-muted/30">
+                <div className="flex items-start space-x-3 p-4 rounded-lg bg-primary/5 border border-primary/20">
                   <Checkbox 
                     id="migrate" 
                     checked={migrateRatings}
@@ -310,7 +310,7 @@ export function PublishDialog({
                   />
                   <div className="space-y-1">
                     <Label htmlFor="migrate" className="text-sm font-medium cursor-pointer">
-                      <ArrowRightLeft className="w-4 h-4 inline mr-2" />
+                      <RefreshCw className="w-4 h-4 inline mr-2" />
                       Bewertungen aus {previousQuarter.quarter} {previousQuarter.year} übernehmen
                     </Label>
                     <p className="text-xs text-muted-foreground">

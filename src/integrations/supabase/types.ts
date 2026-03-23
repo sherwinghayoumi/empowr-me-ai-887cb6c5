@@ -377,7 +377,9 @@ export type Database = {
           gap_to_current: number | null
           gap_to_future: number | null
           id: string
+          is_deprecated: boolean | null
           manager_rating: number | null
+          migrated_from: string | null
           rated_at: string | null
           rating_confidence: string | null
           self_rating: number | null
@@ -394,7 +396,9 @@ export type Database = {
           gap_to_current?: number | null
           gap_to_future?: number | null
           id?: string
+          is_deprecated?: boolean | null
           manager_rating?: number | null
+          migrated_from?: string | null
           rated_at?: string | null
           rating_confidence?: string | null
           self_rating?: number | null
@@ -411,7 +415,9 @@ export type Database = {
           gap_to_current?: number | null
           gap_to_future?: number | null
           id?: string
+          is_deprecated?: boolean | null
           manager_rating?: number | null
+          migrated_from?: string | null
           rated_at?: string | null
           rating_confidence?: string | null
           self_rating?: number | null

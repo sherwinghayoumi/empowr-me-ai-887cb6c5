@@ -538,6 +538,30 @@ export function parseJSONRoleProfile(jsonString: string): ParsedCSVData {
   };
 }
 
+/**
+ * Auto-detect cluster_category from cluster name using pattern matching.
+ */
+function detectClusterCategory(clusterName: string): string | null {
+  const name = clusterName.toLowerCase();
+  // Practice-specific categories
+  if (name.includes('deal execution') || name.includes('transaction management') || name.includes('transaction execution') || name.includes('deal administration'))
+    return 'deal_execution';
+  if (name.includes('due diligence') || name.includes('quality control') || name.includes('quality oversight'))
+    return 'due_diligence';
+  if (name.includes('technical lawyering') || (name.includes('negotiation') && !name.includes('stakeholder')))
+    return 'technical_lawyering';
+  if (name.includes('regulatory clearance') || name.includes('deal compliance') || name.includes('deal strategy'))
+    return 'regulatory_clearance';
+  // Universal categories
+  if (name.includes('ai-enabled')) return 'ai_enabled';
+  if (name.includes('legal technology')) return 'legal_tech';
+  if (name.includes('regulatory') && name.includes('governance')) return 'regulatory_governance';
+  if (name.includes('professional skills')) return 'professional_skills';
+  if (name.includes('leadership')) return 'leadership';
+  if (name.includes('business development')) return 'business_development';
+  return null;
+}
+
 // Import role profile to database
 export async function importRoleProfile(
   parsedData: ParsedCSVData,

@@ -61,6 +61,7 @@ export interface ClusterGroup {
     currentLevel: number;
     demandedLevel: number;
     futureLevel: number;
+    migratedFrom: string | null;
     subskills: {
       id: string;
       name: string;

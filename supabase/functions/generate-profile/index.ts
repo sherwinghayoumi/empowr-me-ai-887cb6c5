@@ -188,7 +188,7 @@ WICHTIGE REGELN:
 1. Verwende NUR die oben definierten Cluster-, Kompetenz- und Subskill-Namen!
 2. Bewerte ALLE Kompetenzen in ALLEN oben aufgelisteten Clustern für diese Rolle!
 3. Vergib IMMER ein numerisches Rating (1-5) – NIEMALS "NB"!
-4. Overall Score = gewichteter Durchschnitt aller Kompetenzen (1=20%, 2=40%, 3=60%, 4=80%, 5=100%)
+4. Overall Score = Durchschnitt aller Kompetenz-Ratings (bereits auf 0-100 Skala, kein Umrechnen noetig)
 5. Antworte NUR mit JSON - keine Erklärungen davor oder danach!
 6. HALTE ALLE Textfelder (evidence, gap, recommendation) EXTREM KURZ (max 10 Wörter)! Kürze ist kritisch!`;
 }

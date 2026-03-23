@@ -50,7 +50,9 @@ import {
 import { cn } from '@/lib/utils';
 import { 
   parseCSV, 
-  parseCSVData, 
+  parseCSVData,
+  parseJSONRoleProfile,
+  detectFileFormat,
   importRoleProfile,
   type RoleProfileCSVRow,
   type ParsedCSVData,

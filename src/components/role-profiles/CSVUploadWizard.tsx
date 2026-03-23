@@ -69,7 +69,7 @@ interface CSVUploadWizardProps {
 }
 
 const steps = [
-  { id: 1, title: 'Upload', description: 'CSV-Datei hochladen' },
+  { id: 1, title: 'Upload', description: 'Datei hochladen' },
   { id: 2, title: 'Parsing', description: 'Daten validieren' },
   { id: 3, title: 'Mapping', description: 'Vorschau prüfen' },
   { id: 4, title: 'Import', description: 'Daten importieren' },

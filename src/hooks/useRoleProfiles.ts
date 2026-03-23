@@ -37,6 +37,7 @@ export interface ParsedCSVData {
   regions: string[];
   clusters: {
     name: string;
+    sortOrder?: number;
     competencies: {
       name: string;
       definition: string;

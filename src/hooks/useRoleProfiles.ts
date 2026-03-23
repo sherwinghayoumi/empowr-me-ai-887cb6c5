@@ -638,6 +638,7 @@ export async function importRoleProfile(
             status: comp.status as 'active' | 'emerging' | 'deprecated',
             tools: comp.tools,
             artifacts: comp.artifacts,
+            cluster_sort_order: cluster.sortOrder || null,
           }, { onConflict: 'role_profile_id,name' })
           .select()
           .single();

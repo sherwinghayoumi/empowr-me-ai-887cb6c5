@@ -231,6 +231,24 @@ const MySkillsPage = () => {
           </ScrollReveal>
         </div>
 
+        {/* Migration Info Banner */}
+        {(() => {
+          const migratedCount = allCompetencies.filter(c => c.migratedFrom).length;
+          if (migratedCount === 0) return null;
+          const source = allCompetencies.find(c => c.migratedFrom)?.migratedFrom?.replace('_', ' ');
+          return (
+            <ScrollReveal delay={350}>
+              <div className="flex items-center gap-3 p-3 rounded-lg bg-primary/5 border border-primary/20 mb-6">
+                <RefreshCw className="w-4 h-4 text-primary shrink-0" />
+                <p className="text-sm text-muted-foreground">
+                  <span className="font-medium text-foreground">{migratedCount} Bewertungen</span> wurden
+                  aus {source} übernommen. Für eine aktuelle Einschätzung empfehlen wir ein neues Assessment.
+                </p>
+              </div>
+            </ScrollReveal>
+          );
+        })()}
+
         {/* Charts Section */}
         <div className="grid md:grid-cols-2 gap-4 mb-8">
           <ScrollReveal delay={250}>

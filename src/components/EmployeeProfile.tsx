@@ -454,6 +454,7 @@ export function EmployeeProfile({ employeeId, onClose }: EmployeeProfileProps) {
                 currentLevel={comp.currentLevel}
                 demandedLevel={comp.demandedLevel}
                 futureLevel={comp.futureLevel}
+                migratedFrom={comp.migratedFrom}
                 delay={index * 100}
                 onClick={() => setSelectedCompetencyId(comp.id)}
               />

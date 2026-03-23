@@ -185,6 +185,7 @@ export function groupByCluster(
       currentLevel: capLevel(ec.current_level),
       demandedLevel: capLevel(ec.demanded_level, 100) || 70,
       futureLevel: capLevel(ec.future_level, 100) || 80,
+      migratedFrom: ec.migrated_from || null,
       subskills: subskillsWithRatings,
     });
   });

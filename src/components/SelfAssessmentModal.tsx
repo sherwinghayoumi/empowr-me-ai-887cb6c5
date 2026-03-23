@@ -78,11 +78,11 @@ export function SelfAssessmentModal({ open, onClose }: SelfAssessmentModalProps)
 
   const getRatingLabel = (rating: number) => {
     switch (rating) {
-      case 1: return "Grundkenntnisse";
-      case 2: return "Fortgeschritten";
-      case 3: return "Kompetent";
-      case 4: return "Erfahren";
-      case 5: return "Experte";
+      case 1: return "Grundkenntnisse (≈15%)";
+      case 2: return "Aufbauend (≈35%)";
+      case 3: return "Kompetent (≈55%)";
+      case 4: return "Erfahren (≈75%)";
+      case 5: return "Experte (≈95%)";
       default: return "Nicht bewertet";
     }
   };

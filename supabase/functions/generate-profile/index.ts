@@ -136,7 +136,7 @@ Antworte NUR mit validem JSON im folgenden Schema:
         "competencies": [
           {
             "name": "EXAKT wie oben definiert",
-            "rating": 1-5,
+            "rating": 0-100,
             "confidence": "HIGH" | "MEDIUM" | "LOW",
             "selfRating": number oder null,
             "managerRating": number oder null,
@@ -144,7 +144,7 @@ Antworte NUR mit validem JSON im folgenden Schema:
             "subskills": [
               {
                 "name": "EXAKT wie oben definiert",
-                "rating": 1-5,
+                "rating": 0-100,
                 "evidence": "max 5 Wörter"
               }
             ]

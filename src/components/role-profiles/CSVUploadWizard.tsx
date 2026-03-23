@@ -50,7 +50,9 @@ import {
 import { cn } from '@/lib/utils';
 import { 
   parseCSV, 
-  parseCSVData, 
+  parseCSVData,
+  parseJSONRoleProfile,
+  detectFileFormat,
   importRoleProfile,
   type RoleProfileCSVRow,
   type ParsedCSVData,
@@ -67,7 +69,7 @@ interface CSVUploadWizardProps {
 }
 
 const steps = [
-  { id: 1, title: 'Upload', description: 'CSV-Datei hochladen' },
+  { id: 1, title: 'Upload', description: 'Datei hochladen' },
   { id: 2, title: 'Parsing', description: 'Daten validieren' },
   { id: 3, title: 'Mapping', description: 'Vorschau prüfen' },
   { id: 4, title: 'Import', description: 'Daten importieren' },
@@ -107,7 +109,7 @@ export function CSVUploadWizard({
     setIsDragging(false);
     
     const droppedFiles = Array.from(e.dataTransfer.files).filter(
-      f => f.name.endsWith('.csv')
+      f => f.name.endsWith('.csv') || f.name.endsWith('.json')
     );
     
     if (droppedFiles.length > 0) {
@@ -117,7 +119,7 @@ export function CSVUploadWizard({
 
   const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFiles = Array.from(e.target.files || []).filter(
-      f => f.name.endsWith('.csv')
+      f => f.name.endsWith('.csv') || f.name.endsWith('.json')
     );
     
     if (selectedFiles.length > 0) {
@@ -132,16 +134,33 @@ export function CSVUploadWizard({
   const handleParseFiles = async () => {
     const errors: string[] = [];
     let allRows: RoleProfileCSVRow[] = [];
+    let jsonParsedData: ParsedCSVData | null = null;
     
     for (const file of files) {
       try {
         const text = await file.text();
-        const rows = parseCSV(text);
+        const format = detectFileFormat(text);
         
-        if (rows.length === 0) {
-          errors.push(`${file.name}: Keine Daten gefunden`);
+        if (format === 'json') {
+          try {
+            const parsed = parseJSONRoleProfile(text);
+            if (jsonParsedData) {
+              jsonParsedData.clusters.push(...parsed.clusters);
+              jsonParsedData.totalCompetencies += parsed.totalCompetencies;
+              jsonParsedData.totalSubskills += parsed.totalSubskills;
+            } else {
+              jsonParsedData = parsed;
+            }
+          } catch (parseError) {
+            errors.push(`${file.name}: ${(parseError as Error).message}`);
+          }
         } else {
-          allRows = [...allRows, ...rows];
+          const rows = parseCSV(text);
+          if (rows.length === 0) {
+            errors.push(`${file.name}: Keine Daten gefunden`);
+          } else {
+            allRows = [...allRows, ...rows];
+          }
         }
       } catch (error) {
         errors.push(`${file.name}: Fehler beim Lesen`);
@@ -151,7 +170,10 @@ export function CSVUploadWizard({
     setCSVRows(allRows);
     setParseErrors(errors);
     
-    if (allRows.length > 0) {
+    if (jsonParsedData) {
+      setParsedData(jsonParsedData);
+      setCurrentStep(3);
+    } else if (allRows.length > 0) {
       const parsed = parseCSVData(allRows);
       setParsedData(parsed);
       setCurrentStep(3);
@@ -214,7 +236,7 @@ export function CSVUploadWizard({
       case 1:
         return files.length > 0;
       case 2:
-        return csvRows.length > 0 && parseErrors.length === 0;
+        return (csvRows.length > 0 || parsedData !== null) && parseErrors.length === 0;
       case 3:
         return parsedData !== null && parsedData.totalCompetencies > 0;
       default:
@@ -228,7 +250,7 @@ export function CSVUploadWizard({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <FileSpreadsheet className="w-5 h-5 text-primary" />
-            Role Profile CSV Import
+            Role Profile Import
           </DialogTitle>
         </DialogHeader>
 
@@ -310,9 +332,9 @@ export function CSVUploadWizard({
                 onDrop={handleDrop}
               >
                 <Upload className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-                <h3 className="text-lg font-medium mb-2">CSV-Dateien hier ablegen</h3>
+                <h3 className="text-lg font-medium mb-2">Role Profile importieren</h3>
                 <p className="text-sm text-muted-foreground mb-4">
-                  oder klicken Sie zum Auswählen
+                  JSON oder CSV-Datei hier ablegen
                 </p>
                 <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
                   Dateien auswählen
@@ -320,7 +342,7 @@ export function CSVUploadWizard({
                 <input
                   ref={fileInputRef}
                   type="file"
-                  accept=".csv"
+                  accept=".csv,.json"
                   multiple
                   className="hidden"
                   onChange={handleFileSelect}
@@ -340,7 +362,12 @@ export function CSVUploadWizard({
                         <div className="flex items-center gap-3">
                           <FileSpreadsheet className="w-5 h-5 text-primary" />
                           <div>
-                            <p className="text-sm font-medium">{file.name}</p>
+                            <p className="text-sm font-medium flex items-center gap-2">
+                              {file.name}
+                              <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                                {file.name.endsWith('.json') ? 'JSON' : 'CSV'}
+                              </Badge>
+                            </p>
                             <p className="text-xs text-muted-foreground">
                               {(file.size / 1024).toFixed(1)} KB
                             </p>
@@ -416,6 +443,13 @@ export function CSVUploadWizard({
                       ...und {csvRows.length - 20} weitere Zeilen
                     </p>
                   )}
+                </div>
+              ) : parsedData ? (
+                <div className="text-center py-8 space-y-3">
+                  <Check className="w-8 h-8 mx-auto text-primary" />
+                  <p className="text-sm text-muted-foreground">
+                    JSON erfolgreich geparst — {parsedData.totalCompetencies} Kompetenzen, {parsedData.totalSubskills} Subskills
+                  </p>
                 </div>
               ) : (
                 <div className="text-center py-8 text-muted-foreground">

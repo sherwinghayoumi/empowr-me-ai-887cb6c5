@@ -444,6 +444,13 @@ export function CSVUploadWizard({
                     </p>
                   )}
                 </div>
+              ) : parsedData ? (
+                <div className="text-center py-8 space-y-3">
+                  <Check className="w-8 h-8 mx-auto text-primary" />
+                  <p className="text-sm text-muted-foreground">
+                    JSON erfolgreich geparst — {parsedData.totalCompetencies} Kompetenzen, {parsedData.totalSubskills} Subskills
+                  </p>
+                </div>
               ) : (
                 <div className="text-center py-8 text-muted-foreground">
                   <Loader2 className="w-8 h-8 mx-auto animate-spin mb-4" />

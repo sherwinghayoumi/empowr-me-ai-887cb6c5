@@ -37,6 +37,7 @@ export interface ParsedCSVData {
   regions: string[];
   clusters: {
     name: string;
+    sortOrder?: number;
     competencies: {
       name: string;
       definition: string;
@@ -429,6 +430,7 @@ export function parseCSVData(rows: RoleProfileCSVRow[]): ParsedCSVData {
     
     clusters.push({
       name: clusterName,
+      sortOrder: clusters.length + 1,
       competencies: comps,
     });
   });
@@ -523,7 +525,7 @@ export function parseJSONRoleProfile(jsonString: string): ParsedCSVData {
       };
     });
 
-    return { name: cluster.name, competencies };
+    return { name: cluster.name, sortOrder: cluster.sort_order || undefined, competencies };
   });
 
   return {
@@ -636,6 +638,7 @@ export async function importRoleProfile(
             status: comp.status as 'active' | 'emerging' | 'deprecated',
             tools: comp.tools,
             artifacts: comp.artifacts,
+            cluster_sort_order: cluster.sortOrder || null,
           }, { onConflict: 'role_profile_id,name' })
           .select()
           .single();

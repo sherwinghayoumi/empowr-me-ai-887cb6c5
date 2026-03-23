@@ -134,16 +134,33 @@ export function CSVUploadWizard({
   const handleParseFiles = async () => {
     const errors: string[] = [];
     let allRows: RoleProfileCSVRow[] = [];
+    let jsonParsedData: ParsedCSVData | null = null;
     
     for (const file of files) {
       try {
         const text = await file.text();
-        const rows = parseCSV(text);
+        const format = detectFileFormat(text);
         
-        if (rows.length === 0) {
-          errors.push(`${file.name}: Keine Daten gefunden`);
+        if (format === 'json') {
+          try {
+            const parsed = parseJSONRoleProfile(text);
+            if (jsonParsedData) {
+              jsonParsedData.clusters.push(...parsed.clusters);
+              jsonParsedData.totalCompetencies += parsed.totalCompetencies;
+              jsonParsedData.totalSubskills += parsed.totalSubskills;
+            } else {
+              jsonParsedData = parsed;
+            }
+          } catch (parseError) {
+            errors.push(`${file.name}: ${(parseError as Error).message}`);
+          }
         } else {
-          allRows = [...allRows, ...rows];
+          const rows = parseCSV(text);
+          if (rows.length === 0) {
+            errors.push(`${file.name}: Keine Daten gefunden`);
+          } else {
+            allRows = [...allRows, ...rows];
+          }
         }
       } catch (error) {
         errors.push(`${file.name}: Fehler beim Lesen`);
@@ -153,7 +170,10 @@ export function CSVUploadWizard({
     setCSVRows(allRows);
     setParseErrors(errors);
     
-    if (allRows.length > 0) {
+    if (jsonParsedData) {
+      setParsedData(jsonParsedData);
+      setCurrentStep(3);
+    } else if (allRows.length > 0) {
       const parsed = parseCSVData(allRows);
       setParsedData(parsed);
       setCurrentStep(3);

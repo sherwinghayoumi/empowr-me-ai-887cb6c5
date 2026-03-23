@@ -136,6 +136,11 @@ export function groupByCluster(
 ): ClusterGroup[] {
   const clusterMap = new Map<string, ClusterGroup>();
 
+  // Filter out deprecated competencies (from previous quarters)
+  const activeCompetencies = employeeCompetencies.filter(
+    ec => !ec.is_deprecated
+  );
+
   // Build a map of subskill ratings by subskill_id
   const subskillRatings = new Map<string, number | null>();
   employeeSubskills.forEach((es) => {
@@ -144,7 +149,7 @@ export function groupByCluster(
     }
   });
 
-  employeeCompetencies.forEach((ec) => {
+  activeCompetencies.forEach((ec) => {
     if (!ec.competency) return;
 
     const cluster = ec.competency.cluster;

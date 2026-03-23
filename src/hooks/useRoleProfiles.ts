@@ -960,3 +960,75 @@ export async function migrateEmployeeRatings(
     };
   }
 }
+
+/**
+ * Reassign employees from Q(old) role profiles to Q(new) role profiles.
+ * Matches by role_key. Only reassigns if Q(new) profile is published.
+ * MUST run AFTER migrateEmployeeRatings to preserve rating continuity.
+ */
+export async function reassignEmployeesToNewQuarter(
+  oldQuarter: string,
+  oldYear: number,
+  newQuarter: string,
+  newYear: number
+): Promise<{
+  success: boolean;
+  reassigned: number;
+  skipped: number;
+  error?: string;
+}> {
+  try {
+    const { data: oldProfiles, error: oldErr } = await supabase
+      .from('role_profiles')
+      .select('id, role_key')
+      .eq('quarter', oldQuarter)
+      .eq('year', oldYear);
+
+    if (oldErr) throw oldErr;
+
+    const { data: newProfiles, error: newErr } = await supabase
+      .from('role_profiles')
+      .select('id, role_key')
+      .eq('quarter', newQuarter)
+      .eq('year', newYear)
+      .eq('is_published', true);
+
+    if (newErr) throw newErr;
+    if (!oldProfiles?.length || !newProfiles?.length) {
+      return { success: true, reassigned: 0, skipped: 0 };
+    }
+
+    let totalReassigned = 0;
+    let totalSkipped = 0;
+
+    for (const oldProfile of oldProfiles) {
+      const newProfile = newProfiles.find(np => np.role_key === oldProfile.role_key);
+
+      if (!newProfile) {
+        totalSkipped++;
+        continue;
+      }
+
+      const { data: updated, error: updateErr } = await supabase
+        .from('employees')
+        .update({
+          role_profile_id: newProfile.id,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('role_profile_id', oldProfile.id)
+        .select('id');
+
+      if (updateErr) throw updateErr;
+      totalReassigned += updated?.length || 0;
+    }
+
+    return { success: true, reassigned: totalReassigned, skipped: totalSkipped };
+  } catch (error) {
+    return {
+      success: false,
+      reassigned: 0,
+      skipped: 0,
+      error: (error as Error).message,
+    };
+  }
+}

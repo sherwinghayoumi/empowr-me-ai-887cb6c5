@@ -163,6 +163,7 @@ export type Database = {
         Row: {
           artifacts: string[] | null
           cluster_id: string | null
+          cluster_sort_order: number | null
           confidence: string | null
           created_at: string | null
           definition: string | null
@@ -180,6 +181,7 @@ export type Database = {
         Insert: {
           artifacts?: string[] | null
           cluster_id?: string | null
+          cluster_sort_order?: number | null
           confidence?: string | null
           created_at?: string | null
           definition?: string | null
@@ -197,6 +199,7 @@ export type Database = {
         Update: {
           artifacts?: string[] | null
           cluster_id?: string | null
+          cluster_sort_order?: number | null
           confidence?: string | null
           created_at?: string | null
           definition?: string | null

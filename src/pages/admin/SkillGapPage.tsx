@@ -109,6 +109,7 @@ const SkillGapPage = () => {
             competencyId: comp.competency.id,
             competencyName: comp.competency.name,
             clusterName: comp.competency.cluster?.name || "Sonstige",
+            clusterCategory: comp.competency.cluster?.cluster_category || null,
             currentLevel: cur,
             demandedLevel: dem,
             futureLevel: fut,

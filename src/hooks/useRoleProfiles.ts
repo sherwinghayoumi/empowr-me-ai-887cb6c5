@@ -445,6 +445,99 @@ export function parseCSVData(rows: RoleProfileCSVRow[]): ParsedCSVData {
   };
 }
 
+// Detect file format (JSON or CSV)
+export function detectFileFormat(content: string): 'json' | 'csv' {
+  const trimmed = content.trim();
+  if (trimmed.startsWith('{')) return 'json';
+  return 'csv';
+}
+
+// Parse FUTURA JSON Role Profile into ParsedCSVData
+export function parseJSONRoleProfile(jsonString: string): ParsedCSVData {
+  let json: any;
+  try {
+    json = JSON.parse(jsonString);
+  } catch (e) {
+    throw new Error(`Ungültiges JSON: ${(e as Error).message}`);
+  }
+
+  if (!json.role_profile) {
+    throw new Error('JSON fehlt das Feld "role_profile"');
+  }
+  if (!Array.isArray(json.clusters) || json.clusters.length === 0) {
+    throw new Error('JSON fehlt das Feld "clusters" oder es ist leer');
+  }
+
+  const rp = json.role_profile;
+
+  let totalCompetencies = 0;
+  let totalSubskills = 0;
+
+  const clusters: ParsedCSVData['clusters'] = json.clusters.map((cluster: any) => {
+    if (!cluster.name) {
+      throw new Error('Ein Cluster hat keinen Namen');
+    }
+    if (!Array.isArray(cluster.competencies) || cluster.competencies.length === 0) {
+      throw new Error(`Cluster "${cluster.name}" hat keine Kompetenzen`);
+    }
+
+    const competencies = cluster.competencies.map((comp: any) => {
+      if (!comp.name) {
+        throw new Error(`Eine Kompetenz in Cluster "${cluster.name}" hat keinen Namen`);
+      }
+      if (comp.demand_weight == null) {
+        throw new Error(`Kompetenz "${comp.name}" hat kein demand_weight`);
+      }
+
+      totalCompetencies++;
+
+      const normalizedStatus = (comp.status || 'active').toLowerCase().trim();
+      const validStatus = ['active', 'emerging', 'deprecated'].includes(normalizedStatus)
+        ? normalizedStatus
+        : 'active';
+
+      const subskills = (comp.subskills || []).map((sub: any) => {
+        totalSubskills++;
+        const subStatus = (sub.status || 'active').toLowerCase().trim();
+        return {
+          name: sub.name || '',
+          demandWeight: sub.demand_weight ?? null,
+          futureDemand: sub.future_demand ?? null,
+          confidence: sub.confidence ?? null,
+          status: ['active', 'emerging', 'deprecated'].includes(subStatus) ? subStatus : 'active',
+        };
+      });
+
+      return {
+        name: comp.name,
+        definition: comp.definition || '',
+        demandWeight: comp.demand_weight ?? null,
+        futureDemand: comp.future_demand ?? null,
+        futureDemandMin: comp.future_demand_min ?? null,
+        futureDemandMax: comp.future_demand_max ?? null,
+        confidence: comp.confidence ?? null,
+        status: validStatus,
+        tools: Array.isArray(comp.tools) ? comp.tools : [],
+        artifacts: Array.isArray(comp.artifacts) ? comp.artifacts : [],
+        subskills,
+      };
+    });
+
+    return { name: cluster.name, competencies };
+  });
+
+  return {
+    roleTitle: rp.role_title || '',
+    practiceGroup: rp.practice_group || '',
+    marketSegment: rp.market_segment || '',
+    experienceLevel: rp.experience_level || '',
+    regions: Array.isArray(rp.regions) ? rp.regions : [],
+    clusters,
+    totalCompetencies,
+    totalSubskills,
+  };
+}
+
 // Import role profile to database
 export async function importRoleProfile(
   parsedData: ParsedCSVData,

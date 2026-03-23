@@ -332,9 +332,9 @@ export function CSVUploadWizard({
                 onDrop={handleDrop}
               >
                 <Upload className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-                <h3 className="text-lg font-medium mb-2">CSV-Dateien hier ablegen</h3>
+                <h3 className="text-lg font-medium mb-2">Role Profile importieren</h3>
                 <p className="text-sm text-muted-foreground mb-4">
-                  oder klicken Sie zum Auswählen
+                  JSON oder CSV-Datei hier ablegen
                 </p>
                 <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
                   Dateien auswählen
@@ -342,7 +342,7 @@ export function CSVUploadWizard({
                 <input
                   ref={fileInputRef}
                   type="file"
-                  accept=".csv"
+                  accept=".csv,.json"
                   multiple
                   className="hidden"
                   onChange={handleFileSelect}

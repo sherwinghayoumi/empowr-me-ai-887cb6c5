@@ -17,7 +17,7 @@ import { toast } from "@/hooks/use-toast";
 import {
   AlertTriangle, TrendingUp, Users, FileQuestion,
   Search, X, Folder, FolderOpen,
-  ChevronDown, ChevronRight, Target, Sparkles, Loader2,
+  ChevronDown, ChevronRight, Target, Sparkles, Loader2, Layers,
 } from "lucide-react";
 
 interface DbEmployee {

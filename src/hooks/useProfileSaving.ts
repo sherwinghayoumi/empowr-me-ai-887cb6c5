@@ -103,9 +103,9 @@ export async function saveProfileToDatabase(
 
     for (const cluster of profile.competencyProfile.clusters) {
       for (const comp of cluster.competencies) {
-        const rating = comp.rating === 'NB' ? null : (comp.rating as number) * 20;
-        const selfRating = comp.selfRating ? comp.selfRating * 20 : null;
-        const managerRating = comp.managerRating ? comp.managerRating * 20 : null;
+        const rating = normalizeRating(comp.rating);
+        const selfRating = normalizeRating(comp.selfRating);
+        const managerRating = normalizeRating(comp.managerRating);
 
         const matchId = findBestMatch(comp.name, dbCompetencies);
         const matchedEc = matchId ? dbCompetencies.find(db => db.id === matchId) : null;

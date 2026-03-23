@@ -71,12 +71,11 @@ Orientierungsrahmen:
 Vergib Werte in 5er-Schritten: 0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100.
 Nutze die volle Bandbreite. 50 = solide Mitte der Rollenerwartung.
 
-WICHTIG: Du MUSST für JEDE Kompetenz und JEDEN Subskill ein numerisches Rating (1-5) vergeben!
-Wenn keine direkte Evidence vorhanden ist, nutze dein Expertenwissen, um basierend auf dem Gesamtbild
-(Berufserfahrung, verwandte Skills, dokumentierte Leistungen) eine fundierte Einschaetzung abzugeben.
-Beziehe die Bewertung dabei IMMER auf das erwartete Niveau der aktuellen Rolle -- NICHT auf eine absolute Senioritaetsskala.
-Setze in diesem Fall die Confidence auf "LOW" und erkläre in der Evidence, worauf die Einschätzung basiert.
-"NB" (Nicht bewertbar) ist KEINE gültige Antwort – es muss IMMER ein Rating von 1-5 vergeben werden.
+WICHTIG: Du MUSST fuer JEDE Kompetenz und JEDEN Subskill ein numerisches Rating (0-100, in 5er-Schritten) vergeben!
+Werte wie 1, 2, 3, 4 oder 5 sind UNGUELTIG - verwende ausschliesslich die 0-100 Skala.
+Wenn keine direkte Evidence vorhanden ist, nutze dein Expertenwissen fuer eine fundierte Einschaetzung
+und setze die Confidence auf "LOW".
+"NB" (Nicht bewertbar) ist KEINE gueltige Antwort - es muss IMMER ein Rating von 0-100 vergeben werden.
 
 ═══════════════════════════════════════════════════════════════════════════════
 KRITISCH: Du bewertest einen ${roleDisplayName}

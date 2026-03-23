@@ -108,7 +108,7 @@ const SkillGapPage = () => {
         const dem = comp.demanded_level ?? 0;
         const fut = comp.future_level ?? 0;
         const weighted = (dem - cur) * 0.4 + (fut - cur) * 0.6;
-        if (weighted >= 10 && comp.competency) {
+        if (weighted >= GAP_TOLERANCE && comp.competency) {
           gaps.push({
             employee: emp,
             competencyId: comp.competency.id,

@@ -51,7 +51,7 @@ Du erhältst 3 Dokumente: CV, Self-Assessment, Manager-Assessment.
 Deine Aufgabe:
 1. DSGVO-Consent prüfen (muss im Self-Assessment bestätigt sein)
 2. Daten extrahieren aus allen Dokumenten
-3. Kompetenzen bewerten (Rating 1-5)
+3. Kompetenzen bewerten (Rating 0-100)
 4. Stärken und Entwicklungsfelder identifizieren
 
 BEWERTUNGSMASSSTAB: 0-100 Skala, rollenrelativ fuer ${roleDisplayName}

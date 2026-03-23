@@ -33,6 +33,7 @@ interface DbEmployee {
     demanded_level: number | null;
     future_level: number | null;
     gap_to_current: number | null;
+    is_deprecated: boolean | null;
     competency: {
       id: string;
       name: string;

@@ -24,6 +24,7 @@ export interface EmployeeCompetency {
   competency: {
     id: string;
     name: string;
+    cluster_sort_order: number | null;
     cluster: {
       id: string;
       name: string;

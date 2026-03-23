@@ -236,7 +236,7 @@ export function CSVUploadWizard({
       case 1:
         return files.length > 0;
       case 2:
-        return csvRows.length > 0 && parseErrors.length === 0;
+        return (csvRows.length > 0 || parsedData !== null) && parseErrors.length === 0;
       case 3:
         return parsedData !== null && parsedData.totalCompetencies > 0;
       default:

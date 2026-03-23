@@ -24,6 +24,7 @@ export interface EmployeeCompetency {
   competency: {
     id: string;
     name: string;
+    cluster_sort_order: number | null;
     cluster: {
       id: string;
       name: string;
@@ -55,6 +56,7 @@ export interface ClusterGroup {
   clusterId: string;
   clusterName: string;
   clusterNameDe: string | null;
+  sortOrder: number;
   competencies: {
     competencyId: string;
     competencyName: string;
@@ -107,6 +109,7 @@ export function useEmployeeSkills() {
             competency:competencies(
               id,
               name,
+              cluster_sort_order,
               cluster:competency_clusters(id, name, name_de),
               subskills(id, name, name_de)
             )
@@ -163,9 +166,16 @@ export function groupByCluster(
         clusterId,
         clusterName,
         clusterNameDe,
+        sortOrder: ec.competency.cluster_sort_order ?? 999,
         competencies: [],
         avgLevel: 0,
       });
+    } else {
+      const existing = clusterMap.get(clusterId)!;
+      const newSort = ec.competency.cluster_sort_order ?? 999;
+      if (newSort < existing.sortOrder) {
+        existing.sortOrder = newSort;
+      }
     }
 
     const group = clusterMap.get(clusterId)!;
@@ -198,7 +208,7 @@ export function groupByCluster(
     }
   });
 
-  return Array.from(clusterMap.values());
+  return Array.from(clusterMap.values()).sort((a, b) => a.sortOrder - b.sortOrder);
 }
 
 // Transform for radar chart

@@ -1,11 +1,16 @@
 import { cn, capLevel } from "@/lib/utils";
 import { useEffect, useState } from "react";
-import { ChevronRight, Info, Wrench } from "lucide-react";
+import { ChevronRight, Info, Wrench, RefreshCw } from "lucide-react";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { getCompetencyDescription } from "@/data/competencyDescriptions";
 
 interface CompetencyBarProps {

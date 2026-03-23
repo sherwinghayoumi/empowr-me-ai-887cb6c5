@@ -166,9 +166,16 @@ export function groupByCluster(
         clusterId,
         clusterName,
         clusterNameDe,
+        sortOrder: ec.competency.cluster_sort_order ?? 999,
         competencies: [],
         avgLevel: 0,
       });
+    } else {
+      const existing = clusterMap.get(clusterId)!;
+      const newSort = ec.competency.cluster_sort_order ?? 999;
+      if (newSort < existing.sortOrder) {
+        existing.sortOrder = newSort;
+      }
     }
 
     const group = clusterMap.get(clusterId)!;

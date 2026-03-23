@@ -941,7 +941,6 @@ export async function migrateEmployeeRatings(
             }
           }
         }
-      }
 
         // 8. Mark old competencies that have no Q(new) equivalent as deprecated
         const unmigratedOldCompIds = oldComps

@@ -781,3 +781,182 @@ export async function propagateToEmployees(
     return { success: false, updated: 0, error: (error as Error).message };
   }
 }
+
+/**
+ * Migrate employee ratings from a previous quarter to a new quarter.
+ * Matches competencies by name (names are stable across quarters).
+ * COPIES ratings — does not move or delete old data.
+ */
+export async function migrateEmployeeRatings(
+  oldQuarter: string,
+  oldYear: number,
+  newQuarter: string,
+  newYear: number
+): Promise<{
+  success: boolean;
+  migrated: number;
+  unmigrated: string[];
+  employeesAffected: number;
+  error?: string;
+}> {
+  try {
+    // 1. Get all published role profiles for BOTH quarters
+    const { data: oldProfiles, error: oldErr } = await supabase
+      .from('role_profiles')
+      .select('id, role_key')
+      .eq('quarter', oldQuarter)
+      .eq('year', oldYear)
+      .eq('is_published', true);
+
+    if (oldErr) throw oldErr;
+
+    const { data: newProfiles, error: newErr } = await supabase
+      .from('role_profiles')
+      .select('id, role_key')
+      .eq('quarter', newQuarter)
+      .eq('year', newYear)
+      .eq('is_published', true);
+
+    if (newErr) throw newErr;
+    if (!oldProfiles?.length || !newProfiles?.length) {
+      return { success: true, migrated: 0, unmigrated: [], employeesAffected: 0 };
+    }
+
+    let totalMigrated = 0;
+    const allUnmigrated: string[] = [];
+    const affectedEmployeeIds = new Set<string>();
+
+    // 2. For each new profile, find the matching old profile by role_key
+    for (const newProfile of newProfiles) {
+      const oldProfile = oldProfiles.find(op => op.role_key === newProfile.role_key);
+      if (!oldProfile) continue;
+
+      // 3. Load competencies for both profiles
+      const { data: oldComps } = await supabase
+        .from('competencies')
+        .select('id, name')
+        .eq('role_profile_id', oldProfile.id);
+
+      const { data: newComps } = await supabase
+        .from('competencies')
+        .select('id, name')
+        .eq('role_profile_id', newProfile.id);
+
+      if (!oldComps?.length || !newComps?.length) continue;
+
+      const newNameToId = new Map(newComps.map(c => [c.name, c.id]));
+
+      // 4. Find employees currently assigned to the OLD profile
+      const { data: employees } = await supabase
+        .from('employees')
+        .select('id')
+        .eq('role_profile_id', oldProfile.id);
+
+      if (!employees?.length) continue;
+
+      // 5. For each employee, migrate ratings
+      for (const emp of employees) {
+        const { data: oldRatings } = await supabase
+          .from('employee_competencies')
+          .select('competency_id, current_level, self_rating, manager_rating, evidence_summary, rating_confidence')
+          .eq('employee_id', emp.id)
+          .in('competency_id', oldComps.map(c => c.id))
+          .not('current_level', 'is', null);
+
+        if (!oldRatings?.length) continue;
+
+        affectedEmployeeIds.add(emp.id);
+
+        for (const oldRating of oldRatings) {
+          const oldComp = oldComps.find(c => c.id === oldRating.competency_id);
+          if (!oldComp) continue;
+
+          const newCompId = newNameToId.get(oldComp.name);
+
+          if (newCompId) {
+            const { error: upsertErr } = await supabase
+              .from('employee_competencies')
+              .upsert({
+                employee_id: emp.id,
+                competency_id: newCompId,
+                current_level: oldRating.current_level,
+                self_rating: oldRating.self_rating,
+                manager_rating: oldRating.manager_rating,
+                evidence_summary: oldRating.evidence_summary,
+                rating_confidence: oldRating.rating_confidence,
+                updated_at: new Date().toISOString(),
+              }, { onConflict: 'employee_id,competency_id' });
+
+            if (!upsertErr) totalMigrated++;
+          } else {
+            if (!allUnmigrated.includes(oldComp.name)) {
+              allUnmigrated.push(oldComp.name);
+            }
+          }
+        }
+
+        // 6. Migrate subskill ratings
+        for (const oldComp of oldComps) {
+          const newCompId = newNameToId.get(oldComp.name);
+          if (!newCompId) continue;
+
+          const { data: oldSubskills } = await supabase
+            .from('subskills')
+            .select('id, name')
+            .eq('competency_id', oldComp.id);
+
+          const { data: newSubskills } = await supabase
+            .from('subskills')
+            .select('id, name')
+            .eq('competency_id', newCompId);
+
+          if (!oldSubskills?.length || !newSubskills?.length) continue;
+
+          const newSubMap = new Map(newSubskills.map(s => [s.name, s.id]));
+
+          const { data: oldSubRatings } = await supabase
+            .from('employee_subskills')
+            .select('subskill_id, current_level, evidence')
+            .eq('employee_id', emp.id)
+            .in('subskill_id', oldSubskills.map(s => s.id))
+            .not('current_level', 'is', null);
+
+          if (!oldSubRatings?.length) continue;
+
+          for (const oldSubRating of oldSubRatings) {
+            const oldSub = oldSubskills.find(s => s.id === oldSubRating.subskill_id);
+            if (!oldSub) continue;
+
+            const newSubId = newSubMap.get(oldSub.name);
+            if (newSubId) {
+              await supabase
+                .from('employee_subskills')
+                .upsert({
+                  employee_id: emp.id,
+                  subskill_id: newSubId,
+                  current_level: oldSubRating.current_level,
+                  evidence: oldSubRating.evidence,
+                  rated_at: new Date().toISOString(),
+                }, { onConflict: 'employee_id,subskill_id' });
+            }
+          }
+        }
+      }
+    }
+
+    return {
+      success: true,
+      migrated: totalMigrated,
+      unmigrated: allUnmigrated,
+      employeesAffected: affectedEmployeeIds.size,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      migrated: 0,
+      unmigrated: [],
+      employeesAffected: 0,
+      error: (error as Error).message,
+    };
+  }
+}

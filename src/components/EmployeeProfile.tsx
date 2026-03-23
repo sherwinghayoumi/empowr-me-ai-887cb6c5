@@ -43,6 +43,7 @@ interface MappedCompetency {
   demandedLevel: number;
   futureLevel: number;
   gap: number;
+  migratedFrom: string | null;
   subskills: MappedSubskill[];
   clusterName: string;
 }
@@ -209,6 +210,7 @@ export function EmployeeProfile({ employeeId, onClose }: EmployeeProfileProps) {
       demandedLevel: capLevel(ec.demanded_level),
       futureLevel: capLevel(ec.future_level),
       gap: Math.max(0, capLevel(ec.demanded_level) - capLevel(ec.current_level)),
+      migratedFrom: (ec as any).migrated_from || null,
       subskills: (ec.competency?.subskills || []).map((ss: any) => ({
         id: ss.id,
         name: ss.name,
@@ -452,6 +454,7 @@ export function EmployeeProfile({ employeeId, onClose }: EmployeeProfileProps) {
                 currentLevel={comp.currentLevel}
                 demandedLevel={comp.demandedLevel}
                 futureLevel={comp.futureLevel}
+                migratedFrom={comp.migratedFrom}
                 delay={index * 100}
                 onClick={() => setSelectedCompetencyId(comp.id)}
               />

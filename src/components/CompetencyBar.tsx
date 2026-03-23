@@ -1,11 +1,16 @@
 import { cn, capLevel } from "@/lib/utils";
 import { useEffect, useState } from "react";
-import { ChevronRight, Info, Wrench } from "lucide-react";
+import { ChevronRight, Info, Wrench, RefreshCw } from "lucide-react";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { getCompetencyDescription } from "@/data/competencyDescriptions";
 
 interface CompetencyBarProps {
@@ -13,6 +18,7 @@ interface CompetencyBarProps {
   currentLevel: number;
   demandedLevel: number;
   futureLevel: number;
+  migratedFrom?: string | null;
   className?: string;
   delay?: number;
   onClick?: () => void;
@@ -23,6 +29,7 @@ export function CompetencyBar({
   currentLevel: rawCurrentLevel,
   demandedLevel: rawDemandedLevel,
   futureLevel: rawFutureLevel,
+  migratedFrom,
   className,
   delay = 0,
   onClick,
@@ -70,6 +77,22 @@ export function CompetencyBar({
         <div className="flex items-center justify-between text-sm">
           <div className="flex items-center gap-2">
             <span className="text-foreground font-medium">{displayName}</span>
+            {migratedFrom && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className="inline-flex items-center gap-1 ml-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-primary/10 text-primary/70 border border-primary/20">
+                    <RefreshCw className="w-2.5 h-2.5" />
+                    {migratedFrom.replace('_', ' ')}
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p className="text-xs">
+                    Bewertung aus {migratedFrom.replace('_', ' ')} übernommen.
+                    Eine Aktualisierung wird empfohlen.
+                  </p>
+                </TooltipContent>
+              </Tooltip>
+            )}
             <ChevronRight className="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
           </div>
           <div className="flex items-center gap-2">

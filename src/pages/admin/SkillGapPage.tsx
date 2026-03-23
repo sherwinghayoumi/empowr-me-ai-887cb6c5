@@ -137,7 +137,12 @@ const SkillGapPage = () => {
       const q = searchQuery.toLowerCase();
       if (!g.employee.full_name.toLowerCase().includes(q) && !g.competencyName.toLowerCase().includes(q)) return false;
     }
-    if (filterCluster  !== "all" && g.clusterName !== filterCluster) return false;
+    if (filterCluster !== "all") {
+      const effectiveCluster = groupByCategory && g.clusterCategory
+        ? (CATEGORY_LABELS[g.clusterCategory] || g.clusterCategory)
+        : g.clusterName;
+      if (effectiveCluster !== filterCluster) return false;
+    }
     if (filterSeverity !== "all" && getSeverityLabel(g.weightedGap, g.demandedLevel) !== filterSeverity) return false;
     if (filterEmployee !== "all" && g.employee.id !== filterEmployee) return false;
     if (filterRole     !== "all" && g.employee.role_profile?.id !== filterRole) return false;

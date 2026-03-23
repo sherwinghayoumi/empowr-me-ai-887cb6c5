@@ -91,6 +91,7 @@ const SkillGapPage = () => {
   const [filterEmployee, setFilterEmployee] = useState("all");
   const [filterRole, setFilterRole] = useState("all");
   const [isGenerating, setIsGenerating] = useState(false);
+  const [groupByCategory, setGroupByCategory] = useState(false);
 
   // Build all gaps
   const allGaps = useMemo<EmployeeGap[]>(() => {

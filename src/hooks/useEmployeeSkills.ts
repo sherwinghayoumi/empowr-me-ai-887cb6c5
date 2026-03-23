@@ -203,7 +203,8 @@ export function groupByCluster(
 export function transformForRadar(
   employeeCompetencies: EmployeeCompetency[]
 ): SkillsForRadar[] {
-  return employeeCompetencies.map((ec) => ({
+  const active = employeeCompetencies.filter(ec => !ec.is_deprecated);
+  return active.map((ec) => ({
     skillId: ec.competency?.id || ec.id,
     skillName: ec.competency?.name || "Unknown",
     currentLevel: capLevel(ec.current_level),

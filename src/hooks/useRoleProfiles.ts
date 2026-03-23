@@ -942,6 +942,20 @@ export async function migrateEmployeeRatings(
           }
         }
       }
+
+        // 8. Mark old competencies that have no Q(new) equivalent as deprecated
+        const unmigratedOldCompIds = oldComps
+          .filter(oc => !newNameToId.has(oc.name))
+          .map(oc => oc.id);
+
+        if (unmigratedOldCompIds.length > 0) {
+          await supabase
+            .from('employee_competencies')
+            .update({ is_deprecated: true })
+            .eq('employee_id', emp.id)
+            .in('competency_id', unmigratedOldCompIds);
+        }
+      }
     }
 
     return {

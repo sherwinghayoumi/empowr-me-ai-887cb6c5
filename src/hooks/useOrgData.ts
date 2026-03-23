@@ -25,6 +25,7 @@ export function useEmployees() {
             demanded_level,
             future_level,
             gap_to_current,
+            is_deprecated,
             competency:competencies(id, name, status, cluster:competency_clusters(name))
           )
         `)

@@ -51,7 +51,7 @@ Du erhältst 3 Dokumente: CV, Self-Assessment, Manager-Assessment.
 Deine Aufgabe:
 1. DSGVO-Consent prüfen (muss im Self-Assessment bestätigt sein)
 2. Daten extrahieren aus allen Dokumenten
-3. Kompetenzen bewerten (Rating 1-5)
+3. Kompetenzen bewerten (Rating 0-100)
 4. Stärken und Entwicklungsfelder identifizieren
 
 BEWERTUNGSMASSSTAB: 0-100 Skala, rollenrelativ fuer ${roleDisplayName}
@@ -187,7 +187,7 @@ Antworte NUR mit validem JSON im folgenden Schema:
 WICHTIGE REGELN:
 1. Verwende NUR die oben definierten Cluster-, Kompetenz- und Subskill-Namen!
 2. Bewerte ALLE Kompetenzen in ALLEN oben aufgelisteten Clustern für diese Rolle!
-3. Vergib IMMER ein numerisches Rating (1-5) – NIEMALS "NB"!
+3. Vergib IMMER ein numerisches Rating (0-100, in 5er-Schritten) – NIEMALS "NB"!
 4. Overall Score = Durchschnitt aller Kompetenz-Ratings (bereits auf 0-100 Skala, kein Umrechnen noetig)
 5. Antworte NUR mit JSON - keine Erklärungen davor oder danach!
 6. HALTE ALLE Textfelder (evidence, gap, recommendation) EXTREM KURZ (max 10 Wörter)! Kürze ist kritisch!`;

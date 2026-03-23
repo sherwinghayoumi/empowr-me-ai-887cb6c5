@@ -17,9 +17,6 @@ function normalizeRating(value: number | string | null | undefined): number | nu
   if (value === null || value === undefined || value === 'NB') return null;
   const num = typeof value === 'string' ? parseFloat(value) : value;
   if (isNaN(num)) return null;
-  // Legacy 1-5 scale: convert to 0-100
-  if (num >= 1 && num <= 5 && Number.isInteger(num)) return num * 20;
-  // Already 0-100 scale
   if (num >= 0 && num <= 100) return Math.round(num);
   return null;
 }

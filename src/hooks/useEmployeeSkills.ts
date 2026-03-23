@@ -19,6 +19,8 @@ export interface EmployeeCompetency {
   current_level: number | null;
   demanded_level: number | null;
   future_level: number | null;
+  migrated_from: string | null;
+  is_deprecated: boolean | null;
   competency: {
     id: string;
     name: string;
@@ -99,6 +101,8 @@ export function useEmployeeSkills() {
             current_level,
             demanded_level,
             future_level,
+            migrated_from,
+            is_deprecated,
             competency:competencies(
               id,
               name,
@@ -132,6 +136,11 @@ export function groupByCluster(
 ): ClusterGroup[] {
   const clusterMap = new Map<string, ClusterGroup>();
 
+  // Filter out deprecated competencies (from previous quarters)
+  const activeCompetencies = employeeCompetencies.filter(
+    ec => !ec.is_deprecated
+  );
+
   // Build a map of subskill ratings by subskill_id
   const subskillRatings = new Map<string, number | null>();
   employeeSubskills.forEach((es) => {
@@ -140,7 +149,7 @@ export function groupByCluster(
     }
   });
 
-  employeeCompetencies.forEach((ec) => {
+  activeCompetencies.forEach((ec) => {
     if (!ec.competency) return;
 
     const cluster = ec.competency.cluster;
@@ -194,7 +203,8 @@ export function groupByCluster(
 export function transformForRadar(
   employeeCompetencies: EmployeeCompetency[]
 ): SkillsForRadar[] {
-  return employeeCompetencies.map((ec) => ({
+  const active = employeeCompetencies.filter(ec => !ec.is_deprecated);
+  return active.map((ec) => ({
     skillId: ec.competency?.id || ec.id,
     skillName: ec.competency?.name || "Unknown",
     currentLevel: capLevel(ec.current_level),

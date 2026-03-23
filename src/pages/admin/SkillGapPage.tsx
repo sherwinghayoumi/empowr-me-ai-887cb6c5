@@ -33,6 +33,7 @@ interface DbEmployee {
     demanded_level: number | null;
     future_level: number | null;
     gap_to_current: number | null;
+    is_deprecated: boolean | null;
     competency: {
       id: string;
       name: string;
@@ -82,7 +83,7 @@ const SkillGapPage = () => {
     if (!employees?.length) return [];
     const gaps: EmployeeGap[] = [];
     (employees as DbEmployee[]).forEach((emp) => {
-      (emp.competencies || []).forEach((comp) => {
+      (emp.competencies || []).filter(c => !c.is_deprecated).forEach((comp) => {
         const cur = comp.current_level ?? 0;
         const dem = comp.demanded_level ?? 0;
         const fut = comp.future_level ?? 0;

@@ -17,7 +17,7 @@ import { toast } from "@/hooks/use-toast";
 import {
   AlertTriangle, TrendingUp, Users, FileQuestion,
   Search, X, Folder, FolderOpen,
-  ChevronDown, ChevronRight, Target, Sparkles, Loader2,
+  ChevronDown, ChevronRight, Target, Sparkles, Loader2, Layers,
 } from "lucide-react";
 
 interface DbEmployee {
@@ -38,7 +38,7 @@ interface DbEmployee {
       id: string;
       name: string;
       status: string | null;
-      cluster: { name: string } | null;
+      cluster: { name: string; cluster_category: string | null } | null;
     } | null;
   }>;
 }
@@ -48,11 +48,25 @@ interface EmployeeGap {
   competencyId: string;
   competencyName: string;
   clusterName: string;
+  clusterCategory: string | null;
   currentLevel: number;
   demandedLevel: number;
   futureLevel: number;
   weightedGap: number;
 }
+
+const CATEGORY_LABELS: Record<string, string> = {
+  deal_execution: "Deal Execution & Transaction Management",
+  due_diligence: "Due Diligence & Quality Control",
+  technical_lawyering: "Technical Lawyering & Negotiation",
+  regulatory_clearance: "Regulatory Clearance & Compliance",
+  ai_enabled: "AI-Enabled Legal Work",
+  legal_tech: "Legal Technology & Automation",
+  regulatory_governance: "Regulatory & AI Governance",
+  professional_skills: "Professional Skills & Client Delivery",
+  leadership: "Leadership & People Management",
+  business_development: "Business Development & Strategy",
+};
 
 function getGapRatio(weightedGap: number, demandedLevel: number): number {
   return demandedLevel > 0 ? weightedGap / demandedLevel : 0;
@@ -77,6 +91,7 @@ const SkillGapPage = () => {
   const [filterEmployee, setFilterEmployee] = useState("all");
   const [filterRole, setFilterRole] = useState("all");
   const [isGenerating, setIsGenerating] = useState(false);
+  const [groupByCategory, setGroupByCategory] = useState(false);
 
   // Build all gaps
   const allGaps = useMemo<EmployeeGap[]>(() => {
@@ -94,6 +109,7 @@ const SkillGapPage = () => {
             competencyId: comp.competency.id,
             competencyName: comp.competency.name,
             clusterName: comp.competency.cluster?.name || "Sonstige",
+            clusterCategory: comp.competency.cluster?.cluster_category || null,
             currentLevel: cur,
             demandedLevel: dem,
             futureLevel: fut,
@@ -106,7 +122,13 @@ const SkillGapPage = () => {
   }, [employees]);
 
   // Filter options
-  const uniqueClusters  = useMemo(() => [...new Set(allGaps.map(g => g.clusterName))].sort(), [allGaps]);
+  const uniqueClusters = useMemo(() => {
+    if (groupByCategory) {
+      const cats = allGaps.map(g => g.clusterCategory ? (CATEGORY_LABELS[g.clusterCategory] || g.clusterCategory) : g.clusterName);
+      return [...new Set(cats)].sort();
+    }
+    return [...new Set(allGaps.map(g => g.clusterName))].sort();
+  }, [allGaps, groupByCategory]);
   const uniqueEmployees = useMemo(() => { const m = new Map<string,string>(); allGaps.forEach(g => m.set(g.employee.id, g.employee.full_name)); return [...m.entries()].sort(([,a],[,b]) => a.localeCompare(b)); }, [allGaps]);
   const uniqueRoles     = useMemo(() => { const m = new Map<string,string>(); allGaps.forEach(g => { if (g.employee.role_profile) m.set(g.employee.role_profile.id, g.employee.role_profile.role_title); }); return [...m.entries()].sort(([,a],[,b]) => a.localeCompare(b)); }, [allGaps]);
 
@@ -115,12 +137,17 @@ const SkillGapPage = () => {
       const q = searchQuery.toLowerCase();
       if (!g.employee.full_name.toLowerCase().includes(q) && !g.competencyName.toLowerCase().includes(q)) return false;
     }
-    if (filterCluster  !== "all" && g.clusterName !== filterCluster) return false;
+    if (filterCluster !== "all") {
+      const effectiveCluster = groupByCategory && g.clusterCategory
+        ? (CATEGORY_LABELS[g.clusterCategory] || g.clusterCategory)
+        : g.clusterName;
+      if (effectiveCluster !== filterCluster) return false;
+    }
     if (filterSeverity !== "all" && getSeverityLabel(g.weightedGap, g.demandedLevel) !== filterSeverity) return false;
     if (filterEmployee !== "all" && g.employee.id !== filterEmployee) return false;
     if (filterRole     !== "all" && g.employee.role_profile?.id !== filterRole) return false;
     return true;
-  }), [allGaps, searchQuery, filterCluster, filterSeverity, filterEmployee, filterRole]);
+  }), [allGaps, searchQuery, filterCluster, filterSeverity, filterEmployee, filterRole, groupByCategory]);
 
   const hasFilters = filterCluster !== "all" || filterSeverity !== "all" || filterEmployee !== "all" || filterRole !== "all" || searchQuery !== "";
   const clearFilters = () => { setSearchQuery(""); setFilterCluster("all"); setFilterSeverity("all"); setFilterEmployee("all"); setFilterRole("all"); };
@@ -215,8 +242,12 @@ const SkillGapPage = () => {
       if (!roleMap[roleId]) roleMap[roleId] = { roleTitle, clusters: {} };
       const roleBucket = roleMap[roleId].clusters;
 
-      if (!roleBucket[g.clusterName]) roleBucket[g.clusterName] = {};
-      const clusterBucket = roleBucket[g.clusterName];
+      const clusterKey = groupByCategory && g.clusterCategory
+        ? (CATEGORY_LABELS[g.clusterCategory] || g.clusterCategory)
+        : g.clusterName;
+
+      if (!roleBucket[clusterKey]) roleBucket[clusterKey] = {};
+      const clusterBucket = roleBucket[clusterKey];
 
       if (!clusterBucket[g.competencyId]) clusterBucket[g.competencyId] = [];
       clusterBucket[g.competencyId].push(g);
@@ -229,7 +260,7 @@ const SkillGapPage = () => {
     });
 
     return roleMap;
-  }, [filteredGaps]);
+  }, [filteredGaps, groupByCategory]);
 
   const sortedRoles = Object.keys(groupedByRole).sort((a, b) =>
     groupedByRole[a].roleTitle.localeCompare(groupedByRole[b].roleTitle)
@@ -393,6 +424,19 @@ const SkillGapPage = () => {
         {/* ── Filters ── */}
         <ScrollReveal delay={130}>
           <div className="flex flex-wrap gap-2 items-center">
+            <Button
+              variant={groupByCategory ? "default" : "outline"}
+              size="sm"
+              className="h-8 text-xs"
+              onClick={() => {
+                setGroupByCategory(!groupByCategory);
+                setFilterCluster("all");
+              }}
+            >
+              <Layers className="w-3 h-3 mr-1" />
+              {groupByCategory ? "Kategorie-Gruppierung" : "Cluster-Gruppierung"}
+            </Button>
+
             <Select value={filterCluster} onValueChange={setFilterCluster}>
               <SelectTrigger className="h-8 w-40 text-xs"><SelectValue placeholder="Cluster" /></SelectTrigger>
               <SelectContent>

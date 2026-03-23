@@ -26,7 +26,7 @@ export function useEmployees() {
             future_level,
             gap_to_current,
             is_deprecated,
-            competency:competencies(id, name, status, cluster:competency_clusters(name))
+            competency:competencies(id, name, status, cluster:competency_clusters(name, cluster_category))
           )
         `)
         .eq('organization_id', organization?.id)

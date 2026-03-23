@@ -109,6 +109,7 @@ export function useEmployeeSkills() {
             competency:competencies(
               id,
               name,
+              cluster_sort_order,
               cluster:competency_clusters(id, name, name_de),
               subskills(id, name, name_de)
             )

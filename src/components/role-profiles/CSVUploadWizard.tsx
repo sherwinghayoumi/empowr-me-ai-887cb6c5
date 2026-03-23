@@ -109,7 +109,7 @@ export function CSVUploadWizard({
     setIsDragging(false);
     
     const droppedFiles = Array.from(e.dataTransfer.files).filter(
-      f => f.name.endsWith('.csv')
+      f => f.name.endsWith('.csv') || f.name.endsWith('.json')
     );
     
     if (droppedFiles.length > 0) {

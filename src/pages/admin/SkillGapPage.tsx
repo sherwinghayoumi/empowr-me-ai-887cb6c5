@@ -260,7 +260,7 @@ const SkillGapPage = () => {
     });
 
     return roleMap;
-  }, [filteredGaps]);
+  }, [filteredGaps, groupByCategory]);
 
   const sortedRoles = Object.keys(groupedByRole).sort((a, b) =>
     groupedByRole[a].roleTitle.localeCompare(groupedByRole[b].roleTitle)

@@ -15,6 +15,17 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Star, AlertCircle, CheckCircle2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+/**
+ * Maps 1-5 star ratings to band midpoints on the 0-100 scale.
+ */
+const STAR_TO_SCORE: Record<number, number> = {
+  1: 15,
+  2: 35,
+  3: 55,
+  4: 75,
+  5: 95,
+};
+
 interface SelfAssessmentModalProps {
   open: boolean;
   onClose: () => void;
@@ -57,7 +68,7 @@ export function SelfAssessmentModal({ open, onClose }: SelfAssessmentModalProps)
       .filter(([_, value]) => value.rating > 0)
       .map(([competencyId, { rating, notes }]) => ({
         competencyId,
-        rating: rating * 20, // 1-5 zu 0-100
+        rating: STAR_TO_SCORE[rating] || rating * 20,
         notes
       }));
     
@@ -78,11 +89,11 @@ export function SelfAssessmentModal({ open, onClose }: SelfAssessmentModalProps)
 
   const getRatingLabel = (rating: number) => {
     switch (rating) {
-      case 1: return "Grundkenntnisse";
-      case 2: return "Fortgeschritten";
-      case 3: return "Kompetent";
-      case 4: return "Erfahren";
-      case 5: return "Experte";
+      case 1: return "Grundkenntnisse (≈15%)";
+      case 2: return "Aufbauend (≈35%)";
+      case 3: return "Kompetent (≈55%)";
+      case 4: return "Erfahren (≈75%)";
+      case 5: return "Experte (≈95%)";
       default: return "Nicht bewertet";
     }
   };

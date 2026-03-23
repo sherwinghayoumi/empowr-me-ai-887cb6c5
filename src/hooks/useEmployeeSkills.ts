@@ -19,6 +19,8 @@ export interface EmployeeCompetency {
   current_level: number | null;
   demanded_level: number | null;
   future_level: number | null;
+  migrated_from: string | null;
+  is_deprecated: boolean | null;
   competency: {
     id: string;
     name: string;

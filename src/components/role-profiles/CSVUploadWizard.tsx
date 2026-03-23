@@ -119,7 +119,7 @@ export function CSVUploadWizard({
 
   const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFiles = Array.from(e.target.files || []).filter(
-      f => f.name.endsWith('.csv')
+      f => f.name.endsWith('.csv') || f.name.endsWith('.json')
     );
     
     if (selectedFiles.length > 0) {

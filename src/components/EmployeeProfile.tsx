@@ -210,6 +210,7 @@ export function EmployeeProfile({ employeeId, onClose }: EmployeeProfileProps) {
       demandedLevel: capLevel(ec.demanded_level),
       futureLevel: capLevel(ec.future_level),
       gap: Math.max(0, capLevel(ec.demanded_level) - capLevel(ec.current_level)),
+      migratedFrom: (ec as any).migrated_from || null,
       subskills: (ec.competency?.subskills || []).map((ss: any) => ({
         id: ss.id,
         name: ss.name,

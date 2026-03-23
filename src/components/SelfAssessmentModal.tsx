@@ -57,7 +57,7 @@ export function SelfAssessmentModal({ open, onClose }: SelfAssessmentModalProps)
       .filter(([_, value]) => value.rating > 0)
       .map(([competencyId, { rating, notes }]) => ({
         competencyId,
-        rating: rating * 20, // 1-5 zu 0-100
+        rating: STAR_TO_SCORE[rating] || rating * 20,
         notes
       }));
     

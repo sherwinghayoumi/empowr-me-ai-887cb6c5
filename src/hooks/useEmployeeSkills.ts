@@ -208,7 +208,7 @@ export function groupByCluster(
     }
   });
 
-  return Array.from(clusterMap.values());
+  return Array.from(clusterMap.values()).sort((a, b) => a.sortOrder - b.sortOrder);
 }
 
 // Transform for radar chart

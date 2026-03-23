@@ -230,6 +230,7 @@ export type Database = {
       }
       competency_clusters: {
         Row: {
+          cluster_category: string | null
           created_at: string | null
           description: string | null
           id: string
@@ -241,6 +242,7 @@ export type Database = {
           year: number
         }
         Insert: {
+          cluster_category?: string | null
           created_at?: string | null
           description?: string | null
           id?: string
@@ -252,6 +254,7 @@ export type Database = {
           year: number
         }
         Update: {
+          cluster_category?: string | null
           created_at?: string | null
           description?: string | null
           id?: string

@@ -18,6 +18,7 @@ interface CompetencyBarProps {
   currentLevel: number;
   demandedLevel: number;
   futureLevel: number;
+  migratedFrom?: string | null;
   className?: string;
   delay?: number;
   onClick?: () => void;

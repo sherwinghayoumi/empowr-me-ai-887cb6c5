@@ -298,10 +298,9 @@ const AdminDashboard = () => {
           </Card>
 
         {/* Gap Distribution Donut */}
-        <div className="animate-fade-in-up" style={{ animationDelay: "300ms" }}>
-          <Card className="bg-card/80 border-border/50 h-full">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-foreground text-base">Gap-Verteilung</CardTitle>
+          <Card className="bg-card/80 border-border/50">
+            <CardHeader className="py-3 px-4">
+              <CardTitle className="text-sm font-medium">Gap-Verteilung</CardTitle>
             </CardHeader>
             <CardContent>
               {gapDistribution.length > 0 ? (
@@ -322,15 +321,7 @@ const AdminDashboard = () => {
                           <Cell key={index} fill={entry.fill} stroke="transparent" />
                         ))}
                       </Pie>
-                      <Tooltip
-                        contentStyle={{
-                          backgroundColor: "hsl(222 47% 11%)",
-                          border: "1px solid hsl(222 40% 20% / 0.5)",
-                          borderRadius: "8px",
-                          fontSize: "12px",
-                        }}
-                        itemStyle={{ color: "hsl(210 40% 98%)" }}
-                      />
+                      <Tooltip {...TOOLTIP_STYLE} />
                     </PieChart>
                   </ResponsiveContainer>
                   <div className="flex flex-wrap justify-center gap-4 mt-4">

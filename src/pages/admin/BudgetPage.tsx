@@ -1,37 +1,29 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { KpiCard } from "@/components/KpiCard";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Progress } from "@/components/ui/progress";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
+} from "@/components/ui/dialog";
+import {
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import {
-  Wallet,
-  TrendingUp,
-  Euro,
-  Target,
-  ArrowUpRight,
-  ArrowDownRight,
-  Minus,
+  Wallet, TrendingUp, Euro, Target, ArrowUpRight, ArrowDownRight, Minus, Pencil, PiggyBank,
 } from "lucide-react";
 import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  Legend,
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
 } from "recharts";
-import { useMeasures, MEASURE_STATUSES } from "@/hooks/useMeasures";
-import { useTeams, useEmployees, useOrgStats } from "@/hooks/useOrgData";
+import { useMeasures, MEASURE_TYPES } from "@/hooks/useMeasures";
+import { useTeams, useOrgStats } from "@/hooks/useOrgData";
+import { supabase } from "@/integrations/supabase/client";
+import { useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 
 // ─── Types ──────────────────────────────────────────
 
@@ -48,11 +40,73 @@ interface TeamBudget {
 interface MeasureROI {
   id: string;
   title: string;
+  measureType: string;
   cost: number;
   status: string;
   teamName: string;
   linkedGaps: number;
   costPerPoint: number | null;
+}
+
+// ─── Inline Budget Edit Dialog ──────────────────────
+
+function BudgetEditDialog({ open, onOpenChange, teamId, teamName, currentBudget }: {
+  open: boolean;
+  onOpenChange: (o: boolean) => void;
+  teamId: string;
+  teamName: string;
+  currentBudget: number;
+}) {
+  const [value, setValue] = useState(currentBudget || "");
+  const [saving, setSaving] = useState(false);
+  const queryClient = useQueryClient();
+
+  const handleSave = async () => {
+    setSaving(true);
+    const numVal = value === "" ? null : Number(value);
+    const { error } = await supabase
+      .from("teams")
+      .update({ annual_budget: numVal })
+      .eq("id", teamId);
+    setSaving(false);
+    if (error) {
+      toast.error("Fehler beim Speichern des Budgets");
+    } else {
+      toast.success(`Budget für ${teamName} aktualisiert`);
+      queryClient.invalidateQueries({ queryKey: ["teams"] });
+      onOpenChange(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-sm">
+        <DialogHeader>
+          <DialogTitle className="text-sm">Budget festlegen</DialogTitle>
+          <DialogDescription className="text-xs">{teamName}</DialogDescription>
+        </DialogHeader>
+        <div className="space-y-2">
+          <Label htmlFor="budget-input" className="text-xs">Jahresbudget (€)</Label>
+          <Input
+            id="budget-input"
+            type="number"
+            min="0"
+            step="1000"
+            value={value}
+            onChange={(e) => setValue(e.target.value)}
+            placeholder="z.B. 50000"
+            className="h-8 text-sm"
+          />
+        </div>
+        <DialogFooter>
+          <Button variant="outline" size="sm" onClick={() => onOpenChange(false)}>Abbrechen</Button>
+          <Button size="sm" onClick={handleSave} disabled={saving}>
+            {saving ? "Speichern…" : "Speichern"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
 }
 
 // ─── Component ──────────────────────────────────────
@@ -61,6 +115,7 @@ const BudgetPage = () => {
   const { data: measures, isLoading: measuresLoading } = useMeasures();
   const { data: teams, isLoading: teamsLoading } = useTeams();
   const { data: stats } = useOrgStats();
+  const [editTeam, setEditTeam] = useState<{ id: string; name: string; budget: number } | null>(null);
 
   const isLoading = measuresLoading || teamsLoading;
 
@@ -77,7 +132,7 @@ const BudgetPage = () => {
       const planned = teamMeasures
         .filter((m) => m.status === "planned" || m.status === "active")
         .reduce((s, m) => s + (m.cost || 0), 0);
-      const annualBudget = (team as any).annual_budget || 0;
+      const annualBudget = team.annual_budget || 0;
       const available = Math.max(0, annualBudget - spent - planned);
       const utilization = annualBudget > 0 ? ((spent + planned) / annualBudget) * 100 : 0;
 
@@ -93,24 +148,23 @@ const BudgetPage = () => {
     });
   }, [teams, measures]);
 
+  const hasBudgetData = teamBudgets.some((t) => t.annualBudget > 0);
+
   // ─── Global Stats ──────────────────────────────────
 
   const globalStats = useMemo(() => {
     const totalBudget = teamBudgets.reduce((s, t) => s + t.annualBudget, 0);
     const totalSpent = teamBudgets.reduce((s, t) => s + t.spent, 0);
     const totalPlanned = teamBudgets.reduce((s, t) => s + t.planned, 0);
+    const totalAvailable = Math.max(0, totalBudget - totalSpent - totalPlanned);
     const completedMeasures = measures?.filter((m) => m.status === "completed") || [];
     const totalLinkedGaps = completedMeasures.reduce(
-      (s, m) => s + (m.linked_competency_ids?.length || 0),
-      0
+      (s, m) => s + (m.linked_competency_ids?.length || 0), 0
     );
-    const costPerPoint =
-      totalLinkedGaps > 0 && totalSpent > 0
-        ? Math.round(totalSpent / totalLinkedGaps)
-        : null;
+    const costPerPoint = totalLinkedGaps > 0 && totalSpent > 0 ? Math.round(totalSpent / totalLinkedGaps) : null;
     const budgetUtilization = totalBudget > 0 ? Math.round(((totalSpent + totalPlanned) / totalBudget) * 100) : 0;
 
-    return { totalBudget, totalSpent, totalPlanned, costPerPoint, budgetUtilization, completedCount: completedMeasures.length };
+    return { totalBudget, totalSpent, totalPlanned, totalAvailable, costPerPoint, budgetUtilization, completedCount: completedMeasures.length };
   }, [teamBudgets, measures]);
 
   // ─── ROI per Measure ───────────────────────────────
@@ -126,6 +180,7 @@ const BudgetPage = () => {
         return {
           id: m.id,
           title: m.title,
+          measureType: m.measure_type,
           cost: m.cost,
           status: m.status,
           teamName: team?.name || "—",
@@ -139,40 +194,53 @@ const BudgetPage = () => {
   // ─── Bar Chart Data ────────────────────────────────
 
   const barChartData = useMemo(() => {
-    return teamBudgets.map((t) => ({
-      name: t.name.length > 14 ? t.name.slice(0, 14) + "…" : t.name,
-      Ausgegeben: t.spent,
-      Geplant: t.planned,
-      Verfügbar: t.available,
-    }));
+    return teamBudgets
+      .filter((t) => t.annualBudget > 0 || t.spent > 0)
+      .map((t) => ({
+        name: t.name.length > 14 ? t.name.slice(0, 14) + "…" : t.name,
+        Ausgegeben: t.spent,
+        Geplant: t.planned,
+        Verfügbar: t.available,
+      }));
   }, [teamBudgets]);
 
-  // ─── ROI Comparison Chart ─────────────────────────
+  // ─── Helpers ───────────────────────────────────────
 
-  const roiChartData = useMemo(() => {
-    return measureROIs
-      .filter((m) => m.costPerPoint !== null)
-      .slice(0, 10)
-      .map((m) => ({
-        name: m.title.length > 20 ? m.title.slice(0, 20) + "…" : m.title,
-        "€/Kompetenzpunkt": m.costPerPoint,
-      }));
-  }, [measureROIs]);
+  const fmt = (v: number) => v.toLocaleString("de-DE");
+  const getMeasureTypeLabel = (type: string) => MEASURE_TYPES.find((t) => t.value === type)?.label || type;
+
+  const getUtilizationColor = (pct: number) => {
+    if (pct > 90) return "text-[hsl(var(--severity-critical))]";
+    if (pct > 70) return "text-[hsl(var(--severity-medium))]";
+    return "text-[hsl(var(--severity-low))]";
+  };
+
+  const getUtilizationBarClass = (pct: number) => {
+    if (pct > 90) return "bg-[hsl(var(--severity-critical))]";
+    if (pct > 70) return "bg-[hsl(var(--severity-medium))]";
+    return "bg-primary";
+  };
+
+  const getCostColor = (cpp: number | null) => {
+    if (cpp === null) return "";
+    if (cpp > 500) return "text-[hsl(var(--severity-critical))]";
+    if (cpp >= 200) return "text-[hsl(var(--severity-medium))]";
+    return "text-[hsl(var(--severity-low))]";
+  };
 
   // ─── Loading ───────────────────────────────────────
 
   if (isLoading) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-4">
         <Skeleton className="h-8 w-48" />
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {[1, 2, 3, 4].map((i) => (
             <Card key={i} className="bg-card/80 border-border/50">
               <CardContent className="p-5"><Skeleton className="h-16" /></CardContent>
             </Card>
           ))}
         </div>
-        <Card className="bg-card/80 border-border/50"><CardContent className="p-6"><Skeleton className="h-64" /></CardContent></Card>
       </div>
     );
   }
@@ -193,48 +261,118 @@ const BudgetPage = () => {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 animate-fade-in-up" style={{ animationDelay: "60ms" }}>
         <KpiCard
           label="Gesamtbudget"
-          value={globalStats.totalBudget > 0 ? `${globalStats.totalBudget.toLocaleString("de-DE")} €` : "—"}
+          value={globalStats.totalBudget > 0 ? `${fmt(globalStats.totalBudget)} €` : "—"}
           icon={Wallet}
           color="text-primary"
-          sub={globalStats.totalBudget > 0 ? `${teamBudgets.filter(t => t.annualBudget > 0).length} Teams mit Budget` : "Budget in Team-Settings festlegen"}
+          sub={globalStats.totalBudget > 0 ? `${teamBudgets.filter(t => t.annualBudget > 0).length} Teams mit Budget` : "Budget in Teams festlegen"}
           index={0}
         />
         <KpiCard
-          label="Ausgegeben"
-          value={`${globalStats.totalSpent.toLocaleString("de-DE")} €`}
+          label="Verbraucht"
+          value={`${fmt(globalStats.totalSpent)} €`}
           icon={Euro}
           color={globalStats.totalSpent > 0 ? "text-[hsl(var(--severity-medium))]" : "text-muted-foreground"}
           sub={`${globalStats.completedCount} abgeschl. Maßnahmen`}
           index={1}
         />
         <KpiCard
-          label="Budget verbraucht"
-          value={globalStats.totalBudget > 0 ? `${globalStats.budgetUtilization}%` : "—"}
+          label="Geplant"
+          value={`${fmt(globalStats.totalPlanned)} €`}
           icon={TrendingUp}
-          color={globalStats.budgetUtilization > 80 ? "text-[hsl(var(--severity-critical))]" : globalStats.budgetUtilization > 50 ? "text-[hsl(var(--severity-medium))]" : "text-[hsl(var(--severity-low))]"}
-          sub={globalStats.totalBudget > 0 ? `${globalStats.totalPlanned.toLocaleString("de-DE")} € geplant` : undefined}
+          color="text-primary"
+          sub={globalStats.totalBudget > 0 ? `${globalStats.budgetUtilization}% Auslastung` : undefined}
           index={2}
         />
         <KpiCard
-          label="€ / Kompetenzpunkt"
-          value={globalStats.costPerPoint !== null ? `${globalStats.costPerPoint.toLocaleString("de-DE")} €` : "—"}
-          icon={Target}
-          color="text-primary"
-          sub={globalStats.costPerPoint !== null ? "Basierend auf abgeschl. Maßnahmen" : "Noch keine abgeschl. Maßnahmen"}
+          label="Verfügbar"
+          value={globalStats.totalBudget > 0 ? `${fmt(globalStats.totalAvailable)} €` : "—"}
+          icon={PiggyBank}
+          color={globalStats.totalAvailable > 0 ? "text-[hsl(var(--severity-low))]" : "text-muted-foreground"}
+          sub={globalStats.costPerPoint !== null ? `Ø ${fmt(globalStats.costPerPoint)} €/Kompetenzpunkt` : "Noch keine ROI-Daten"}
           index={3}
         />
       </div>
 
-      {/* Budget per Team + Utilization */}
+      {/* Empty State */}
+      {!hasBudgetData && (
+        <Card className="bg-card/80 border-border/50 animate-fade-in-up" style={{ animationDelay: "120ms" }}>
+          <CardContent className="flex flex-col items-center justify-center py-12 text-center">
+            <Wallet className="w-10 h-10 text-muted-foreground mb-3 opacity-50" />
+            <p className="text-sm font-medium text-foreground mb-1">Noch kein Budget definiert</p>
+            <p className="text-xs text-muted-foreground max-w-md">
+              Gehe zu Einstellungen → Teams, um Jahresbudgets festzulegen. Oder setze Budgets direkt in der Tabelle unten.
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Budget per Team Table + Chart */}
       <div className="grid lg:grid-cols-2 gap-4">
-        {/* Stacked Bar Chart */}
+        {/* Budget Table with inline edit */}
         <div className="animate-fade-in-up" style={{ animationDelay: "140ms" }}>
           <Card className="bg-card/80 border-border/50 h-full">
             <CardHeader className="pb-3">
-              <CardTitle className="text-foreground text-base">Budget pro Team</CardTitle>
+              <CardTitle className="text-foreground text-sm">Budget pro Team</CardTitle>
+            </CardHeader>
+            <CardContent className="p-0">
+              <Table>
+                <TableHeader>
+                  <TableRow className="border-border/30 hover:bg-transparent">
+                    <TableHead className="text-xs">Team</TableHead>
+                    <TableHead className="text-xs text-right">Budget</TableHead>
+                    <TableHead className="text-xs text-right">Verbraucht</TableHead>
+                    <TableHead className="text-xs text-right">Auslastung</TableHead>
+                    <TableHead className="text-xs w-8"></TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {teamBudgets.map((t) => (
+                    <TableRow key={t.id} className="border-border/20">
+                      <TableCell className="text-xs py-2 font-medium">{t.name}</TableCell>
+                      <TableCell className="text-xs py-2 text-right tabular-nums">
+                        {t.annualBudget > 0 ? `${fmt(t.annualBudget)} €` : <span className="text-muted-foreground">—</span>}
+                      </TableCell>
+                      <TableCell className="text-xs py-2 text-right tabular-nums">
+                        {fmt(t.spent)} €
+                      </TableCell>
+                      <TableCell className="text-xs py-2 text-right">
+                        {t.annualBudget > 0 ? (
+                          <div className="flex items-center gap-2 justify-end">
+                            <div className="w-16 h-1.5 rounded-full bg-muted overflow-hidden">
+                              <div className={`h-full rounded-full ${getUtilizationBarClass(t.utilization)}`} style={{ width: `${t.utilization}%` }} />
+                            </div>
+                            <span className={`tabular-nums ${getUtilizationColor(t.utilization)}`}>
+                              {Math.round(t.utilization)}%
+                            </span>
+                          </div>
+                        ) : <span className="text-muted-foreground">—</span>}
+                      </TableCell>
+                      <TableCell className="py-2">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6"
+                          onClick={() => setEditTeam({ id: t.id, name: t.name, budget: t.annualBudget })}
+                        >
+                          <Pencil className="w-3 h-3" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Stacked Bar Chart */}
+        <div className="animate-fade-in-up" style={{ animationDelay: "200ms" }}>
+          <Card className="bg-card/80 border-border/50 h-full">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-foreground text-sm">Budget-Verteilung</CardTitle>
             </CardHeader>
             <CardContent>
-              {barChartData.length > 0 && teamBudgets.some(t => t.annualBudget > 0 || t.spent > 0) ? (
+              {barChartData.length > 0 ? (
                 <ResponsiveContainer width="100%" height={260}>
                   <BarChart data={barChartData} barGap={2}>
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(222 40% 20% / 0.3)" vertical={false} />
@@ -254,206 +392,98 @@ const BudgetPage = () => {
               ) : (
                 <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
                   <Wallet className="w-8 h-8 mb-2 opacity-50" />
-                  <p className="text-sm">Legen Sie Budgets in den Team-Settings fest</p>
-                  <p className="text-xs mt-1">und erstellen Sie Maßnahmen mit Kosten</p>
+                  <p className="text-xs">Noch kein Budget definiert</p>
                 </div>
               )}
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Budget Utilization Progress Bars */}
-        <div className="animate-fade-in-up" style={{ animationDelay: "200ms" }}>
-          <Card className="bg-card/80 border-border/50 h-full">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-foreground text-base">Budget-Auslastung</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {teamBudgets.length > 0 ? (
-                  teamBudgets.map((team) => {
-                    const hasData = team.annualBudget > 0;
-                    const spentPct = hasData ? Math.min((team.spent / team.annualBudget) * 100, 100) : 0;
-                    const plannedPct = hasData ? Math.min((team.planned / team.annualBudget) * 100, 100 - spentPct) : 0;
-                    const isOverBudget = team.spent + team.planned > team.annualBudget && team.annualBudget > 0;
-                    return (
-                      <div key={team.id} className="space-y-1.5">
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm text-foreground">{team.name}</span>
-                          <div className="flex items-center gap-2">
-                            {isOverBudget && (
-                              <Badge className="bg-[hsl(var(--severity-critical))]/15 text-[hsl(var(--severity-critical))] border-[hsl(var(--severity-critical))]/30 text-[10px]">
-                                Überbudget
-                              </Badge>
-                            )}
-                            <span className="text-xs text-muted-foreground tabular-nums">
-                              {hasData
-                                ? `${team.spent.toLocaleString("de-DE")} / ${team.annualBudget.toLocaleString("de-DE")} €`
-                                : "Kein Budget"}
-                            </span>
-                          </div>
-                        </div>
-                        <div className="h-2.5 rounded-full bg-muted overflow-hidden flex">
-                          <div
-                            className="h-full bg-primary rounded-l-full animate-progress-fill"
-                            style={{ width: `${spentPct}%` }}
-                          />
-                          <div
-                            className="h-full bg-primary/30"
-                            style={{ width: `${plannedPct}%` }}
-                          />
-                        </div>
-                        <div className="flex gap-4 text-[10px] text-muted-foreground">
-                          <span>Ausgegeben: {team.spent.toLocaleString("de-DE")} €</span>
-                          <span>Geplant: {team.planned.toLocaleString("de-DE")} €</span>
-                          {hasData && <span>Verfügbar: {team.available.toLocaleString("de-DE")} €</span>}
-                        </div>
-                      </div>
-                    );
-                  })
-                ) : (
-                  <p className="text-sm text-muted-foreground text-center py-8">Keine Teams vorhanden</p>
-                )}
-              </div>
             </CardContent>
           </Card>
         </div>
       </div>
 
       {/* ROI Section */}
-      <div className="grid lg:grid-cols-2 gap-4">
-        {/* ROI Table */}
-        <div className="animate-fade-in-up" style={{ animationDelay: "260ms" }}>
-          <Card className="bg-card/80 border-border/50 h-full">
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-foreground text-base">ROI pro Maßnahme</CardTitle>
-                <Badge variant="outline" className="text-[10px] text-muted-foreground">
-                  €/Kompetenzpunkt
-                </Badge>
-              </div>
-            </CardHeader>
-            <CardContent className="p-0">
-              {measureROIs.length > 0 ? (
-                <Table>
-                  <TableHeader>
-                    <TableRow className="border-border/30 hover:bg-transparent">
-                      <TableHead className="text-xs">Maßnahme</TableHead>
-                      <TableHead className="text-xs text-right">Kosten</TableHead>
-                      <TableHead className="text-xs text-center">Gaps</TableHead>
-                      <TableHead className="text-xs text-right">€/Punkt</TableHead>
-                      <TableHead className="text-xs text-center">Effizienz</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {measureROIs.slice(0, 12).map((m) => (
-                      <TableRow key={m.id} className="border-border/20">
-                        <TableCell className="text-sm py-2.5">
-                          <div>
-                            <span className="font-medium">{m.title}</span>
-                            <p className="text-[10px] text-muted-foreground">{m.teamName}</p>
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-sm font-mono tabular-nums text-right py-2.5">
-                          {m.cost.toLocaleString("de-DE")} €
-                        </TableCell>
-                        <TableCell className="text-sm text-center py-2.5 tabular-nums">
-                          {m.linkedGaps || "—"}
-                        </TableCell>
-                        <TableCell className="text-sm font-mono tabular-nums text-right py-2.5">
-                          {m.costPerPoint !== null ? (
-                            <span className={
-                              m.costPerPoint < 500 ? "text-[hsl(var(--severity-low))]" :
-                              m.costPerPoint < 1500 ? "text-[hsl(var(--severity-medium))]" :
-                              "text-[hsl(var(--severity-critical))]"
-                            }>
-                              {m.costPerPoint.toLocaleString("de-DE")} €
-                            </span>
-                          ) : "—"}
-                        </TableCell>
-                        <TableCell className="text-center py-2.5">
-                          {m.costPerPoint !== null ? (
-                            m.costPerPoint < 500 ? (
-                              <ArrowUpRight className="w-4 h-4 text-[hsl(var(--severity-low))] inline" />
-                            ) : m.costPerPoint < 1500 ? (
-                              <Minus className="w-4 h-4 text-[hsl(var(--severity-medium))] inline" />
-                            ) : (
-                              <ArrowDownRight className="w-4 h-4 text-[hsl(var(--severity-critical))] inline" />
-                            )
+      <div className="animate-fade-in-up" style={{ animationDelay: "260ms" }}>
+        <Card className="bg-card/80 border-border/50">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-foreground text-sm">ROI pro Maßnahme</CardTitle>
+              <Badge variant="outline" className="text-[10px] text-muted-foreground">
+                Sortiert nach €/Kompetenzpunkt (beste zuerst)
+              </Badge>
+            </div>
+          </CardHeader>
+          <CardContent className="p-0">
+            {measureROIs.length > 0 ? (
+              <Table>
+                <TableHeader>
+                  <TableRow className="border-border/30 hover:bg-transparent">
+                    <TableHead className="text-xs">Maßnahme</TableHead>
+                    <TableHead className="text-xs">Typ</TableHead>
+                    <TableHead className="text-xs text-right">Kosten</TableHead>
+                    <TableHead className="text-xs text-center">Gaps</TableHead>
+                    <TableHead className="text-xs text-right">€/Punkt</TableHead>
+                    <TableHead className="text-xs text-center">Effizienz</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {measureROIs.slice(0, 15).map((m) => (
+                    <TableRow key={m.id} className="border-border/20">
+                      <TableCell className="text-xs py-2">
+                        <div>
+                          <span className="font-medium">{m.title}</span>
+                          <p className="text-[10px] text-muted-foreground">{m.teamName}</p>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-xs py-2">
+                        <Badge variant="outline" className="text-[10px]">
+                          {getMeasureTypeLabel(m.measureType)}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-xs py-2 text-right tabular-nums font-mono">
+                        {fmt(m.cost)} €
+                      </TableCell>
+                      <TableCell className="text-xs py-2 text-center tabular-nums">
+                        {m.linkedGaps > 0 ? m.linkedGaps : "—"}
+                      </TableCell>
+                      <TableCell className={`text-xs py-2 text-right tabular-nums font-mono ${getCostColor(m.costPerPoint)}`}>
+                        {m.costPerPoint !== null ? `${fmt(m.costPerPoint)} €` : "—"}
+                      </TableCell>
+                      <TableCell className="text-center py-2">
+                        {m.costPerPoint !== null ? (
+                          m.costPerPoint < 200 ? (
+                            <ArrowUpRight className="w-3.5 h-3.5 text-[hsl(var(--severity-low))] inline" />
+                          ) : m.costPerPoint <= 500 ? (
+                            <Minus className="w-3.5 h-3.5 text-[hsl(var(--severity-medium))] inline" />
                           ) : (
-                            <span className="text-xs text-muted-foreground">—</span>
-                          )}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              ) : (
-                <div className="flex flex-col items-center justify-center py-12 text-muted-foreground px-6">
-                  <Target className="w-8 h-8 mb-2 opacity-50" />
-                  <p className="text-sm">Keine Maßnahmen mit Kosten vorhanden</p>
-                  <p className="text-xs mt-1">Erstellen Sie Maßnahmen mit Kosten und verknüpfen Sie Skill-Gaps</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* ROI Comparison Bar Chart */}
-        <div className="animate-fade-in-up" style={{ animationDelay: "320ms" }}>
-          <Card className="bg-card/80 border-border/50 h-full">
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-foreground text-base">ROI-Vergleich</CardTitle>
-                <Badge variant="outline" className="text-[10px] text-muted-foreground">
-                  Niedrigere €/Punkt = besser
-                </Badge>
+                            <ArrowDownRight className="w-3.5 h-3.5 text-[hsl(var(--severity-critical))] inline" />
+                          )
+                        ) : (
+                          <span className="text-[10px] text-muted-foreground">—</span>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-12 text-muted-foreground px-6">
+                <Target className="w-8 h-8 mb-2 opacity-50" />
+                <p className="text-xs">Keine Maßnahmen mit Kosten vorhanden</p>
               </div>
-            </CardHeader>
-            <CardContent>
-              {roiChartData.length > 0 ? (
-                <ResponsiveContainer width="100%" height={280}>
-                  <BarChart data={roiChartData} layout="vertical" barSize={16}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(222 40% 20% / 0.3)" horizontal={false} />
-                    <XAxis
-                      type="number"
-                      tick={{ fill: "hsl(215 20% 60%)", fontSize: 11 }}
-                      axisLine={false}
-                      tickLine={false}
-                      tickFormatter={(v) => `${v} €`}
-                    />
-                    <YAxis
-                      type="category"
-                      dataKey="name"
-                      tick={{ fill: "hsl(215 20% 60%)", fontSize: 10 }}
-                      axisLine={false}
-                      tickLine={false}
-                      width={130}
-                    />
-                    <Tooltip
-                      contentStyle={{ backgroundColor: "hsl(222 47% 11%)", border: "1px solid hsl(222 40% 20% / 0.5)", borderRadius: "8px", fontSize: "12px" }}
-                      itemStyle={{ color: "hsl(210 40% 98%)" }}
-                      formatter={(value: number) => [`${value.toLocaleString("de-DE")} €`, "€/Kompetenzpunkt"]}
-                    />
-                    <Bar
-                      dataKey="€/Kompetenzpunkt"
-                      fill="hsl(45 75% 50%)"
-                      radius={[0, 4, 4, 0]}
-                      animationDuration={800}
-                    />
-                  </BarChart>
-                </ResponsiveContainer>
-              ) : (
-                <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
-                  <TrendingUp className="w-8 h-8 mb-2 opacity-50" />
-                  <p className="text-sm">Verknüpfen Sie Maßnahmen mit Skill-Gaps</p>
-                  <p className="text-xs mt-1">um den ROI-Vergleich zu berechnen</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
+
+      {/* Inline Budget Edit Dialog */}
+      {editTeam && (
+        <BudgetEditDialog
+          open={!!editTeam}
+          onOpenChange={(o) => !o && setEditTeam(null)}
+          teamId={editTeam.id}
+          teamName={editTeam.name}
+          currentBudget={editTeam.budget}
+        />
+      )}
     </div>
   );
 };

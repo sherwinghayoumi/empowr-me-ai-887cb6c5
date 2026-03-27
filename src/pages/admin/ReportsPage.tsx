@@ -75,10 +75,7 @@ const ReportsPage = () => {
   const { data: employees, isLoading: empLoading } = useEmployees();
   const { data: teams } = useTeams();
   const { data: measures } = useMeasures();
-  const { data: reports, isLoading: reportsLoading } = useReports();
-  const publishMutation = usePublishReport();
-  const unpublishMutation = useUnpublishReport();
-  const deleteMutation = useDeleteReport();
+  const { reports, isLoading: reportsLoading, publishReport, unpublishReport, deleteReport } = useReports();
 
   const [mainTab, setMainTab] = useState("employees");
   const [searchQuery, setSearchQuery] = useState("");

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { GlassCard, GlassCardContent, GlassCardHeader, GlassCardTitle } from "@/components/GlassCard";
+import { GlassCard, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -63,7 +63,7 @@ export function TeamCard({
   const isArchived = team.is_archived;
 
   return (
-    <GlassCard 
+    <Card 
       className={`hover-lift h-full transition-all duration-300 ${isArchived ? 'opacity-60' : ''}`}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
@@ -72,9 +72,9 @@ export function TeamCard({
         boxShadow: isHovered ? `0 8px 32px ${color}20` : undefined
       }}
     >
-      <GlassCardHeader>
+      <CardHeader>
         <div className="flex items-center justify-between">
-          <GlassCardTitle className="text-foreground flex items-center gap-2">
+          <CardTitle className="text-foreground flex items-center gap-2">
             <div 
               className="p-2 rounded-lg transition-transform duration-300"
               style={{ 
@@ -105,7 +105,7 @@ export function TeamCard({
                 </div>
               )}
             </div>
-          </GlassCardTitle>
+          </CardTitle>
           <div className="flex items-center gap-2">
             <Badge 
               className="backdrop-blur"
@@ -176,8 +176,8 @@ export function TeamCard({
             )}
           </div>
         )}
-      </GlassCardHeader>
-      <GlassCardContent className="space-y-2">
+      </CardHeader>
+      <CardContent className="space-y-2">
         {team.members?.map((member) => (
           <button
             key={member.id}
@@ -209,7 +209,7 @@ export function TeamCard({
             Keine Mitglieder in diesem Team
           </p>
         )}
-      </GlassCardContent>
-    </GlassCard>
+      </CardContent>
+    </Card>
   );
 }

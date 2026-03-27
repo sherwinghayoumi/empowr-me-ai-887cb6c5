@@ -194,14 +194,14 @@ export function LearningPathGeneratorModal({
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-2xl h-[85vh] flex flex-col overflow-hidden">
+      <DialogContent className="max-w-2xl h-[80vh] flex flex-col overflow-hidden">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Sparkles className="w-5 h-5 text-primary animate-ai-sparkle-icon" />
+          <DialogTitle className="text-sm font-medium flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-primary" />
             AI Lernpfad-Generator
           </DialogTitle>
-          <DialogDescription>
-            Generiere einen personalisierten Lernpfad für {skillGapInput.employeeName}
+          <DialogDescription className="text-xs">
+            Lernpfad für {skillGapInput.employeeName}
           </DialogDescription>
         </DialogHeader>
 

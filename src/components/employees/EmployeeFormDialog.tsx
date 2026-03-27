@@ -175,29 +175,17 @@ export function EmployeeFormDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            {mode === "create" ? (
-              <>
-                <UserPlus className="w-5 h-5 text-primary" />
-                Neuen Mitarbeiter anlegen
-              </>
-            ) : (
-              <>
-                <Save className="w-5 h-5 text-primary" />
-                Mitarbeiter bearbeiten
-              </>
-            )}
+          <DialogTitle className="text-sm font-medium flex items-center gap-2">
+            {mode === "create" ? <><UserPlus className="w-4 h-4 text-primary" />Neuen Mitarbeiter anlegen</> : <><Save className="w-4 h-4 text-primary" />Mitarbeiter bearbeiten</>}
           </DialogTitle>
-          <DialogDescription>
-            {mode === "create"
-              ? "Erfassen Sie die Daten des neuen Mitarbeiters. Kompetenzen werden automatisch basierend auf der Rolle initialisiert."
-              : "Aktualisieren Sie die Mitarbeiterdaten."}
+          <DialogDescription className="text-xs">
+            {mode === "create" ? "Kompetenzen werden automatisch basierend auf der Rolle initialisiert." : "Aktualisieren Sie die Mitarbeiterdaten."}
           </DialogDescription>
         </DialogHeader>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-3">
+            <div className="grid grid-cols-2 gap-3">
               <FormField
                 control={form.control}
                 name="full_name"

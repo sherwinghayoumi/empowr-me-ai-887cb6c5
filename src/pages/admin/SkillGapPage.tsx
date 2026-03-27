@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { KpiCard } from "@/components/KpiCard";
 import { SkillGapCardDb } from "@/components/SkillGapCardDb";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
@@ -8,15 +8,16 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import {
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+} from "@/components/ui/table";
 import { useEmployees } from "@/hooks/useOrgData";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import {
   AlertTriangle, TrendingUp, Users, FileQuestion,
-  Search, X, Folder, FolderOpen,
-  ChevronDown, ChevronRight, Target, Sparkles, Loader2, Layers,
+  Search, X, Target, Sparkles, Loader2,
 } from "lucide-react";
 
 interface DbEmployee {
@@ -47,25 +48,11 @@ interface EmployeeGap {
   competencyId: string;
   competencyName: string;
   clusterName: string;
-  clusterCategory: string | null;
   currentLevel: number;
   demandedLevel: number;
   futureLevel: number;
   weightedGap: number;
 }
-
-const CATEGORY_LABELS: Record<string, string> = {
-  deal_execution: "Deal Execution & Transaction Management",
-  due_diligence: "Due Diligence & Quality Control",
-  technical_lawyering: "Technical Lawyering & Negotiation",
-  regulatory_clearance: "Regulatory Clearance & Compliance",
-  ai_enabled: "AI-Enabled Legal Work",
-  legal_tech: "Legal Technology & Automation",
-  regulatory_governance: "Regulatory & AI Governance",
-  professional_skills: "Professional Skills & Client Delivery",
-  leadership: "Leadership & People Management",
-  business_development: "Business Development & Strategy",
-};
 
 const GAP_TOLERANCE = 10;
 
@@ -77,18 +64,23 @@ function getSeverityLabel(weightedGap: number, demandedLevel: number): "focus" |
   return "ontrack";
 }
 
+const severityBadge: Record<string, string> = {
+  focus: "bg-[hsl(var(--severity-medium))]/15 text-[hsl(var(--severity-medium))]",
+  building: "bg-primary/15 text-primary",
+  ontrack: "bg-[hsl(var(--severity-low))]/15 text-[hsl(var(--severity-low))]",
+};
+const severityLabel: Record<string, string> = { focus: "Potenzial", building: "Wachstum", ontrack: "Stark" };
+
 const SkillGapPage = () => {
   const { data: employees, isLoading, error } = useEmployees();
   const queryClient = useQueryClient();
-
-  const [openFolders, setOpenFolders] = useState<Record<string, boolean>>({});
   const [searchQuery, setSearchQuery] = useState("");
-  const [filterCluster, setFilterCluster] = useState("all");
   const [filterSeverity, setFilterSeverity] = useState("all");
   const [filterEmployee, setFilterEmployee] = useState("all");
   const [filterRole, setFilterRole] = useState("all");
   const [isGenerating, setIsGenerating] = useState(false);
-  const [groupByCategory, setGroupByCategory] = useState(false);
+  const [sortKey, setSortKey] = useState<'gap' | 'name' | 'employee'>('gap');
+  const [sortAsc, setSortAsc] = useState(false);
 
   const allGaps = useMemo<EmployeeGap[]>(() => {
     if (!employees?.length) return [];
@@ -101,15 +93,9 @@ const SkillGapPage = () => {
         const weighted = (dem - cur) * 0.4 + (fut - cur) * 0.6;
         if (weighted >= GAP_TOLERANCE && comp.competency) {
           gaps.push({
-            employee: emp,
-            competencyId: comp.competency.id,
-            competencyName: comp.competency.name,
+            employee: emp, competencyId: comp.competency.id, competencyName: comp.competency.name,
             clusterName: comp.competency.cluster?.name || "Sonstige",
-            clusterCategory: comp.competency.cluster?.cluster_category || null,
-            currentLevel: cur,
-            demandedLevel: dem,
-            futureLevel: fut,
-            weightedGap: weighted,
+            currentLevel: cur, demandedLevel: dem, futureLevel: fut, weightedGap: weighted,
           });
         }
       });
@@ -117,39 +103,36 @@ const SkillGapPage = () => {
     return gaps;
   }, [employees]);
 
-  const uniqueClusters = useMemo(() => {
-    if (groupByCategory) {
-      const cats = allGaps.map(g => g.clusterCategory ? (CATEGORY_LABELS[g.clusterCategory] || g.clusterCategory) : g.clusterName);
-      return [...new Set(cats)].sort();
-    }
-    return [...new Set(allGaps.map(g => g.clusterName))].sort();
-  }, [allGaps, groupByCategory]);
   const uniqueEmployees = useMemo(() => { const m = new Map<string,string>(); allGaps.forEach(g => m.set(g.employee.id, g.employee.full_name)); return [...m.entries()].sort(([,a],[,b]) => a.localeCompare(b)); }, [allGaps]);
-  const uniqueRoles     = useMemo(() => { const m = new Map<string,string>(); allGaps.forEach(g => { if (g.employee.role_profile) m.set(g.employee.role_profile.id, g.employee.role_profile.role_title); }); return [...m.entries()].sort(([,a],[,b]) => a.localeCompare(b)); }, [allGaps]);
+  const uniqueRoles = useMemo(() => { const m = new Map<string,string>(); allGaps.forEach(g => { if (g.employee.role_profile) m.set(g.employee.role_profile.id, g.employee.role_profile.role_title); }); return [...m.entries()].sort(([,a],[,b]) => a.localeCompare(b)); }, [allGaps]);
 
   const filteredGaps = useMemo(() => allGaps.filter(g => {
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
       if (!g.employee.full_name.toLowerCase().includes(q) && !g.competencyName.toLowerCase().includes(q)) return false;
     }
-    if (filterCluster !== "all") {
-      const effectiveCluster = groupByCategory && g.clusterCategory
-        ? (CATEGORY_LABELS[g.clusterCategory] || g.clusterCategory)
-        : g.clusterName;
-      if (effectiveCluster !== filterCluster) return false;
-    }
     if (filterSeverity !== "all" && getSeverityLabel(g.weightedGap, g.demandedLevel) !== filterSeverity) return false;
     if (filterEmployee !== "all" && g.employee.id !== filterEmployee) return false;
-    if (filterRole     !== "all" && g.employee.role_profile?.id !== filterRole) return false;
+    if (filterRole !== "all" && g.employee.role_profile?.id !== filterRole) return false;
     return true;
-  }), [allGaps, searchQuery, filterCluster, filterSeverity, filterEmployee, filterRole, groupByCategory]);
+  }).sort((a, b) => {
+    let cmp = 0;
+    if (sortKey === 'gap') cmp = a.weightedGap - b.weightedGap;
+    else if (sortKey === 'name') cmp = a.competencyName.localeCompare(b.competencyName);
+    else cmp = a.employee.full_name.localeCompare(b.employee.full_name);
+    return sortAsc ? cmp : -cmp;
+  }), [allGaps, searchQuery, filterSeverity, filterEmployee, filterRole, sortKey, sortAsc]);
 
-  const hasFilters = filterCluster !== "all" || filterSeverity !== "all" || filterEmployee !== "all" || filterRole !== "all" || searchQuery !== "";
-  const clearFilters = () => { setSearchQuery(""); setFilterCluster("all"); setFilterSeverity("all"); setFilterEmployee("all"); setFilterRole("all"); };
-
-  const totalGaps     = filteredGaps.length;
-  const focusCount    = filteredGaps.filter(g => getSeverityLabel(g.weightedGap, g.demandedLevel) === "focus").length;
+  const hasFilters = filterSeverity !== "all" || filterEmployee !== "all" || filterRole !== "all" || searchQuery !== "";
+  const totalGaps = filteredGaps.length;
+  const focusCount = filteredGaps.filter(g => getSeverityLabel(g.weightedGap, g.demandedLevel) === "focus").length;
   const affectedCount = new Set(filteredGaps.map(g => g.employee.id)).size;
+
+  const toggleSort = (key: typeof sortKey) => {
+    if (sortKey === key) setSortAsc(!sortAsc);
+    else { setSortKey(key); setSortAsc(key === 'name' || key === 'employee'); }
+  };
+  const sortIndicator = (key: typeof sortKey) => sortKey === key ? (sortAsc ? ' ↑' : ' ↓') : '';
 
   const handleGenerateDescriptions = async () => {
     if (!employees?.length) return;
@@ -163,9 +146,7 @@ const SkillGapPage = () => {
       });
       const { data: existing } = await supabase.from("competency_descriptions").select("name_key");
       const existingKeys = new Set((existing ?? []).map((e: { name_key: string }) => e.name_key.toLowerCase()));
-      const missingCompetencies = [...allCompetencyNames]
-        .filter((n) => !existingKeys.has(n.toLowerCase()))
-        .map((name) => ({ name, type: "competency" as const }));
+      const missingCompetencies = [...allCompetencyNames].filter((n) => !existingKeys.has(n.toLowerCase())).map((name) => ({ name, type: "competency" as const }));
       if (missingCompetencies.length === 0) {
         toast({ title: "Alles aktuell", description: "Alle Kompetenzen haben bereits eine Beschreibung." });
         setIsGenerating(false);
@@ -180,77 +161,34 @@ const SkillGapPage = () => {
         totalGenerated += data?.generated ?? 0;
       }
       queryClient.invalidateQueries({ queryKey: ["competency_descriptions"] });
-      toast({ title: "Beschreibungen generiert", description: `${totalGenerated} neue Beschreibungen wurden KI-generiert und gespeichert.` });
+      toast({ title: "Beschreibungen generiert", description: `${totalGenerated} neue Beschreibungen.` });
     } catch (err) {
-      console.error("Generierungsfehler:", err);
       toast({ title: "Fehler", description: "Beschreibungen konnten nicht generiert werden.", variant: "destructive" });
     } finally {
       setIsGenerating(false);
     }
   };
 
-  const groupedByRole = useMemo(() => {
-    const roleMap: Record<string, { roleTitle: string; clusters: Record<string, Record<string, EmployeeGap[]>> }> = {};
-    filteredGaps.forEach(g => {
-      const roleId = g.employee.role_profile?.id ?? "__none__";
-      const roleTitle = g.employee.role_profile?.role_title ?? "Ohne Rolle";
-      if (!roleMap[roleId]) roleMap[roleId] = { roleTitle, clusters: {} };
-      const roleBucket = roleMap[roleId].clusters;
-      const clusterKey = groupByCategory && g.clusterCategory ? (CATEGORY_LABELS[g.clusterCategory] || g.clusterCategory) : g.clusterName;
-      if (!roleBucket[clusterKey]) roleBucket[clusterKey] = {};
-      const clusterBucket = roleBucket[clusterKey];
-      if (!clusterBucket[g.competencyId]) clusterBucket[g.competencyId] = [];
-      clusterBucket[g.competencyId].push(g);
-    });
-    Object.values(roleMap).forEach(role => {
-      Object.values(role.clusters).forEach(cluster => {
-        Object.values(cluster).forEach(arr => arr.sort((a, b) => b.weightedGap - a.weightedGap));
-      });
-    });
-    return roleMap;
-  }, [filteredGaps, groupByCategory]);
-
-  const sortedRoles = Object.keys(groupedByRole).sort((a, b) =>
-    groupedByRole[a].roleTitle.localeCompare(groupedByRole[b].roleTitle)
-  );
-
   if (isLoading) {
     return (
-      <div className="space-y-6">
-        <div className="flex items-start justify-between">
-          <div className="space-y-2">
-            <Skeleton className="h-7 w-56" />
-            <Skeleton className="h-4 w-80" />
-          </div>
-          <Skeleton className="h-9 w-52 rounded-md" />
+      <div className="p-4 space-y-4">
+        <Skeleton className="h-7 w-40" />
+        <div className="grid grid-cols-3 gap-3">
+          {[1,2,3].map(i => <Skeleton key={i} className="h-20" />)}
         </div>
-        <div className="grid grid-cols-3 gap-4">
-          {[1,2,3].map(i => (
-            <Card key={i} className="bg-card/80 border-border/50 animate-skeleton-pulse" style={{ animationDelay: `${i * 150}ms` }}>
-              <CardContent className="p-4">
-                <div className="flex items-center gap-3">
-                  <Skeleton className="w-10 h-10 rounded-lg" />
-                  <div className="space-y-1.5 flex-1">
-                    <Skeleton className="h-5 w-12" />
-                    <Skeleton className="h-3 w-28" />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+        <Skeleton className="h-64 w-full" />
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="space-y-6">
+      <div className="p-4">
         <Card className="bg-card/80 border-border/50">
           <CardContent className="py-12 text-center">
             <AlertTriangle className="w-10 h-10 text-destructive mx-auto mb-3" />
             <p className="text-foreground font-medium">Fehler beim Laden</p>
-            <p className="text-sm text-muted-foreground mt-1">{error.message}</p>
+            <p className="text-xs text-muted-foreground mt-1">{error.message}</p>
           </CardContent>
         </Card>
       </div>
@@ -259,13 +197,11 @@ const SkillGapPage = () => {
 
   if (!employees?.length) {
     return (
-      <div className="space-y-6">
-        <h1 className="text-2xl font-bold text-foreground">Skill Gap Analyse</h1>
+      <div className="p-4">
         <Card className="bg-card/80 border-border/50">
           <CardContent className="py-12 text-center">
             <FileQuestion className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
             <p className="text-foreground font-medium">Keine Mitarbeiter vorhanden</p>
-            <p className="text-sm text-muted-foreground mt-1">Legen Sie zuerst Mitarbeiter an.</p>
           </CardContent>
         </Card>
       </div>
@@ -273,269 +209,117 @@ const SkillGapPage = () => {
   }
 
   return (
-    <div className="space-y-4">
-      {/* Title */}
-      <div className="flex items-start justify-between gap-3 animate-fade-in-up">
-        <div>
-          <h1 className="text-lg font-semibold text-foreground tracking-tight">Skill Gap Analyse</h1>
-          <p className="text-xs text-muted-foreground mt-0.5">Kompetenzlücken erkennen und gezielte Lernpfade einleiten</p>
-        </div>
-        <Button
-          variant="ai"
-          size="sm"
-          onClick={handleGenerateDescriptions}
-          disabled={isGenerating}
-          className="shrink-0 gap-1.5 h-8 text-xs"
-          title="Prüft alle Kompetenzen und generiert fehlende deutsche Beschreibungen automatisch per KI"
-        >
-          {isGenerating
-            ? <Loader2 className="w-3 h-3 animate-spin" />
-            : <Sparkles className="w-3 h-3 animate-ai-sparkle-icon" />}
-          {isGenerating ? "Generiere..." : "Beschreibungen aktualisieren"}
+    <div className="p-4 space-y-4">
+      {/* Header */}
+      <div className="flex items-center justify-between animate-fade-in">
+        <h1 className="text-lg font-semibold">Skill Gap Analyse</h1>
+        <Button variant="outline" size="sm" onClick={handleGenerateDescriptions} disabled={isGenerating} className="h-8 text-xs gap-1.5">
+          {isGenerating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
+          {isGenerating ? "Generiere..." : "Beschreibungen"}
         </Button>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-3 gap-3 animate-fade-in-up" style={{ animationDelay: '60ms' }}>
+      {/* KPIs */}
+      <div className="grid grid-cols-3 gap-3">
         <KpiCard label="Entwicklungsbereiche" value={totalGaps} icon={TrendingUp} color="text-primary" index={0} />
         <KpiCard label="Großes Potenzial" value={focusCount} icon={Target} color="text-[hsl(var(--severity-medium))]" index={1} />
-        <KpiCard label="Mitarbeiter" value={affectedCount} icon={Users} color="text-primary" index={2} />
-      </div>
-
-      {/* Search */}
-      <div className="relative max-w-sm animate-fade-in-up" style={{ animationDelay: '100ms' }}>
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-        <Input
-          placeholder="Mitarbeiter oder Kompetenz..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="pl-9 h-9"
-        />
+        <KpiCard label="Betroffene Mitarbeiter" value={affectedCount} icon={Users} color="text-primary" index={2} />
       </div>
 
       {/* Filters */}
-      <div className="flex flex-wrap gap-2 items-center animate-fade-in-up" style={{ animationDelay: '130ms' }}>
-        <Button
-          variant={groupByCategory ? "default" : "outline"}
-          size="sm"
-          className="h-8 text-xs"
-          onClick={() => { setGroupByCategory(!groupByCategory); setFilterCluster("all"); }}
-        >
-          <Layers className="w-3 h-3 mr-1" />
-          {groupByCategory ? "Kategorie-Gruppierung" : "Cluster-Gruppierung"}
-        </Button>
-
-        <Select value={filterCluster} onValueChange={setFilterCluster}>
-          <SelectTrigger className="h-8 w-40 text-xs"><SelectValue placeholder="Cluster" /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Alle Cluster</SelectItem>
-            {uniqueClusters.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-          </SelectContent>
-        </Select>
-
+      <div className="flex flex-wrap gap-2">
+        <Input placeholder="Suchen…" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="w-48 h-8 text-xs bg-card/80 border-border/50" />
         <Select value={filterSeverity} onValueChange={setFilterSeverity}>
-          <SelectTrigger className="h-8 w-44 text-xs"><SelectValue placeholder="Entwicklungsstand" /></SelectTrigger>
+          <SelectTrigger className="w-36 h-8 text-xs bg-card/80 border-border/50"><SelectValue placeholder="Status" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Alle</SelectItem>
-            <SelectItem value="focus">Großes Potenzial</SelectItem>
-            <SelectItem value="building">Im Wachstum</SelectItem>
-            <SelectItem value="ontrack">Gut aufgestellt</SelectItem>
+            <SelectItem value="focus">Potenzial</SelectItem>
+            <SelectItem value="building">Wachstum</SelectItem>
+            <SelectItem value="ontrack">Stark</SelectItem>
           </SelectContent>
         </Select>
-
         <Select value={filterEmployee} onValueChange={setFilterEmployee}>
-          <SelectTrigger className="h-8 w-44 text-xs"><SelectValue placeholder="Mitarbeiter" /></SelectTrigger>
+          <SelectTrigger className="w-44 h-8 text-xs bg-card/80 border-border/50"><SelectValue placeholder="Mitarbeiter" /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Alle Mitarbeiter</SelectItem>
+            <SelectItem value="all">Alle</SelectItem>
             {uniqueEmployees.map(([id, name]) => <SelectItem key={id} value={id}>{name}</SelectItem>)}
           </SelectContent>
         </Select>
-
         <Select value={filterRole} onValueChange={setFilterRole}>
-          <SelectTrigger className="h-8 w-44 text-xs"><SelectValue placeholder="Rolle" /></SelectTrigger>
+          <SelectTrigger className="w-44 h-8 text-xs bg-card/80 border-border/50"><SelectValue placeholder="Rolle" /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Alle Rollen</SelectItem>
+            <SelectItem value="all">Alle</SelectItem>
             {uniqueRoles.map(([id, title]) => <SelectItem key={id} value={id}>{title}</SelectItem>)}
           </SelectContent>
         </Select>
-
         {hasFilters && (
-          <button onClick={clearFilters} className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors">
+          <button onClick={() => { setSearchQuery(""); setFilterSeverity("all"); setFilterEmployee("all"); setFilterRole("all"); }}
+            className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
             <X className="w-3 h-3" />zurücksetzen
           </button>
         )}
-
-        <span className="text-xs text-muted-foreground ml-auto tabular-nums">{totalGaps} Gaps</span>
       </div>
 
-      {/* Legend */}
-      <div className="flex gap-4 text-xs text-muted-foreground">
-        <span className="flex items-center gap-1.5"><span className="w-3 h-1.5 rounded bg-primary/50 inline-block" />Ist-Niveau</span>
-        <span className="flex items-center gap-1.5"><span className="w-px h-3 bg-foreground/50 inline-block" />Soll</span>
-        <span className="flex items-center gap-1.5"><span className="w-px h-3 bg-primary inline-block" />Ziel</span>
-      </div>
-
-      {/* Role-folder view */}
-      <div className="space-y-3">
-        {sortedRoles.map((roleId) => {
-          const roleData = groupedByRole[roleId];
-          if (!roleData) return null;
-          const { roleTitle, clusters } = roleData;
-          const sortedRoleClusters = Object.keys(clusters).sort();
-          const allRoleGapItems = Object.values(clusters).flatMap(c => Object.values(c).flat());
-          const totalRoleGaps = allRoleGapItems.length;
-          const roleCountFocus    = allRoleGapItems.filter(g => getSeverityLabel(g.weightedGap, g.demandedLevel) === "focus").length;
-          const roleCountBuilding = allRoleGapItems.filter(g => getSeverityLabel(g.weightedGap, g.demandedLevel) === "building").length;
-          const roleCountOntrack  = allRoleGapItems.filter(g => getSeverityLabel(g.weightedGap, g.demandedLevel) === "ontrack").length;
-          const isRoleOpen = openFolders[`role-${roleId}`] ?? false;
-
-          return (
-            <Collapsible
-              key={roleId}
-              open={isRoleOpen}
-              onOpenChange={(v) => setOpenFolders(prev => ({ ...prev, [`role-${roleId}`]: v }))}
-            >
-              <CollapsibleTrigger asChild>
-                <Card className="bg-card/80 border-border/50 cursor-pointer hover-lift border-primary/20">
-                  <CardContent className="py-3.5 px-4">
-                    <div className="flex items-center gap-3">
-                      <div className="p-1.5 rounded-md bg-primary/15 shrink-0">
-                        <FolderOpen className="w-4 h-4 text-primary" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-semibold text-foreground text-sm truncate">{roleTitle}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {sortedRoleClusters.length} Cluster · {totalRoleGaps} Kompetenzen
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-1.5 shrink-0">
-                        {roleCountFocus > 0 && (
-                          <Badge variant="outline" className="text-xs bg-[hsl(var(--severity-medium))]/15 text-[hsl(var(--severity-medium))] border-[hsl(var(--severity-medium))]/25">
-                            {roleCountFocus}× Potenzial
-                          </Badge>
-                        )}
-                        {roleCountBuilding > 0 && (
-                          <Badge variant="outline" className="text-xs bg-primary/15 text-primary border-primary/25">
-                            {roleCountBuilding}× Wachstum
-                          </Badge>
-                        )}
-                        {roleCountOntrack > 0 && (
-                          <Badge variant="outline" className="text-xs bg-[hsl(var(--severity-low))]/15 text-[hsl(var(--severity-low))] border-[hsl(var(--severity-low))]/25">
-                            {roleCountOntrack}× Stark
-                          </Badge>
-                        )}
-                      </div>
-                      {isRoleOpen
-                        ? <ChevronDown className="w-4 h-4 text-muted-foreground shrink-0" />
-                        : <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />}
-                    </div>
-                  </CardContent>
-                </Card>
-              </CollapsibleTrigger>
-
-              <CollapsibleContent>
-                <div className="mt-2 ml-5 space-y-2 border-l border-border/40 pl-4">
-                  {sortedRoleClusters.map((clusterName) => {
-                    const byComp = clusters[clusterName];
-                    const clusterGaps = Object.values(byComp).flat();
-                    const clusterFocus    = clusterGaps.filter(g => getSeverityLabel(g.weightedGap, g.demandedLevel) === "focus").length;
-                    const clusterBuilding = clusterGaps.filter(g => getSeverityLabel(g.weightedGap, g.demandedLevel) === "building").length;
-                    const clusterOntrack  = clusterGaps.filter(g => getSeverityLabel(g.weightedGap, g.demandedLevel) === "ontrack").length;
-                    const isClusterOpen = openFolders[`cluster-${roleId}-${clusterName}`] ?? false;
-
-                    return (
-                      <Collapsible
-                        key={clusterName}
-                        open={isClusterOpen}
-                        onOpenChange={(v) => setOpenFolders(prev => ({ ...prev, [`cluster-${roleId}-${clusterName}`]: v }))}
-                      >
-                        <CollapsibleTrigger asChild>
-                          <Card className="bg-card/80 border-border/50 cursor-pointer hover-lift">
-                            <CardContent className="py-2.5 px-4">
-                              <div className="flex items-center gap-3">
-                                <Folder className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-                                <span className="text-sm text-foreground flex-1 truncate">{clusterName}</span>
-                                <div className="flex items-center gap-1.5 shrink-0">
-                                  {clusterFocus > 0 && (
-                                    <Badge variant="outline" className="text-xs bg-[hsl(var(--severity-medium))]/15 text-[hsl(var(--severity-medium))] border-[hsl(var(--severity-medium))]/25">
-                                      {clusterFocus}× Potenzial
-                                    </Badge>
-                                  )}
-                                  {clusterBuilding > 0 && (
-                                    <Badge variant="outline" className="text-xs bg-primary/15 text-primary border-primary/25">
-                                      {clusterBuilding}× Wachstum
-                                    </Badge>
-                                  )}
-                                  {clusterOntrack > 0 && (
-                                    <Badge variant="outline" className="text-xs bg-[hsl(var(--severity-low))]/15 text-[hsl(var(--severity-low))] border-[hsl(var(--severity-low))]/25">
-                                      {clusterOntrack}× Stark
-                                    </Badge>
-                                  )}
-                                </div>
-                                {isClusterOpen
-                                  ? <ChevronDown className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-                                  : <ChevronRight className="w-3.5 h-3.5 text-muted-foreground shrink-0" />}
-                              </div>
-                            </CardContent>
-                          </Card>
-                        </CollapsibleTrigger>
-                        <CollapsibleContent>
-                          <div className="mt-2 ml-4 space-y-4 border-l border-border/30 pl-4">
-                            {Object.entries(byComp).map(([compId, gaps]) => {
-                              const compName = gaps[0]?.competencyName ?? "";
-                              return (
-                                <div key={compId} className="space-y-2">
-                                  <p className="text-xs font-medium text-muted-foreground">
-                                    {compName}
-                                    <span className="ml-1 opacity-50">({gaps.length})</span>
-                                  </p>
-                                  <ScrollArea className="w-full whitespace-nowrap">
-                                    <div className="flex gap-3 pb-3">
-                                      {gaps.map((gap, idx) => (
-                                        <SkillGapCardDb
-                                          key={`${gap.employee.id}-${gap.competencyId}`}
-                                          employee={{ id: gap.employee.id, full_name: gap.employee.full_name, role_profile: gap.employee.role_profile }}
-                                          competency={{ id: gap.competencyId, name: gap.competencyName, currentLevel: gap.currentLevel, demandedLevel: gap.demandedLevel, futureLevel: gap.futureLevel }}
-                                          delay={idx * 30}
-                                        />
-                                      ))}
-                                    </div>
-                                    <ScrollBar orientation="horizontal" />
-                                  </ScrollArea>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </CollapsibleContent>
-                      </Collapsible>
-                    );
-                  })}
-                </div>
-              </CollapsibleContent>
-            </Collapsible>
-          );
-        })}
-      </div>
-
-      {/* Empty state */}
-      {totalGaps === 0 && (
+      {/* Table */}
+      {totalGaps > 0 ? (
+        <Card className="bg-card/80 border-border/50">
+          <CardContent className="p-0">
+            <Table>
+              <TableHeader>
+                <TableRow className="border-border/50">
+                  <TableHead className="text-xs cursor-pointer hover:text-primary" onClick={() => toggleSort('employee')}>
+                    Mitarbeiter{sortIndicator('employee')}
+                  </TableHead>
+                  <TableHead className="text-xs">Rolle</TableHead>
+                  <TableHead className="text-xs cursor-pointer hover:text-primary" onClick={() => toggleSort('name')}>
+                    Kompetenz{sortIndicator('name')}
+                  </TableHead>
+                  <TableHead className="text-xs text-right">Ist</TableHead>
+                  <TableHead className="text-xs text-right">Soll</TableHead>
+                  <TableHead className="text-xs text-right cursor-pointer hover:text-primary" onClick={() => toggleSort('gap')}>
+                    Gap{sortIndicator('gap')}
+                  </TableHead>
+                  <TableHead className="text-xs">Status</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredGaps.slice(0, 100).map((g, i) => {
+                  const sev = getSeverityLabel(g.weightedGap, g.demandedLevel);
+                  const gap = g.demandedLevel - g.currentLevel;
+                  return (
+                    <TableRow
+                      key={`${g.employee.id}-${g.competencyId}`}
+                      className="border-border/30 hover:bg-muted/30 animate-fade-in-up opacity-0"
+                      style={{ animationDelay: `${Math.min(i, 20) * 0.02}s` }}
+                    >
+                      <TableCell className="text-xs py-2 font-medium">{g.employee.full_name}</TableCell>
+                      <TableCell className="text-xs py-2 text-muted-foreground">{g.employee.role_profile?.role_title || '—'}</TableCell>
+                      <TableCell className="text-xs py-2">{g.competencyName}</TableCell>
+                      <TableCell className="text-xs py-2 text-right tabular-nums">{g.currentLevel}%</TableCell>
+                      <TableCell className="text-xs py-2 text-right tabular-nums">{g.demandedLevel}%</TableCell>
+                      <TableCell className="text-xs py-2 text-right tabular-nums font-semibold">
+                        {gap > 0 ? <span className="text-[hsl(var(--severity-critical))]">-{gap}</span> : '0'}
+                      </TableCell>
+                      <TableCell className="py-2">
+                        <Badge variant="outline" className={`text-[10px] ${severityBadge[sev]}`}>{severityLabel[sev]}</Badge>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      ) : (
         <Card className="bg-card/80 border-border/50">
           <CardContent className="py-12 text-center">
-            <AlertTriangle className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
-            <p className="text-foreground font-medium">
-              {hasFilters ? "Keine Gaps für diese Filter" : "Keine Skill Gaps erkannt"}
-            </p>
-            <p className="text-sm text-muted-foreground mt-1">
-              {hasFilters ? "Filter anpassen oder zurücksetzen." : "Alle Mitarbeiter erfüllen ihre Kompetenzanforderungen."}
-            </p>
-            {hasFilters && (
-              <Button variant="outline" size="sm" className="mt-4 gap-1" onClick={clearFilters}>
-                <X className="w-3 h-3" />Filter zurücksetzen
-              </Button>
-            )}
+            <p className="text-foreground font-medium">{hasFilters ? "Keine Gaps für diese Filter" : "Keine Skill Gaps erkannt"}</p>
+            <p className="text-xs text-muted-foreground mt-1">{hasFilters ? "Filter anpassen." : "Alle Mitarbeiter erfüllen ihre Anforderungen."}</p>
           </CardContent>
         </Card>
       )}
+
+      <p className="text-xs text-muted-foreground">{totalGaps} Gaps{filteredGaps.length > 100 ? ` (erste 100 angezeigt)` : ''}</p>
     </div>
   );
 };

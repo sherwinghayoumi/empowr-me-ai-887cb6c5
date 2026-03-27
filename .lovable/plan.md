@@ -1,116 +1,114 @@
 
 
-# FUTURA TEAMS v3 Migration — Schritt 1: Design-Tokens + Sidebar-Navigation + Farbsprache
+# FUTURA v3 — Productionization Roadmap
 
-## Zusammenfassung
-
-Schritt 1 legt das visuelle und strukturelle Fundament für v3: neues Farbschema (Dark Navy + Gold, kein Glassmorphism), Severity-Tokens, Sidebar-Navigation für Org-Admin, und Routing-Umbau. Alle bestehenden Admin-Seiten werden in ein neues Sidebar-Layout eingebettet. Employee-Routen werden entfernt.
+6 sequentielle Pläne, die das System von Demo-/Mock-Zustand zu einem vollumfänglich funktionsfähigen Talent-Management-Tool transformieren.
 
 ---
 
-## Betroffene Dateien
+## Plan 1: Current Gaps vs. Future Risks — Zweistufige Gap-Engine
 
-### 1. `src/index.css` — Design-Tokens ersetzen
+**Problem:** Aktuell werden `demanded_level` (Current Gap) und `future_level` (Future Risk) in eine einzige gewichtete Zahl vermengt. Das verhindert saubere Priorisierung.
 
-- Glassmorphism-Klassen entfernen: `.glass`, `.glass-card`, `.glass-strong`, `.glass-subtle`
-- Severity-Tokens hinzufügen: `--severity-critical: 0 84% 60%`, `--severity-medium: 45 75% 50%`, `--severity-low: 142 71% 45%`
-- Aufwändige Keyframes entfernen: `gradient-shift`, `gradient-shift-reverse`, `gradient-pulse`, `float`, `star-pulse`, `ai-sparkle-icon`, `ai-shimmer`
-- Behalten: `fadeIn`, `fadeInUp`, `scaleIn`, `slideInLeft/Right`, `pulseSoft`, `skeleton-pulse`, `progress-fill`
-- Hex-Pattern entfernen
-- Bestehende Farb-Tokens bleiben (bereits Dark Navy + Gold)
-
-### 2. `src/layouts/AdminLayout.tsx` — Neues Sidebar-Layout (NEU)
-
-Neues Layout analog zu `SuperAdminLayout.tsx`:
-- Sidebar (links, 280px, collapsible auf Mobile via Sheet)
-- Nav-Einträge: Dashboard, Anwälte, Skill Gaps, Maßnahmen*, Budget & ROI*, Reports, Settings*
-- Logo + Org-Name oben, User-Info + Logout unten
-- Breadcrumbs im Header
-- `<Outlet />` für Child-Routes
-- *Maßnahmen, Budget, Settings: Routen existieren noch nicht → werden in späteren Schritten erstellt, Navigation zeigt sie aber schon (disabled oder als Placeholder)
-
-### 3. `src/App.tsx` — Routing-Umbau
-
-- Employee-Routen entfernen (`/employee`, `/employee/skills`, `/employee/learning`)
-- Admin-Routen in nested Layout umbauen:
-  ```
-  <Route path="/admin" element={<ProtectedRoute><AdminLayout /></ProtectedRoute>}>
-    <Route index element={<AdminDashboard />} />
-    <Route path="teams" element={<TeamsPage />} />
-    <Route path="employees" element={<EmployeesPage />} />
-    <Route path="skill-gaps" element={<SkillGapPage />} />
-    <Route path="reports" element={<ReportsPage />} />
-    <Route path="reports/future-skill-matrix" element={<FutureSkillReportPage />} />
-    <Route path="measures" element={<PlaceholderPage title="Maßnahmen" />} />
-    <Route path="budget" element={<PlaceholderPage title="Budget & ROI" />} />
-  </Route>
-  ```
-- Default redirect `/` → `/login` bleibt
-- EmployeeDashboard, MySkillsPage, MyLearningPage Imports entfernen
-
-### 4. Admin-Seiten anpassen (6 Dateien)
-
-Jede Admin-Seite (`AdminDashboard`, `TeamsPage`, `EmployeesPage`, `SkillGapPage`, `ReportsPage`, `FutureSkillReportPage`):
-- `<Header variant="admin" />` entfernen (Sidebar übernimmt Navigation)
-- `GlassCard` → shadcn `Card` mit `className="bg-card/80 border-border/50"`
-- `AnimatedCounter` → statischer Wert mit `tabular-nums` Klasse
-- `ScrollReveal` → `<div className="animate-fade-in-up">` mit stagger-Klassen
-- `ParallaxBackground` entfernen
-- Äußeres `<div className="min-h-screen">` + `<main className="container py-8">` entfernen (Layout liefert das)
-
-### 5. Dateien entfernen / nicht mehr importieren
-
-- `src/components/GlassCard.tsx` — nicht mehr benötigt (kein Delete nötig, nur Imports entfernen)
-- `src/components/AnimatedCounter.tsx` — nicht mehr benötigt
-- `src/components/ScrollReveal.tsx` — nicht mehr benötigt
-- `src/components/ParallaxBackground.tsx` — nicht mehr benötigt
-- Employee-Seiten bleiben im Dateisystem, werden aber aus App.tsx entfernt
-- `src/components/Header.tsx` — wird von Admin-Seiten nicht mehr verwendet
-
-### 6. `tailwind.config.ts` — Minimal
-
-Keine Änderungen nötig — Farb-Tokens kommen aus CSS-Variablen, die bereits korrekt sind.
+**Änderungen:**
+- **`useOrgData.ts` / `useSkillGapAnalysis`**: Zwei separate Gap-Listen berechnen: `currentGaps` (demanded − current) und `futureRisks` (future − current). Jeweils eigene Severity-Einstufung.
+- **`SkillGapPage.tsx`**: Tabs "Aktuelle Gaps" und "Zukunftsrisiken" statt einer gemischten Liste. Jeder Tab zeigt eigene KPIs (Anzahl, betroffene MA, Ø Gap).
+- **`AdminDashboard.tsx`**: KPI-Karte "Kritische Gaps" aufteilen in "Current Gaps" und "Future Risks" mit eigener Farbe (rot vs. amber).
+- **Severity-Labels**: "Kritisch / Mittel / Gering" statt "Potenzial / Wachstum / Stark" — klarer und professioneller.
+- **`SeverityBadge.tsx`**: Neue Variante für Future Risks (amber-Palette).
 
 ---
 
-## Technische Details
+## Plan 2: Wording & Darstellung — Positives Framing + Practice-Group-Kontext
 
-**Komponenten-Mapping (Suchen & Ersetzen):**
+**Problem:** Alle Mitarbeiter wirken "schlecht", weil Gaps ohne Kontext dargestellt werden. Außerdem fehlt die Practice-Group-Differenzierung in den Ansichten.
 
-| Alt | Neu |
-|-----|-----|
-| `<GlassCard>` | `<Card className="bg-card/80 border-border/50">` |
-| `<GlassCardHeader>` | `<CardHeader>` |
-| `<GlassCardTitle>` | `<CardTitle>` |
-| `<GlassCardContent>` | `<CardContent>` |
-| `<AnimatedCounter value={n} />` | `<span className="tabular-nums">{n}</span>` |
-| `<ScrollReveal delay={d}>` | `<div className="animate-fade-in-up" style={{animationDelay: `${d}ms`}}>` |
-| `<ParallaxBackground />` | entfernen |
-| `<Header variant="admin" />` | entfernen |
+**Änderungen:**
+- **Wording-Refactor überall**: 
+  - "Gap" → "Entwicklungsfeld" in der UI
+  - Scores als "X von Y" statt nur die Differenz zeigen
+  - Stärken explizit hervorheben: Kompetenzen ON-TRACK oder ÜBER-Soll bekommen grüne Badges
+- **Practice-Group-Filter global**: Dropdown in Dashboard, SkillGaps, Reports, Budget — filtert alle Daten nach Practice Group (aus `role_profiles.practice_group`).
+- **Kontextualisierung**: Bei jedem Gap den Demanded Level anzeigen, damit klar ist, ob z.B. ein Level von 70 bei einem Target von 80 nur eine kleine Lücke ist.
+- **Employee-Profil**: Stärken-Sektion oben, dann Entwicklungsfelder. Nicht nur Schwächen zeigen.
 
-**AdminLayout Sidebar-Nav-Items:**
-```typescript
-[
-  { label: "Dashboard",    href: "/admin",           icon: LayoutDashboard },
-  { label: "Anwälte",      href: "/admin/employees", icon: Users },
-  { label: "Teams",        href: "/admin/teams",     icon: Building2 },
-  { label: "Skill Gaps",   href: "/admin/skill-gaps",icon: AlertTriangle },
-  { label: "Maßnahmen",    href: "/admin/measures",  icon: ClipboardList },
-  { label: "Budget & ROI", href: "/admin/budget",    icon: TrendingUp },
-  { label: "Reports",      href: "/admin/reports",   icon: FileText },
-  { label: "Settings",     href: "/admin/settings",  icon: Settings },
-]
+---
+
+## Plan 3: Maßnahmen + Lernpfade zusammenlegen
+
+**Problem:** `measures` (Tabelle) und `learning_paths` + `learning_modules` (Tabellen) sind separate Systeme für dasselbe Konzept.
+
+**Änderungen:**
+- **Datenmodell**: `measures` wird die Haupttabelle. Neue Spalten per Migration:
+  - `source` (enum: 'manual' | 'ai_generated')
+  - `ai_recommendation_reason` (text)
+  - `progress_percent` (numeric, default 0)
+  - `assigned_employee_ids` bleibt, wird aber auch für Einzelzuweisungen genutzt
+- **Migration**: Bestehende `learning_paths` + `learning_modules` Daten in `measures` überführen (einmalig, mit SQL-Migration).
+- **`useMeasures.ts`**: Erweitern um Progress-Tracking, AI-Flag, und Module-Unterstützung.
+- **`MeasuresPage.tsx`**: Zeigt jetzt alles — manuelle Maßnahmen UND AI-generierte Lernpfade. Filter nach `source`. Progress-Bar pro Maßnahme.
+- **`LearningPathGeneratorModal.tsx`**: Erzeugt jetzt einen `measure`-Eintrag statt `learning_path`.
+- **Sidebar**: "Maßnahmen" → "Maßnahmen & Lernpfade" (oder kurz "Entwicklung").
+- **Alte Tabellen**: `learning_paths` und `learning_modules` bleiben vorerst bestehen (keine Löschung), werden aber nicht mehr aktiv genutzt.
+
+---
+
+## Plan 4: Budget-Planung vollumfänglich funktionsfähig
+
+**Problem:** Budget kommt aktuell nur aus `teams.annual_budget` und wird nur passiv aggregiert. Keine echte Planungsfunktion.
+
+**Änderungen:**
+- **DB-Migration**: Neue Tabelle `budget_plans`:
+  - `id`, `organization_id`, `team_id` (nullable), `year`, `quarter`
+  - `planned_amount`, `allocated_amount`, `notes`
+  - `created_by`, `created_at`, `updated_at`
+  - RLS: org_admin kann eigene Org verwalten
+- **`BudgetPage.tsx` Redesign**:
+  - **Planungs-Tab**: Budget pro Team und Quartal setzen/anpassen. Inline-Edit in Tabelle.
+  - **Übersicht-Tab**: Geplant vs. Ausgegeben vs. Verbleibend pro Team. Progress Bars.
+  - **ROI-Tab**: Kosten pro Kompetenzpunkt, effizienteste Maßnahmen, Trend über Quartale.
+- **`useBudgetPlans.ts`**: Neuer Hook für CRUD auf `budget_plans`.
+- **Dashboard-KPI**: "Budget verbraucht" zeigt echte Plan-Daten statt nur `teams.annual_budget`.
+
+---
+
+## Plan 5: Reports-Seite → Assessment-Cycle-Logik
+
+**Problem:** Reports sind aktuell nur eine Tabelle mit Aggregationen. Es fehlt der "Cycle"-Gedanke: Erst Assessment → dann Report freischalten.
+
+**Änderungen:**
+- **Konzept**: Jeder Report braucht zwei Datenpunkte: Baseline (Q-Start) und Endstand (Q-Ende). Ohne zweites Assessment zeigt die Seite nur "Current State".
+- **DB-Migration**: Neue Tabelle `assessment_snapshots`:
+  - `id`, `organization_id`, `employee_id`, `snapshot_type` ('baseline' | 'endline')
+  - `quarter`, `year`, `competency_data` (jsonb — Snapshot aller Kompetenzwerte)
+  - `created_at`
+- **`ReportsPage.tsx` Redesign**:
+  - **Phase 1 (kein Endline vorhanden)**: Zeigt "Current State" — aktuelle Levels, Gaps, laufende Maßnahmen. Button "Assessment starten" (löst Profil-Regenerierung aus).
+  - **Phase 2 (Endline vorhanden)**: Voller Q-Report freigeschaltet — Delta-Analyse (Baseline → Endline), ROI pro MA, abgeschlossene Maßnahmen, Kosten.
+- **Snapshot-Erstellung**: "Baseline speichern" Button am Quartalsbeginn speichert aktuellen Stand aller MA-Kompetenzen als JSON-Snapshot. "Endline Assessment" am Quartalsende triggert Re-Profiling und speichert erneut.
+- **`useAssessmentSnapshots.ts`**: Neuer Hook für Snapshot-CRUD und Vergleichslogik.
+
+---
+
+## Plan 6: Cleanup — Mock-Daten, tote Imports, Konsistenz
+
+**Problem:** Diverse Mock-Daten-Referenzen, ungenutzte Komponenten und inkonsistente Patterns.
+
+**Änderungen:**
+- Entferne `src/data/mockData.ts`, `src/data/competenciesData.ts`, `src/data/certificationsData.ts` falls noch referenziert.
+- Entferne ungenutzte Komponenten: `GlassCard.tsx`, `ParallaxBackground.tsx`, `ScrollReveal.tsx`, `AnimatedCounter.tsx`, `AnimatedIcon.tsx`, `AnimatedProgress.tsx`, `GrowthJourneyChart.tsx`, `SwipeableRadarChart.tsx`, `CompetencyBar.tsx`.
+- Entferne Employee-Self-Service-Seiten die nicht mehr zum v3-Konzept passen: `EmployeeDashboard.tsx`, `MyLearningPage.tsx`, `MySkillsPage.tsx` (gemäß v3 Strategic Pivot — reines Management-Cockpit).
+- Prüfe alle Imports auf tote Referenzen.
+- Stelle sicher, dass `useOrgData` keine `future_level` Mock-Fallbacks hat.
+
+---
+
+## Empfohlene Reihenfolge
+
+```text
+Plan 1 → Plan 2 → Plan 3 → Plan 4 → Plan 5 → Plan 6
+ Gaps     Wording   Merge    Budget   Reports   Cleanup
 ```
 
-**Nicht anfassen:** Supabase-Client, Auth-Context, alle Hooks, Edge Functions, RLS, DB-Migrationen.
-
----
-
-## Reihenfolge der Implementierung
-
-1. `index.css` — Glassmorphism entfernen, Severity-Tokens hinzufügen
-2. `AdminLayout.tsx` — Neues Sidebar-Layout erstellen
-3. `App.tsx` — Routing umbauen
-4. Admin-Seiten einzeln migrieren (GlassCard → Card, etc.)
-5. Placeholder-Seite für `/measures` und `/budget` erstellen
+Plan 1 + 2 können parallel bearbeitet werden. Plan 3 ist Voraussetzung für Plan 4 (Budget braucht konsolidierte Maßnahmen). Plan 5 baut auf 1-4 auf. Plan 6 ist abschließend.
 

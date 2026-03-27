@@ -1102,6 +1102,7 @@ export type Database = {
       }
       teams: {
         Row: {
+          annual_budget: number | null
           average_score: number | null
           color: string | null
           created_at: string | null
@@ -1118,6 +1119,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          annual_budget?: number | null
           average_score?: number | null
           color?: string | null
           created_at?: string | null
@@ -1134,6 +1136,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          annual_budget?: number | null
           average_score?: number | null
           color?: string | null
           created_at?: string | null

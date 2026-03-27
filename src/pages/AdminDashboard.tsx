@@ -71,15 +71,17 @@ const AdminDashboard = () => {
 
   // ─── Derived data ──────────────────────────────────
 
-  const currentGapCount = gapAnalysis?.currentGapCount || 0;
-  const futureRiskCount = gapAnalysis?.futureRiskCount || 0;
+  const criticalGapCount = useMemo(() => {
+    if (!gapAnalysis) return 0;
+    return gapAnalysis.criticalGaps.length;
+  }, [gapAnalysis]);
 
-  // Top 10 employees sorted by currentGapTotal (desc)
+  // Top 10 employees sorted by total gap (desc)
   const top10 = useMemo(() => {
     if (!gapAnalysis) return [];
     return [...gapAnalysis.byEmployee]
-      .filter((e) => e.currentGapTotal > 0)
-      .sort((a, b) => b.currentGapTotal - a.currentGapTotal)
+      .filter((e) => e.totalGap > 0)
+      .sort((a, b) => b.totalGap - a.totalGap)
       .slice(0, 10);
   }, [gapAnalysis]);
 
@@ -91,10 +93,9 @@ const AdminDashboard = () => {
     let low = 0;
     for (const emp of gapAnalysis.byEmployee) {
       for (const g of emp.gaps) {
-        const gap = g.gap; // current gap (demanded - current)
-        if (gap >= 30) critical++;
-        else if (gap >= 15) medium++;
-        else if (gap > 0) low++;
+        if (g.gap >= 20) critical++;
+        else if (g.gap >= 10) medium++;
+        else if (g.gap > 0) low++;
       }
     }
     return [
@@ -166,11 +167,11 @@ const AdminDashboard = () => {
       color: "text-[hsl(var(--severity-low))]",
     },
     {
-      label: "Entwicklungsfelder",
-      value: currentGapCount,
+      label: "Kritische Gaps",
+      value: criticalGapCount,
       icon: AlertTriangle,
-      color: currentGapCount > 0 ? "text-[hsl(var(--severity-critical))]" : "text-muted-foreground",
-      pulse: currentGapCount > 5,
+      color: criticalGapCount > 0 ? "text-[hsl(var(--severity-critical))]" : "text-muted-foreground",
+      pulse: criticalGapCount > 0,
     },
     {
       label: "Budget verbraucht",
@@ -244,7 +245,7 @@ const AdminDashboard = () => {
         <Card className="lg:col-span-3 bg-card/80 border-border/50 transition-shadow duration-200 hover:shadow-lg hover:shadow-primary/5">
             <CardHeader className="py-3 px-4">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-sm font-medium">Top 10 Entwicklungsbedarf</CardTitle>
+                <CardTitle className="text-sm font-medium">Top 10 Handlungsbedarf</CardTitle>
                 <Link
                   to="/admin/skill-gaps"
                   className="text-xs text-primary hover:underline flex items-center gap-1"
@@ -260,7 +261,7 @@ const AdminDashboard = () => {
                     <TableRow className="border-border/50">
                       <TableHead className="text-xs">Anwalt</TableHead>
                       <TableHead className="text-xs">Rolle</TableHead>
-                      <TableHead className="text-xs text-right">Ent.-Score</TableHead>
+                      <TableHead className="text-xs text-right">Gap-Score</TableHead>
                       <TableHead className="text-xs">Severity</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -278,10 +279,10 @@ const AdminDashboard = () => {
                         </TableCell>
                         <TableCell className="text-xs py-2 text-muted-foreground">{emp.role || "—"}</TableCell>
                         <TableCell className="text-xs py-2 text-right tabular-nums font-semibold severity-critical">
-                          {Math.round(emp.currentGapTotal)}
+                          {Math.round(emp.totalGap)}
                         </TableCell>
                         <TableCell className="py-2">
-                          <SeverityBadge severity={severityLevel(emp.currentGapTotal)} />
+                          <SeverityBadge severity={severityLevel(emp.totalGap)} />
                         </TableCell>
                       </TableRow>
                     ))}
@@ -290,7 +291,7 @@ const AdminDashboard = () => {
               ) : (
                 <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
                   <Target className="w-8 h-8 mb-2 opacity-50" />
-                  <p className="text-xs">Alle Anforderungen erfüllt</p>
+                  <p className="text-xs">Keine Kompetenzlücken erkannt</p>
                 </div>
               )}
             </CardContent>
@@ -299,7 +300,7 @@ const AdminDashboard = () => {
         {/* Gap Distribution Donut */}
           <Card className="bg-card/80 border-border/50">
             <CardHeader className="py-3 px-4">
-              <CardTitle className="text-sm font-medium">Entwicklungsfeld-Verteilung</CardTitle>
+              <CardTitle className="text-sm font-medium">Gap-Verteilung</CardTitle>
             </CardHeader>
             <CardContent>
               {gapDistribution.length > 0 ? (
@@ -339,7 +340,7 @@ const AdminDashboard = () => {
               ) : (
                 <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
                   <AlertTriangle className="w-8 h-8 mb-2 opacity-50" />
-                  <p className="text-sm">Keine Entwicklungsdaten</p>
+                  <p className="text-sm">Keine Gap-Daten</p>
                 </div>
               )}
             </CardContent>

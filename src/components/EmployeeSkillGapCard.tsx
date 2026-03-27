@@ -213,15 +213,15 @@ export function EmployeeSkillGapCard({
           {/* Gap Stats */}
           <div className="grid grid-cols-2 gap-3">
             <div className="bg-secondary/30 rounded-lg p-3 text-center">
-              <p className="text-xs text-muted-foreground mb-1">Aktuelles Entwicklungsfeld</p>
+              <p className="text-xs text-muted-foreground mb-1">Aktuelle Lücke</p>
               <p className={`text-xl font-bold ${(demandedLevel - currentLevel) > 0 ? "text-destructive" : "text-emerald-400"}`}>
-                {(demandedLevel - currentLevel) > 0 ? `${currentLevel} von ${demandedLevel}` : `On Track`}
+                {(demandedLevel - currentLevel) > 0 ? `-${demandedLevel - currentLevel}%` : `+${Math.abs(demandedLevel - currentLevel)}%`}
               </p>
             </div>
             <div className="bg-secondary/30 rounded-lg p-3 text-center">
-              <p className="text-xs text-muted-foreground mb-1">Zukunftsziel</p>
-              <p className={`text-xl font-bold ${(futureLevel - currentLevel) > 0 ? "text-amber-400" : "text-emerald-400"}`}>
-                {(futureLevel - currentLevel) > 0 ? `${currentLevel} von ${futureLevel}` : `On Track`}
+              <p className="text-xs text-muted-foreground mb-1">Zukunfts-Lücke</p>
+              <p className={`text-xl font-bold ${(futureLevel - currentLevel) > 0 ? "text-destructive" : "text-emerald-400"}`}>
+                {(futureLevel - currentLevel) > 0 ? `-${futureLevel - currentLevel}%` : `+${Math.abs(futureLevel - currentLevel)}%`}
               </p>
             </div>
           </div>

@@ -424,41 +424,37 @@ export function useLatestReport() {
 // SKILL GAP ANALYSIS
 // =====================================================
 
+interface GapByCompetency {
+  totalGap: number;
+  employeeCount: number;
+  avgGap: number;
+}
+
 interface EmployeeGap {
   competency: string;
-  competencyId: string;
   gap: number;
   current: number;
   demanded: number;
-  future: number;
 }
 
 interface EmployeeWithGaps {
   id: string;
   name: string;
   role: string | undefined;
-  practiceGroup: string | undefined;
-  currentGapTotal: number;
-  futureRiskTotal: number;
+  totalGap: number;
   gaps: EmployeeGap[];
 }
 
-interface CompetencyGapEntry {
+interface CriticalGap extends GapByCompetency {
   name: string;
-  avgCurrentGap: number;
-  avgFutureRisk: number;
-  employeeCount: number;
 }
 
-export interface GapAnalysis {
+interface GapAnalysis {
+  byCompetency: Record<string, GapByCompetency>;
   byEmployee: EmployeeWithGaps[];
-  currentGapCount: number;
-  futureRiskCount: number;
-  criticalCurrentGaps: CompetencyGapEntry[];
-  criticalFutureRisks: CompetencyGapEntry[];
+  criticalGaps: CriticalGap[];
+  emergingSkills: unknown[];
 }
-
-const GAP_THRESHOLD = 10; // ignore gaps below this
 
 export function useSkillGapAnalysis() {
   const { organization } = useAuth();
@@ -471,12 +467,13 @@ export function useSkillGapAnalysis() {
         .select(`
           id,
           full_name,
-          role_profile:role_profiles!employees_role_profile_id_fkey(role_key, role_title, practice_group),
+          role_profile:role_profiles!employees_role_profile_id_fkey(role_key, role_title),
           competencies:employee_competencies(
             current_level,
             demanded_level,
             future_level,
-            is_deprecated,
+            gap_to_current,
+            gap_to_future,
             competency:competencies(id, name, status)
           )
         `)
@@ -485,73 +482,65 @@ export function useSkillGapAnalysis() {
       
       if (error) throw error;
       
-      const compAgg: Record<string, { currentGaps: number[]; futureRisks: number[]; count: number }> = {};
-      const byEmployee: EmployeeWithGaps[] = [];
-      let currentGapCount = 0;
-      let futureRiskCount = 0;
+      const gapAnalysis: GapAnalysis = {
+        byCompetency: {},
+        byEmployee: [],
+        criticalGaps: [],
+        emergingSkills: []
+      };
       
       for (const emp of employees || []) {
-        let currentGapTotal = 0;
-        let futureRiskTotal = 0;
+        let totalGap = 0;
         const empGaps: EmployeeGap[] = [];
         
         for (const comp of emp.competencies || []) {
-          if (comp.is_deprecated) continue;
-          const cur = comp.current_level || 0;
-          const dem = comp.demanded_level || 0;
-          const fut = comp.future_level || 0;
-          const currentGap = Math.max(0, dem - cur);
-          const futureRisk = Math.max(0, fut - cur);
+          const currentLevel = comp.current_level || 0;
+          const demandedLevel = comp.demanded_level || 0;
+          const gap = demandedLevel - currentLevel;
           const competencyName = comp.competency?.name || 'Unknown';
-          const competencyId = comp.competency?.id || '';
           
-          // Track aggregation
-          if (!compAgg[competencyName]) compAgg[competencyName] = { currentGaps: [], futureRisks: [], count: 0 };
-          compAgg[competencyName].count++;
-          if (currentGap >= GAP_THRESHOLD) compAgg[competencyName].currentGaps.push(currentGap);
-          if (futureRisk >= GAP_THRESHOLD) compAgg[competencyName].futureRisks.push(futureRisk);
-          
-          if (currentGap >= GAP_THRESHOLD || futureRisk >= GAP_THRESHOLD) {
-            empGaps.push({ competency: competencyName, competencyId, gap: currentGap, current: cur, demanded: dem, future: fut });
+          if (gap > 0) {
+            totalGap += gap;
+            empGaps.push({
+              competency: competencyName,
+              gap,
+              current: currentLevel,
+              demanded: demandedLevel
+            });
           }
-          if (currentGap >= GAP_THRESHOLD) { currentGapTotal += currentGap; currentGapCount++; }
-          if (futureRisk >= GAP_THRESHOLD) { futureRiskTotal += futureRisk; futureRiskCount++; }
+          
+          if (!gapAnalysis.byCompetency[competencyName]) {
+            gapAnalysis.byCompetency[competencyName] = {
+              totalGap: 0,
+              employeeCount: 0,
+              avgGap: 0
+            };
+          }
+          gapAnalysis.byCompetency[competencyName].totalGap += Math.max(0, gap);
+          gapAnalysis.byCompetency[competencyName].employeeCount++;
         }
         
-        byEmployee.push({
+        gapAnalysis.byEmployee.push({
           id: emp.id,
           name: emp.full_name,
           role: emp.role_profile?.role_title,
-          practiceGroup: emp.role_profile?.practice_group ?? undefined,
-          currentGapTotal,
-          futureRiskTotal,
-          gaps: empGaps.sort((a, b) => b.gap - a.gap),
+          totalGap,
+          gaps: empGaps.sort((a, b) => b.gap - a.gap)
         });
       }
       
-      const criticalCurrentGaps: CompetencyGapEntry[] = Object.entries(compAgg)
-        .filter(([, d]) => d.currentGaps.length > 0)
-        .map(([name, d]) => ({
-          name,
-          avgCurrentGap: d.currentGaps.reduce((s, v) => s + v, 0) / d.currentGaps.length,
-          avgFutureRisk: d.futureRisks.length > 0 ? d.futureRisks.reduce((s, v) => s + v, 0) / d.futureRisks.length : 0,
-          employeeCount: d.currentGaps.length,
-        }))
-        .sort((a, b) => b.avgCurrentGap - a.avgCurrentGap);
+      for (const [, data] of Object.entries(gapAnalysis.byCompetency)) {
+        data.avgGap = data.employeeCount > 0 ? data.totalGap / data.employeeCount : 0;
+      }
       
-      const criticalFutureRisks: CompetencyGapEntry[] = Object.entries(compAgg)
-        .filter(([, d]) => d.futureRisks.length > 0)
-        .map(([name, d]) => ({
-          name,
-          avgCurrentGap: d.currentGaps.length > 0 ? d.currentGaps.reduce((s, v) => s + v, 0) / d.currentGaps.length : 0,
-          avgFutureRisk: d.futureRisks.reduce((s, v) => s + v, 0) / d.futureRisks.length,
-          employeeCount: d.futureRisks.length,
-        }))
-        .sort((a, b) => b.avgFutureRisk - a.avgFutureRisk);
+      gapAnalysis.criticalGaps = Object.entries(gapAnalysis.byCompetency)
+        .filter(([, data]) => data.avgGap > 20)
+        .sort((a, b) => b[1].avgGap - a[1].avgGap)
+        .map(([name, data]) => ({ name, ...data }));
       
-      return { byEmployee, currentGapCount, futureRiskCount, criticalCurrentGaps, criticalFutureRisks } as GapAnalysis;
+      return gapAnalysis;
     },
-    enabled: !!organization?.id,
+    enabled: !!organization?.id
   });
 }
 

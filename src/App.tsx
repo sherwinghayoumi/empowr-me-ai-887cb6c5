@@ -79,7 +79,7 @@ function AppRoutes() {
         <Route path="skill-gaps" element={<SkillGapPage />} />
         <Route path="reports" element={<ReportsPage />} />
         <Route path="reports/future-skill-matrix" element={<FutureSkillReportPage />} />
-        <Route path="measures" element={<PlaceholderPage title="Maßnahmen" description="Weiterbildungsmaßnahmen verwalten, Skill-Gaps zuordnen und den Fortschritt tracken." />} />
+        <Route path="measures" element={<MeasuresPage />} />
         <Route path="budget" element={<PlaceholderPage title="Budget & ROI" description="Budget-Übersicht pro Team, ROI-Berechnung und €/Kompetenzpunkt-Analyse." />} />
       </Route>
 

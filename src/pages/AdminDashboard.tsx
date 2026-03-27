@@ -117,16 +117,24 @@ const AdminDashboard = () => {
     ].filter((d) => d.value > 0);
   }, [gapAnalysis]);
 
-  // Budget per team (placeholder — real data comes in Step 3/4)
-  const budgetPerTeam = useMemo(() => {
-    if (!teams) return [];
-    return teams.map((t) => ({
-      name: t.name.length > 12 ? t.name.slice(0, 12) + "…" : t.name,
-      planned: 0,
-      spent: 0,
-      available: 0,
-    }));
-  }, [teams]);
+  // Budget from measures data
+  const budgetData = useMemo(() => {
+    if (!teams || !measures) return { perTeam: [], totalSpent: 0, totalBudget: 0, costPerPoint: null as number | null, utilization: "—" };
+    const perTeam = teams.map((t) => {
+      const tm = measures.filter((m) => m.assigned_team_id === t.id);
+      const spent = tm.filter((m) => m.status === "completed").reduce((s, m) => s + (m.cost || 0), 0);
+      const planned = tm.filter((m) => m.status === "planned" || m.status === "active").reduce((s, m) => s + (m.cost || 0), 0);
+      const budget = (t as any).annual_budget || 0;
+      return { name: t.name.length > 12 ? t.name.slice(0, 12) + "…" : t.name, spent, planned, available: Math.max(0, budget - spent - planned) };
+    });
+    const totalSpent = perTeam.reduce((s, t) => s + t.spent, 0);
+    const totalBudget = teams.reduce((s, t) => s + ((t as any).annual_budget || 0), 0);
+    const completedWithGaps = measures.filter((m) => m.status === "completed" && m.linked_competency_ids?.length > 0);
+    const totalGaps = completedWithGaps.reduce((s, m) => s + (m.linked_competency_ids?.length || 0), 0);
+    const costPerPoint = totalGaps > 0 && totalSpent > 0 ? Math.round(totalSpent / totalGaps) : null;
+    const utilization = totalBudget > 0 ? `${Math.round(((totalSpent + perTeam.reduce((s, t) => s + t.planned, 0)) / totalBudget) * 100)}%` : "—";
+    return { perTeam, totalSpent, totalBudget, costPerPoint, utilization };
+  }, [teams, measures]);
 
   // Alerts
   const alerts = useMemo(() => {

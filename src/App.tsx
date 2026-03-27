@@ -36,6 +36,7 @@ import ReportsPage from "@/pages/admin/ReportsPage";
 import FutureSkillReportPage from "@/pages/admin/FutureSkillReportPage";
 import PlaceholderPage from "@/pages/admin/PlaceholderPage";
 import MeasuresPage from "@/pages/admin/MeasuresPage";
+import BudgetPage from "@/pages/admin/BudgetPage";
 
 // Other
 import NotFound from "@/pages/NotFound";

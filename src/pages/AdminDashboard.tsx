@@ -139,30 +139,8 @@ const AdminDashboard = () => {
     return { perTeam, totalSpent, totalBudget, costPerPoint, utilization };
   }, [teams, measures]);
 
-  // Alerts
-  const alerts = useMemo(() => {
-    const items: { text: string; severity: "critical" | "medium" | "low" }[] = [];
-
-    // Employees without competency data
-    const noProfile = employees?.filter(
-      (e) => !e.competencies || e.competencies.length === 0
-    );
-    if (noProfile && noProfile.length > 0) {
-      items.push({
-        text: `${noProfile.length} Anwält${noProfile.length === 1 ? "" : "e"} ohne Kompetenzprofil`,
-        severity: noProfile.length >= 3 ? "critical" : "medium",
-      });
-    }
-
-    if (criticalGapCount > 0) {
-      items.push({
-        text: `${criticalGapCount} kritische Kompetenzlücke${criticalGapCount === 1 ? "" : "n"} identifiziert`,
-        severity: "critical",
-      });
-    }
-
-    return items;
-  }, [employees, criticalGapCount]);
+  // Alerts from centralized hook
+  const { alerts, quarterInfo } = useAlerts();
 
   // ─── Loading ───────────────────────────────────────
 

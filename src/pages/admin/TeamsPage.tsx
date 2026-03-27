@@ -1,11 +1,10 @@
 import { useState } from "react";
-import { Header } from "@/components/Header";
 import { EmployeeProfile } from "@/components/EmployeeProfile";
-import { ScrollReveal } from "@/components/ScrollReveal";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent } from "@/components/ui/card";
 import { Plus, Archive, Users } from "lucide-react";
 import { useTeams, useCreateTeam, useUpdateTeam, useDeleteTeam, useArchiveTeam, useEmployees } from "@/hooks/useOrgData";
 import { TeamFormDialog } from "@/components/teams/TeamFormDialog";
@@ -58,27 +57,14 @@ const TeamsPage = () => {
   const deleteTeam = useDeleteTeam();
   const archiveTeam = useArchiveTeam();
 
-  const handleOpenCreate = () => {
-    setSelectedTeam(null);
-    setFormDialogOpen(true);
-  };
-
-  const handleEdit = (team: TeamData) => {
-    setSelectedTeam(team);
-    setFormDialogOpen(true);
-  };
+  const handleOpenCreate = () => { setSelectedTeam(null); setFormDialogOpen(true); };
+  const handleEdit = (team: TeamData) => { setSelectedTeam(team); setFormDialogOpen(true); };
 
   const handleArchive = async (team: TeamData) => {
-    await archiveTeam.mutateAsync({ 
-      teamId: team.id, 
-      archive: !team.is_archived 
-    });
+    await archiveTeam.mutateAsync({ teamId: team.id, archive: !team.is_archived });
   };
 
-  const handleDeleteClick = (team: TeamData) => {
-    setSelectedTeam(team);
-    setDeleteDialogOpen(true);
-  };
+  const handleDeleteClick = (team: TeamData) => { setSelectedTeam(team); setDeleteDialogOpen(true); };
 
   const handleDeleteConfirm = async () => {
     if (selectedTeam) {
@@ -100,11 +86,7 @@ const TeamsPage = () => {
     };
 
     if (selectedTeam) {
-      await updateTeam.mutateAsync({ 
-        ...payload, 
-        id: selectedTeam.id,
-        isArchived: data.isArchived 
-      });
+      await updateTeam.mutateAsync({ ...payload, id: selectedTeam.id, isArchived: data.isArchived });
     } else {
       await createTeam.mutateAsync(payload);
     }
@@ -112,7 +94,6 @@ const TeamsPage = () => {
     setSelectedTeam(null);
   };
 
-  // Prepare initial data for edit mode
   const getInitialFormData = (): Partial<TeamFormData> & { id?: string } | undefined => {
     if (!selectedTeam) return undefined;
     return {
@@ -132,22 +113,20 @@ const TeamsPage = () => {
     };
   };
 
-  // Filter teams based on archive status
   const displayedTeams = teams?.filter(t => showArchived ? t.is_archived : !t.is_archived) || [];
   const archivedCount = teams?.filter(t => t.is_archived).length || 0;
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background">
-        <Header variant="admin" />
-        <main className="container py-8">
-          <div className="flex items-center justify-between mb-8">
-            <Skeleton className="h-9 w-32" />
-            <Skeleton className="h-10 w-44" />
-          </div>
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[...Array(3)].map((_, i) => (
-              <div key={i} className="glass-card p-5 space-y-4 animate-skeleton-pulse" style={{ animationDelay: `${i * 150}ms` }}>
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <Skeleton className="h-9 w-32" />
+          <Skeleton className="h-10 w-44" />
+        </div>
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {[...Array(3)].map((_, i) => (
+            <Card key={i} className="bg-card/80 border-border/50 animate-skeleton-pulse" style={{ animationDelay: `${i * 150}ms` }}>
+              <CardContent className="p-5 space-y-4">
                 <div className="flex items-center gap-3">
                   <Skeleton className="w-10 h-10 rounded-lg" />
                   <div className="flex-1 space-y-1.5">
@@ -159,89 +138,84 @@ const TeamsPage = () => {
                 <div className="flex gap-2">
                   {[1,2,3].map(j => <Skeleton key={j} className="w-8 h-8 rounded-full" />)}
                 </div>
-              </div>
-            ))}
-          </div>
-        </main>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <Header variant="admin" />
-      <main className="container py-8">
-        <ScrollReveal>
-          <div className="flex items-center justify-between mb-8">
-            <div className="flex items-center gap-4">
-              <h1 className="text-3xl font-bold text-foreground">Teams</h1>
-              <Tabs value={showArchived ? "archived" : "active"} onValueChange={(v) => setShowArchived(v === "archived")}>
-                <TabsList>
-                  <TabsTrigger value="active" className="flex items-center gap-2">
-                    <Users className="w-4 h-4" />
-                    Aktiv
-                  </TabsTrigger>
-                  <TabsTrigger value="archived" className="flex items-center gap-2">
-                    <Archive className="w-4 h-4" />
-                    Archiviert
-                    {archivedCount > 0 && (
-                      <span className="ml-1 text-xs bg-secondary px-1.5 py-0.5 rounded-full">
-                        {archivedCount}
-                      </span>
-                    )}
-                  </TabsTrigger>
-                </TabsList>
-              </Tabs>
-            </div>
+    <div className="space-y-6">
+      <div className="flex items-center justify-between animate-fade-in-up">
+        <div className="flex items-center gap-4">
+          <h1 className="text-3xl font-bold text-foreground">Teams</h1>
+          <Tabs value={showArchived ? "archived" : "active"} onValueChange={(v) => setShowArchived(v === "archived")}>
+            <TabsList>
+              <TabsTrigger value="active" className="flex items-center gap-2">
+                <Users className="w-4 h-4" />
+                Aktiv
+              </TabsTrigger>
+              <TabsTrigger value="archived" className="flex items-center gap-2">
+                <Archive className="w-4 h-4" />
+                Archiviert
+                {archivedCount > 0 && (
+                  <span className="ml-1 text-xs bg-secondary px-1.5 py-0.5 rounded-full">
+                    {archivedCount}
+                  </span>
+                )}
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+        </div>
+        <Button onClick={handleOpenCreate}>
+          <Plus className="w-4 h-4 mr-2" />
+          Team hinzufügen
+        </Button>
+      </div>
+
+      {displayedTeams.length === 0 ? (
+        <div className="text-center py-16">
+          <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-secondary/50 flex items-center justify-center">
+            {showArchived ? <Archive className="w-8 h-8 text-muted-foreground" /> : <Users className="w-8 h-8 text-muted-foreground" />}
+          </div>
+          <h3 className="text-lg font-medium text-foreground mb-2">
+            {showArchived ? "Keine archivierten Teams" : "Noch keine Teams erstellt"}
+          </h3>
+          <p className="text-muted-foreground mb-4">
+            {showArchived 
+              ? "Archivierte Teams werden hier angezeigt."
+              : "Erstellen Sie Ihr erstes Team, um Mitarbeiter zu organisieren."
+            }
+          </p>
+          {!showArchived && (
             <Button onClick={handleOpenCreate}>
               <Plus className="w-4 h-4 mr-2" />
-              Team hinzufügen
+              Erstes Team erstellen
             </Button>
-          </div>
-        </ScrollReveal>
-
-        {displayedTeams.length === 0 ? (
-          <div className="text-center py-16">
-            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-secondary/50 flex items-center justify-center">
-              {showArchived ? <Archive className="w-8 h-8 text-muted-foreground" /> : <Users className="w-8 h-8 text-muted-foreground" />}
+          )}
+        </div>
+      ) : (
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {displayedTeams.map((team, index) => (
+            <div key={team.id} className="animate-fade-in-up" style={{ animationDelay: `${index * 80}ms` }}>
+              <TeamCard
+                team={team}
+                index={index}
+                onMemberClick={setSelectedEmployeeId}
+                onEdit={handleEdit}
+                onArchive={handleArchive}
+                onDelete={handleDeleteClick}
+              />
             </div>
-            <h3 className="text-lg font-medium text-foreground mb-2">
-              {showArchived ? "Keine archivierten Teams" : "Noch keine Teams erstellt"}
-            </h3>
-            <p className="text-muted-foreground mb-4">
-              {showArchived 
-                ? "Archivierte Teams werden hier angezeigt."
-                : "Erstellen Sie Ihr erstes Team, um Mitarbeiter zu organisieren."
-              }
-            </p>
-            {!showArchived && (
-              <Button onClick={handleOpenCreate}>
-                <Plus className="w-4 h-4 mr-2" />
-                Erstes Team erstellen
-              </Button>
-            )}
-          </div>
-        ) : (
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {displayedTeams.map((team, index) => (
-              <ScrollReveal key={team.id} delay={index * 100}>
-                <TeamCard
-                  team={team}
-                  index={index}
-                  onMemberClick={setSelectedEmployeeId}
-                  onEdit={handleEdit}
-                  onArchive={handleArchive}
-                  onDelete={handleDeleteClick}
-                />
-              </ScrollReveal>
-            ))}
-          </div>
-        )}
-      </main>
+          ))}
+        </div>
+      )}
 
       {/* Employee Profile Dialog */}
       <Dialog open={!!selectedEmployeeId} onOpenChange={() => setSelectedEmployeeId(null)}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto glass">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           {selectedEmployeeId && (
             <EmployeeProfile 
               employeeId={selectedEmployeeId} 
@@ -251,7 +225,6 @@ const TeamsPage = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Team Form Dialog (Create/Edit) */}
       <TeamFormDialog
         open={formDialogOpen}
         onOpenChange={setFormDialogOpen}
@@ -268,7 +241,6 @@ const TeamsPage = () => {
         mode={selectedTeam ? "edit" : "create"}
       />
 
-      {/* Delete Confirmation Dialog */}
       <DeleteTeamDialog
         open={deleteDialogOpen}
         onOpenChange={setDeleteDialogOpen}

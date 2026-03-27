@@ -781,6 +781,91 @@ export type Database = {
           },
         ]
       }
+      measures: {
+        Row: {
+          assigned_employee_ids: string[] | null
+          assigned_team_id: string | null
+          completed_at: string | null
+          cost: number | null
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          duration_hours: number | null
+          end_date: string | null
+          id: string
+          linked_competency_ids: string[] | null
+          measure_type: string
+          organization_id: string
+          provider: string | null
+          start_date: string | null
+          status: string
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          assigned_employee_ids?: string[] | null
+          assigned_team_id?: string | null
+          completed_at?: string | null
+          cost?: number | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          duration_hours?: number | null
+          end_date?: string | null
+          id?: string
+          linked_competency_ids?: string[] | null
+          measure_type?: string
+          organization_id: string
+          provider?: string | null
+          start_date?: string | null
+          status?: string
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          assigned_employee_ids?: string[] | null
+          assigned_team_id?: string | null
+          completed_at?: string | null
+          cost?: number | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          duration_hours?: number | null
+          end_date?: string | null
+          id?: string
+          linked_competency_ids?: string[] | null
+          measure_type?: string
+          organization_id?: string
+          provider?: string | null
+          start_date?: string | null
+          status?: string
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "measures_assigned_team_id_fkey"
+            columns: ["assigned_team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "measures_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "measures_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       organizations: {
         Row: {
           created_at: string | null

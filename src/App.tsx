@@ -35,6 +35,7 @@ import SkillGapPage from "@/pages/admin/SkillGapPage";
 import ReportsPage from "@/pages/admin/ReportsPage";
 import FutureSkillReportPage from "@/pages/admin/FutureSkillReportPage";
 import PlaceholderPage from "@/pages/admin/PlaceholderPage";
+import MeasuresPage from "@/pages/admin/MeasuresPage";
 
 // Other
 import NotFound from "@/pages/NotFound";
@@ -78,7 +79,7 @@ function AppRoutes() {
         <Route path="skill-gaps" element={<SkillGapPage />} />
         <Route path="reports" element={<ReportsPage />} />
         <Route path="reports/future-skill-matrix" element={<FutureSkillReportPage />} />
-        <Route path="measures" element={<PlaceholderPage title="Maßnahmen" description="Weiterbildungsmaßnahmen verwalten, Skill-Gaps zuordnen und den Fortschritt tracken." />} />
+        <Route path="measures" element={<MeasuresPage />} />
         <Route path="budget" element={<PlaceholderPage title="Budget & ROI" description="Budget-Übersicht pro Team, ROI-Berechnung und €/Kompetenzpunkt-Analyse." />} />
       </Route>
 

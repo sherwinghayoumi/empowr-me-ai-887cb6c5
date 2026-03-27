@@ -418,10 +418,8 @@ const AdminDashboard = () => {
               )}
             </CardContent>
           </Card>
-        </div>
 
         {/* Competency Level Trend */}
-        <div className="animate-fade-in-up" style={{ animationDelay: "500ms" }}>
           <Card className="bg-card/80 border-border/50 h-full">
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
@@ -487,44 +485,43 @@ const AdminDashboard = () => {
 
       {/* Team-Übersicht */}
       {teams && teams.length > 0 && (
-          <Card className="bg-card/80 border-border/50">
-            <CardHeader className="py-3 px-4">
-              <CardTitle className="text-sm font-medium">
-                Team-Übersicht
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid md:grid-cols-3 gap-4">
-                {teams.map((team) => (
-                  <div
-                    key={team.id}
-                    className="p-4 rounded-lg bg-muted/30 border border-border/30 hover:border-primary/30 transition-colors"
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="font-medium text-sm text-foreground">{team.name}</span>
-                      <span className="text-xs text-muted-foreground tabular-nums">
-                        {team.member_count || 0} Mitglieder
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="flex-1 h-2 rounded-full bg-muted">
-                        <div
-                          className="h-full rounded-full bg-primary animate-progress-fill"
-                          style={{
-                            width: `${Math.min(team.average_score || 0, 100)}%`,
-                          }}
-                        />
-                      </div>
-                      <span className="text-xs font-mono tabular-nums text-foreground">
-                        {Math.round(team.average_score || 0)}%
-                      </span>
-                    </div>
+        <Card className="bg-card/80 border-border/50">
+          <CardHeader className="py-3 px-4">
+            <CardTitle className="text-sm font-medium">
+              Team-Übersicht
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid md:grid-cols-3 gap-4">
+              {teams.map((team) => (
+                <div
+                  key={team.id}
+                  className="p-4 rounded-lg bg-muted/30 border border-border/30 hover:border-primary/30 transition-colors"
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="font-medium text-sm text-foreground">{team.name}</span>
+                    <span className="text-xs text-muted-foreground tabular-nums">
+                      {team.member_count || 0} Mitglieder
+                    </span>
                   </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 h-2 rounded-full bg-muted">
+                      <div
+                        className="h-full rounded-full bg-primary animate-progress-fill"
+                        style={{
+                          width: `${Math.min(team.average_score || 0, 100)}%`,
+                        }}
+                      />
+                    </div>
+                    <span className="text-xs font-mono tabular-nums text-foreground">
+                      {Math.round(team.average_score || 0)}%
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
       )}
     </div>
   );

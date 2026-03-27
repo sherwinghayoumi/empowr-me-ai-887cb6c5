@@ -73,6 +73,7 @@ interface TeamFormData {
   tags: string[];
   priority: number;
   isArchived: boolean;
+  annualBudget: number | null;
   members: TeamMember[];
 }
 
@@ -111,6 +112,7 @@ export function TeamFormDialog({
     tags: [],
     priority: 0,
     isArchived: false,
+    annualBudget: null,
     members: []
   });
   
@@ -128,6 +130,7 @@ export function TeamFormDialog({
         tags: initialData.tags || [],
         priority: initialData.priority || 0,
         isArchived: initialData.isArchived || false,
+        annualBudget: initialData.annualBudget ?? null,
         members: initialData.members || []
       });
     } else {
@@ -139,6 +142,7 @@ export function TeamFormDialog({
         tags: [],
         priority: 0,
         isArchived: false,
+        annualBudget: null,
         members: []
       });
     }
@@ -267,7 +271,18 @@ export function TeamFormDialog({
               </div>
 
               <div className="space-y-2">
-                <Label>Priorität</Label>
+                <Label htmlFor="team-budget">Jahresbudget (€)</Label>
+                <Input
+                  id="team-budget"
+                  type="number"
+                  min="0"
+                  step="1000"
+                  value={formData.annualBudget ?? ""}
+                  onChange={(e) => setFormData(prev => ({ ...prev, annualBudget: e.target.value ? Number(e.target.value) : null }))}
+                  placeholder="z.B. 50000"
+                />
+                <p className="text-xs text-muted-foreground">Optional. Wird für die Budget-Planung verwendet.</p>
+              </div>
                 <div className="flex items-center gap-2">
                   {[0, 1, 2, 3].map((p) => (
                     <Button

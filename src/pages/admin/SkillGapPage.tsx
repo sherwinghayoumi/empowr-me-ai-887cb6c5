@@ -16,7 +16,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import {
   AlertTriangle, TrendingUp, Users, FileQuestion,
-  Search, X, Target, Sparkles, Loader2, ShieldAlert,
+  Search, X, Target, Sparkles, Loader2, ShieldAlert, Info, CheckCircle2,
 } from "lucide-react";
 
 // ─── Types ──────────────────────────────────────────
@@ -89,7 +89,7 @@ const gapBadgeClass: Record<GapSeverity, string> = {
   watch: "bg-[hsl(var(--severity-medium))]/15 text-[hsl(var(--severity-medium))]",
   minor: "bg-primary/15 text-primary",
 };
-const gapLabel: Record<GapSeverity, string> = { critical: "Handlungsbedarf", watch: "Beobachten", minor: "Geringfügig" };
+const gapLabel: Record<GapSeverity, string> = { critical: "Handlungsbedarf", watch: "Fokus", minor: "Auf Kurs" };
 
 const riskBadgeClass: Record<RiskSeverity, string> = {
   high: "bg-[hsl(var(--severity-medium))]/15 text-[hsl(var(--severity-medium))]",
@@ -306,12 +306,22 @@ const SkillGapPage = () => {
     <div className="p-4 space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between animate-fade-in">
-        <h1 className="text-lg font-semibold">Skill Gap Analyse</h1>
+        <h1 className="text-lg font-semibold">Entwicklungsfelder</h1>
         <Button variant="outline" size="sm" onClick={handleGenerateDescriptions} disabled={isGenerating} className="h-8 text-xs gap-1.5">
           {isGenerating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
           {isGenerating ? "Generiere..." : "Beschreibungen"}
         </Button>
       </div>
+
+      {/* Context Note */}
+      <Card className="bg-primary/5 border-primary/20 animate-fade-in">
+        <CardContent className="py-2.5 px-3 flex items-start gap-2">
+          <Info className="w-3.5 h-3.5 text-primary mt-0.5 shrink-0" />
+          <p className="text-[11px] text-muted-foreground leading-relaxed">
+            Entwicklungsfelder sind normal und Teil jedes professionellen Wachstumspfads. Die Bewertung zeigt, wo gezieltes Coaching und Maßnahmen den größten Impact haben — nicht eine Gesamtbewertung der Mitarbeiter.
+          </p>
+        </CardContent>
+      </Card>
 
       {/* Filters */}
       <div className="flex flex-wrap gap-2">
@@ -343,7 +353,7 @@ const SkillGapPage = () => {
         <TabsList className="h-8">
           <TabsTrigger value="gaps" className="text-xs h-7 px-3 gap-1.5">
             <Target className="w-3.5 h-3.5" />
-            Aktuelle Lücken
+            Aktuelle Entwicklungsfelder
             {gapStats.total > 0 && <span className="ml-1 text-[10px] bg-secondary px-1.5 py-0.5 rounded-full tabular-nums">{gapStats.total}</span>}
           </TabsTrigger>
           <TabsTrigger value="risks" className="text-xs h-7 px-3 gap-1.5">
@@ -356,8 +366,8 @@ const SkillGapPage = () => {
         {/* ── Tab 1: Current Gaps ─────────────────────────── */}
         <TabsContent value="gaps" className="mt-4 space-y-4">
           <div className="grid grid-cols-3 gap-3">
-            <KpiCard label="Lücken gesamt" value={gapStats.total} icon={TrendingUp} color="text-primary" index={0} />
-            <KpiCard label="Handlungsbedarf (krit.)" value={gapStats.critical} icon={AlertTriangle} color="text-[hsl(var(--severity-critical))]" index={1} />
+            <KpiCard label="Entwicklungsfelder" value={gapStats.total} icon={TrendingUp} color="text-primary" index={0} />
+            <KpiCard label="Handlungsbedarf" value={gapStats.critical} icon={AlertTriangle} color="text-[hsl(var(--severity-critical))]" index={1} />
             <KpiCard label="Betroffene Mitarbeiter" value={gapStats.affected} icon={Users} color="text-primary" index={2} />
           </div>
 
@@ -377,7 +387,7 @@ const SkillGapPage = () => {
                       <TableHead className="text-xs text-right">Ist-Level</TableHead>
                       <TableHead className="text-xs text-right">Soll-Level</TableHead>
                       <TableHead className="text-xs text-right cursor-pointer hover:text-primary" onClick={() => toggleGapSort('gap')}>
-                        Lücke{gapSortIndicator('gap')}
+                        Entwicklungsfeld{gapSortIndicator('gap')}
                       </TableHead>
                       <TableHead className="text-xs">Status</TableHead>
                     </TableRow>
@@ -391,7 +401,12 @@ const SkillGapPage = () => {
                           className="border-border/30 hover:bg-muted/30 animate-fade-in-up opacity-0"
                           style={{ animationDelay: `${Math.min(i, 20) * 0.02}s` }}
                         >
-                          <TableCell className="text-xs py-2 font-medium">{g.employee.full_name}</TableCell>
+                          <TableCell className="text-xs py-2 font-medium">
+                            {g.employee.full_name}
+                            {g.employee.role_profile?.practice_group && (
+                              <Badge variant="outline" className="ml-1.5 text-[9px] text-muted-foreground border-border/40 py-0 px-1">{g.employee.role_profile.practice_group}</Badge>
+                            )}
+                          </TableCell>
                           <TableCell className="text-xs py-2 text-muted-foreground">{g.employee.role_profile?.role_title || '—'}</TableCell>
                           <TableCell className="text-xs py-2">{g.competencyName}</TableCell>
                           <TableCell className="text-xs py-2 text-right tabular-nums">{g.currentLevel}%</TableCell>
@@ -412,8 +427,9 @@ const SkillGapPage = () => {
           ) : (
             <Card className="bg-card/80 border-border/50">
               <CardContent className="py-12 text-center">
-                <p className="text-foreground font-medium">{hasFilters ? "Keine Lücken für diese Filter" : "Keine aktuellen Skill-Lücken"}</p>
-                <p className="text-xs text-muted-foreground mt-1">{hasFilters ? "Filter anpassen." : "Alle Mitarbeiter erfüllen ihre aktuellen Anforderungen."}</p>
+                <CheckCircle2 className="w-10 h-10 text-[hsl(var(--severity-low))] mx-auto mb-3" />
+                <p className="text-foreground font-medium">{hasFilters ? "Keine Entwicklungsfelder in diesem Filter" : "Keine aktuellen Entwicklungsfelder"}</p>
+                <p className="text-xs text-muted-foreground mt-1">{hasFilters ? "Das Team ist für die aktuellen Rollenanforderungen gut aufgestellt." : "Alle Mitarbeiter erfüllen ihre aktuellen Anforderungen."}</p>
               </CardContent>
             </Card>
           )}
@@ -459,7 +475,12 @@ const SkillGapPage = () => {
                           className="border-border/30 hover:bg-muted/30 animate-fade-in-up opacity-0"
                           style={{ animationDelay: `${Math.min(i, 20) * 0.02}s` }}
                         >
-                          <TableCell className="text-xs py-2 font-medium">{r.employee.full_name}</TableCell>
+                          <TableCell className="text-xs py-2 font-medium">
+                            {r.employee.full_name}
+                            {r.employee.role_profile?.practice_group && (
+                              <Badge variant="outline" className="ml-1.5 text-[9px] text-muted-foreground border-border/40 py-0 px-1">{r.employee.role_profile.practice_group}</Badge>
+                            )}
+                          </TableCell>
                           <TableCell className="text-xs py-2 text-muted-foreground">{r.employee.role_profile?.role_title || '—'}</TableCell>
                           <TableCell className="text-xs py-2">{r.competencyName}</TableCell>
                           <TableCell className="text-xs py-2 text-right tabular-nums">{r.currentLevel}%</TableCell>
@@ -481,8 +502,9 @@ const SkillGapPage = () => {
           ) : (
             <Card className="bg-card/80 border-border/50">
               <CardContent className="py-12 text-center">
-                <p className="text-foreground font-medium">{hasFilters ? "Keine Risiken für diese Filter" : "Keine Zukunftsrisiken erkannt"}</p>
-                <p className="text-xs text-muted-foreground mt-1">{hasFilters ? "Filter anpassen." : "Keine Kompetenzen mit steigendem Zukunftsbedarf über dem Ist-Niveau."}</p>
+                <CheckCircle2 className="w-10 h-10 text-[hsl(var(--severity-low))] mx-auto mb-3" />
+                <p className="text-foreground font-medium">{hasFilters ? "Keine Risiken in diesem Filter" : "Keine Zukunftsrisiken erkannt"}</p>
+                <p className="text-xs text-muted-foreground mt-1">{hasFilters ? "Das Team ist für die aktuellen Rollenanforderungen gut aufgestellt." : "Keine Kompetenzen mit steigendem Zukunftsbedarf über dem Ist-Niveau."}</p>
               </CardContent>
             </Card>
           )}

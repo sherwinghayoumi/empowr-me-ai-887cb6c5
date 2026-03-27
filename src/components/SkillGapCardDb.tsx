@@ -12,7 +12,7 @@ interface SkillGapCardDbProps {
   employee: {
     id: string;
     full_name: string;
-    role_profile?: { role_title: string } | null;
+    role_profile?: { role_title: string; practice_group?: string | null } | null;
   };
   competency: {
     id: string;
@@ -40,9 +40,9 @@ function getGapSeverity(currentLevel: number, demandedLevel: number, futureLevel
 }
 
 const severityConfig: Record<GapSeverity, { badge: string; label: string }> = {
-  focus: { badge: "bg-[hsl(var(--severity-medium))]/15 text-[hsl(var(--severity-medium))] border-[hsl(var(--severity-medium))]/25", label: "Potenzial" },
-  building: { badge: "bg-primary/15 text-primary border-primary/25", label: "Wachstum" },
-  ontrack: { badge: "bg-[hsl(var(--severity-low))]/15 text-[hsl(var(--severity-low))] border-[hsl(var(--severity-low))]/25", label: "Stark" },
+  focus: { badge: "bg-[hsl(var(--severity-medium))]/15 text-[hsl(var(--severity-medium))] border-[hsl(var(--severity-medium))]/25", label: "Handlungsbedarf" },
+  building: { badge: "bg-primary/15 text-primary border-primary/25", label: "Entwicklung" },
+  ontrack: { badge: "bg-[hsl(var(--severity-low))]/15 text-[hsl(var(--severity-low))] border-[hsl(var(--severity-low))]/25", label: "Auf Kurs" },
 };
 
 export function SkillGapCardDb({ employee, competency, subskills = [], delay = 0 }: SkillGapCardDbProps) {
@@ -53,7 +53,8 @@ export function SkillGapCardDb({ employee, competency, subskills = [], delay = 0
   const { currentLevel, demandedLevel, futureLevel } = competency;
   const severity = getGapSeverity(currentLevel, demandedLevel, futureLevel);
   const cfg = severityConfig[severity];
-  const gap = demandedLevel - currentLevel;
+  const progressPct = demandedLevel > 0 ? Math.min(Math.round((currentLevel / demandedLevel) * 100), 100) : 0;
+  const progressColor = progressPct >= 80 ? "bg-[hsl(var(--severity-low))]" : progressPct >= 60 ? "bg-[hsl(45,75%,50%)]" : "bg-[hsl(var(--severity-medium))]";
   const desc = resolveDescription(competency.name, dbDescriptions, "competency");
   const displayName = desc?.labelDE ?? competency.name;
 
@@ -71,7 +72,12 @@ export function SkillGapCardDb({ employee, competency, subskills = [], delay = 0
           {/* Header */}
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0">
-              <p className="text-xs font-medium text-foreground truncate">{employee.full_name}</p>
+              <div className="flex items-center gap-1">
+                <p className="text-xs font-medium text-foreground truncate">{employee.full_name}</p>
+                {employee.role_profile?.practice_group && (
+                  <Badge variant="outline" className="text-[8px] text-muted-foreground border-border/40 py-0 px-1 shrink-0">{employee.role_profile.practice_group}</Badge>
+                )}
+              </div>
               <p className="text-[10px] text-muted-foreground truncate">{employee.role_profile?.role_title || '—'}</p>
             </div>
             <Badge variant="outline" className={`text-[10px] shrink-0 ${cfg.badge}`}>{cfg.label}</Badge>
@@ -97,16 +103,16 @@ export function SkillGapCardDb({ employee, competency, subskills = [], delay = 0
                 </Popover>
               )}
             </div>
-            <span className="text-xs font-semibold tabular-nums shrink-0">
-              {demandedLevel > 0 ? Math.round((currentLevel / demandedLevel) * 100) : 0}%
-            </span>
           </div>
 
-          {/* Progress bar */}
+          {/* Progress bar — Entwicklungsstand */}
           <div className="space-y-1">
-            <div className="relative h-1.5 bg-secondary/40 rounded-full overflow-visible">
-              <div className="absolute h-full bg-primary/50 rounded-full" style={{ width: `${Math.min(currentLevel, 100)}%` }} />
-              <div className="absolute top-1/2 -translate-y-1/2 w-0.5 h-3 bg-foreground/50 rounded-full" style={{ left: `${Math.min(demandedLevel, 100)}%` }} />
+            <div className="flex items-center justify-between">
+              <span className="text-[9px] text-muted-foreground">Entwicklungsstand</span>
+              <span className="text-[10px] font-semibold tabular-nums">{progressPct}%</span>
+            </div>
+            <div className="h-1.5 bg-secondary/40 rounded-full overflow-hidden">
+              <div className={`h-full rounded-full transition-all duration-700 ${progressColor}`} style={{ width: `${progressPct}%` }} />
             </div>
             <div className="flex justify-between text-[9px] text-muted-foreground tabular-nums">
               <span>Ist: {currentLevel}%</span>

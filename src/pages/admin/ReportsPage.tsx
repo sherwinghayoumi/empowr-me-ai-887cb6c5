@@ -317,9 +317,11 @@ const ReportsPage = () => {
           <ReportsList
             reports={reports}
             isLoading={reportsLoading}
-            onPublish={(id) => publishMutation.mutate(id)}
-            onUnpublish={(id) => unpublishMutation.mutate(id)}
-            onDelete={(id) => deleteMutation.mutate(id)}
+            onView={(r) => setSelectedReport(r)}
+            onEdit={(r) => setSelectedReport(r)}
+            onPublish={(r) => publishReport.mutate({ reportId: r.id, quarter: r.quarter, year: r.year })}
+            onUnpublish={(id) => unpublishReport.mutate(id)}
+            onDelete={(id) => deleteReport.mutate(id)}
           />
         </TabsContent>
       </Tabs>

@@ -220,29 +220,35 @@ const AdminDashboard = () => {
       {/* Alert Banner */}
       {alerts.length > 0 && (
         <div className="animate-fade-in-up space-y-2">
-          {alerts.map((alert, i) => (
-            <div
-              key={i}
-              className={`flex items-center gap-3 px-4 py-3 rounded-lg border ${
-                alert.severity === "critical"
-                  ? "bg-[hsl(var(--severity-critical))]/10 border-[hsl(var(--severity-critical))]/30"
-                  : alert.severity === "medium"
-                    ? "bg-[hsl(var(--severity-medium))]/10 border-[hsl(var(--severity-medium))]/30"
-                    : "bg-[hsl(var(--severity-low))]/10 border-[hsl(var(--severity-low))]/30"
-              }`}
-            >
-              <AlertCircle
-                className={`w-4 h-4 shrink-0 ${
-                  alert.severity === "critical"
-                    ? "text-[hsl(var(--severity-critical))]"
-                    : alert.severity === "medium"
-                      ? "text-[hsl(var(--severity-medium))]"
-                      : "text-[hsl(var(--severity-low))]"
-                } ${alert.severity === "critical" ? "animate-pulse-subtle" : ""}`}
-              />
-              <span className="text-sm text-foreground">{alert.text}</span>
-            </div>
-          ))}
+          {alerts.map((alert) => {
+            const severityStyles =
+              alert.severity === "critical"
+                ? "bg-[hsl(var(--severity-critical))]/10 border-[hsl(var(--severity-critical))]/30"
+                : alert.severity === "medium"
+                  ? "bg-[hsl(var(--severity-medium))]/10 border-[hsl(var(--severity-medium))]/30"
+                  : "bg-[hsl(var(--severity-low))]/10 border-[hsl(var(--severity-low))]/30";
+            const iconColor =
+              alert.severity === "critical"
+                ? "text-[hsl(var(--severity-critical))]"
+                : alert.severity === "medium"
+                  ? "text-[hsl(var(--severity-medium))]"
+                  : "text-[hsl(var(--severity-low))]";
+            const Icon = alert.category === "quarter" ? Clock : AlertCircle;
+
+            const content = (
+              <div className={`flex items-center gap-3 px-4 py-3 rounded-lg border ${severityStyles} ${alert.link ? "cursor-pointer hover:opacity-80 transition-opacity" : ""}`}>
+                <Icon className={`w-4 h-4 shrink-0 ${iconColor} ${alert.severity === "critical" ? "animate-pulse-subtle" : ""}`} />
+                <span className="text-sm text-foreground flex-1">{alert.text}</span>
+                {alert.link && <ExternalLink className="w-3.5 h-3.5 text-muted-foreground shrink-0" />}
+              </div>
+            );
+
+            return alert.link ? (
+              <Link key={alert.id} to={alert.link}>{content}</Link>
+            ) : (
+              <div key={alert.id}>{content}</div>
+            );
+          })}
         </div>
       )}
 

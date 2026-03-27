@@ -345,15 +345,12 @@ const AdminDashboard = () => {
               )}
             </CardContent>
           </Card>
-        </div>
       </div>
 
       {/* Bottom Row: Budget per Team + Trend */}
-      <div className="grid lg:grid-cols-2 gap-6">
-        {/* Budget per Team */}
-        <div className="animate-fade-in-up" style={{ animationDelay: "400ms" }}>
-          <Card className="bg-card/80 border-border/50 h-full">
-            <CardHeader className="pb-3">
+      <div className="grid lg:grid-cols-2 gap-4">
+        <Card className="bg-card/80 border-border/50">
+            <CardHeader className="py-3 px-4">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-foreground text-base">Budget pro Team</CardTitle>
                 <Badge variant="outline" className="text-[10px] text-muted-foreground">

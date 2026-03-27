@@ -1,19 +1,14 @@
-import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+} from "@/components/ui/table";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { AnimatedCounter } from "@/components/AnimatedCounter";
 import { 
-  Users, MoreVertical, Pencil, Archive, Trash2, Star,
-  Briefcase, Building, Code, Gavel, Scale, TrendingUp,
-  Target, Award, Shield, Zap, Heart, BookOpen, ArchiveRestore
+  Users, MoreVertical, Pencil, Archive, Trash2,
+  ArchiveRestore
 } from "lucide-react";
-
-const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
-  Users, Briefcase, Building, Code, Gavel, Scale, TrendingUp,
-  Target, Award, Shield, Zap, Heart, BookOpen, Star
-};
 
 interface TeamMember {
   id: string;
@@ -47,167 +42,67 @@ interface TeamCardProps {
   onDelete: (team: TeamData) => void;
 }
 
-export function TeamCard({ 
-  team, 
-  index, 
-  onMemberClick, 
-  onEdit, 
-  onArchive, 
-  onDelete 
-}: TeamCardProps) {
-  const [isHovered, setIsHovered] = useState(false);
-  
-  const color = team.color || "#6366f1";
-  const IconComponent = ICON_MAP[team.icon || "Users"] || Users;
+export function TeamCard({ team, index, onMemberClick, onEdit, onArchive, onDelete }: TeamCardProps) {
   const memberCount = team.member_count || team.members?.length || 0;
   const isArchived = team.is_archived;
+  const avgScore = Math.round(team.average_score || 0);
 
   return (
-    <Card 
-      className={`hover-lift h-full transition-all duration-300 ${isArchived ? 'opacity-60' : ''}`}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-      style={{
-        borderColor: isHovered ? `${color}40` : undefined,
-        boxShadow: isHovered ? `0 8px 32px ${color}20` : undefined
-      }}
-    >
-      <CardHeader className="pb-2 pt-4 px-4">
+    <Card className={`bg-card/80 border-border/50 ${isArchived ? 'opacity-60' : ''}`}>
+      <CardHeader className="py-3 px-4">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-foreground flex items-center gap-2">
-            <div 
-              className="p-2 rounded-lg transition-transform duration-300"
-              style={{ 
-                backgroundColor: `${color}20`,
-                transform: isHovered ? 'scale(1.1)' : 'scale(1)'
-              }}
-            >
-              <IconComponent 
-                className="w-5 h-5 transition-transform duration-300" 
-                style={{ color }}
-              />
-            </div>
-            <div className="flex flex-col">
-              <span className="flex items-center gap-2">
-                {team.name}
-                {isArchived && (
-                  <Badge variant="outline" className="text-xs">
-                    <Archive className="w-3 h-3 mr-1" />
-                    Archiviert
-                  </Badge>
-                )}
-              </span>
-              {(team.priority || 0) > 0 && (
-                <div className="flex mt-0.5">
-                  {Array.from({ length: team.priority || 0 }).map((_, i) => (
-                    <Star key={i} className="w-3 h-3" style={{ color, fill: color }} />
-                  ))}
-                </div>
-              )}
-            </div>
+          <CardTitle className="text-sm font-medium flex items-center gap-2">
+            <Users className="w-4 h-4 text-primary" />
+            {team.name}
+            {isArchived && <Badge variant="outline" className="text-[10px]">Archiviert</Badge>}
           </CardTitle>
           <div className="flex items-center gap-2">
-            <Badge 
-              className="backdrop-blur"
-              style={{ backgroundColor: `${color}20`, color }}
-            >
-              <AnimatedCounter 
-                value={Math.round(team.average_score || 0)} 
-                suffix="%" 
-                duration={1500} 
-                delay={index * 100} 
-              />
-            </Badge>
+            <span className="text-sm font-semibold tabular-nums text-primary">{avgScore}%</span>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8">
-                  <MoreVertical className="w-4 h-4" />
+                <Button variant="ghost" size="icon" className="h-6 w-6">
+                  <MoreVertical className="w-3.5 h-3.5" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => onEdit(team)}>
-                  <Pencil className="w-4 h-4 mr-2" />
-                  Bearbeiten
-                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => onEdit(team)}><Pencil className="w-3.5 h-3.5 mr-2" />Bearbeiten</DropdownMenuItem>
                 <DropdownMenuItem onClick={() => onArchive(team)}>
-                  {isArchived ? (
-                    <>
-                      <ArchiveRestore className="w-4 h-4 mr-2" />
-                      Wiederherstellen
-                    </>
-                  ) : (
-                    <>
-                      <Archive className="w-4 h-4 mr-2" />
-                      Archivieren
-                    </>
-                  )}
+                  {isArchived ? <><ArchiveRestore className="w-3.5 h-3.5 mr-2" />Wiederherstellen</> : <><Archive className="w-3.5 h-3.5 mr-2" />Archivieren</>}
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem 
-                  onClick={() => onDelete(team)}
-                  className="text-destructive focus:text-destructive"
-                >
-                  <Trash2 className="w-4 h-4 mr-2" />
-                  Löschen
-                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => onDelete(team)} className="text-destructive focus:text-destructive"><Trash2 className="w-3.5 h-3.5 mr-2" />Löschen</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
         </div>
-        <p className="text-sm text-muted-foreground">
-          {memberCount} Mitglieder
-        </p>
-        {team.tags && team.tags.length > 0 && (
-          <div className="flex flex-wrap gap-1 mt-2">
-            {team.tags.slice(0, 3).map((tag) => (
-              <Badge 
-                key={tag} 
-                variant="outline" 
-                className="text-xs"
-                style={{ borderColor: `${color}40`, color }}
-              >
-                {tag}
-              </Badge>
-            ))}
-            {team.tags.length > 3 && (
-              <Badge variant="outline" className="text-xs">
-                +{team.tags.length - 3}
-              </Badge>
-            )}
-          </div>
-        )}
+        <p className="text-xs text-muted-foreground">{memberCount} Mitglieder</p>
       </CardHeader>
-      <CardContent className="space-y-1 px-4 pb-4 pt-0">
-        {team.members?.map((member) => (
-          <button
-            key={member.id}
-            onClick={() => onMemberClick(member.id)}
-            className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-secondary/30 transition-all duration-200 text-left group"
-          >
-            <div 
-              className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-transform duration-200 group-hover:scale-110"
-              style={{ backgroundColor: `${color}20`, color }}
-            >
-              {member.full_name.split(" ").map(n => n[0]).join("")}
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-foreground truncate">{member.full_name}</p>
-              <p className="text-xs text-muted-foreground truncate">
-                {member.team_role || member.role_profile?.role_title || "—"}
-              </p>
-            </div>
-            <span 
-              className="text-sm font-medium"
-              style={{ color }}
-            >
-              {Math.round(member.overall_score || 0)}%
-            </span>
-          </button>
-        ))}
-        {(!team.members || team.members.length === 0) && (
-          <p className="text-sm text-muted-foreground text-center py-4">
-            Keine Mitglieder in diesem Team
-          </p>
+      <CardContent className="p-0">
+        {team.members && team.members.length > 0 ? (
+          <Table>
+            <TableHeader>
+              <TableRow className="border-border/50">
+                <TableHead className="text-xs">Name</TableHead>
+                <TableHead className="text-xs">Rolle</TableHead>
+                <TableHead className="text-xs text-right">Score</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {team.members.map(member => (
+                <TableRow
+                  key={member.id}
+                  className="cursor-pointer border-border/30 hover:bg-muted/30"
+                  onClick={() => onMemberClick(member.id)}
+                >
+                  <TableCell className="text-xs py-1.5 font-medium">{member.full_name}</TableCell>
+                  <TableCell className="text-xs py-1.5 text-muted-foreground">{member.team_role || member.role_profile?.role_title || '—'}</TableCell>
+                  <TableCell className="text-xs py-1.5 text-right tabular-nums">{Math.round(member.overall_score || 0)}%</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        ) : (
+          <p className="text-xs text-muted-foreground text-center py-4">Keine Mitglieder</p>
         )}
       </CardContent>
     </Card>

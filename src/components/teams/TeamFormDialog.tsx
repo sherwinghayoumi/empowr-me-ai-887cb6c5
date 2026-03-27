@@ -283,6 +283,9 @@ export function TeamFormDialog({
                 />
                 <p className="text-xs text-muted-foreground">Optional. Wird für die Budget-Planung verwendet.</p>
               </div>
+
+              <div className="space-y-2">
+                <Label>Priorität</Label>
                 <div className="flex items-center gap-2">
                   {[0, 1, 2, 3].map((p) => (
                     <Button

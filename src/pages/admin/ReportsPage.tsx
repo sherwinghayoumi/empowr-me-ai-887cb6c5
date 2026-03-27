@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { KpiCard } from "@/components/KpiCard";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -152,53 +153,34 @@ const ReportsPage = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-foreground">Q-Reports</h1>
-        <p className="text-muted-foreground">Individuelle Kompetenz-Reports pro Anwalt</p>
+      <div className="animate-fade-in-up">
+        <h1 className="text-lg font-semibold text-foreground tracking-tight">Q-Reports</h1>
+        <p className="text-xs text-muted-foreground mt-0.5">Individuelle Kompetenz-Reports pro Anwalt</p>
       </div>
 
       {/* KPIs */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {[
-          { label: "Anwälte", value: totalEmployees, icon: Users, color: "text-primary" },
-          { label: "Ø Gap-Score", value: avgGap, icon: Target, color: avgGap >= 15 ? "text-[hsl(var(--severity-critical))]" : "text-[hsl(var(--severity-low))]" },
-          { label: "Maßnahmen abgeschl.", value: totalCompleted, icon: CheckCircle2, color: "text-[hsl(var(--severity-low))]" },
-          { label: "Investiert", value: `€${totalSpent.toLocaleString("de-DE")}`, icon: Wallet, color: "text-primary" },
-        ].map((kpi) => {
-          const Icon = kpi.icon;
-          return (
-            <Card key={kpi.label} className="bg-card/80 border-border/50">
-              <CardContent className="p-5">
-                <div className="flex items-center gap-3">
-                  <Icon className={cn("w-5 h-5", kpi.color)} />
-                  <div>
-                    <p className="text-2xl font-bold text-foreground tabular-nums">
-                      {empLoading ? <Skeleton className="h-7 w-12" /> : kpi.value}
-                    </p>
-                    <p className="text-xs text-muted-foreground">{kpi.label}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          );
-        })}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 animate-fade-in-up" style={{ animationDelay: '60ms' }}>
+        <KpiCard label="Anwälte" value={empLoading ? "…" : totalEmployees} icon={Users} color="text-primary" index={0} />
+        <KpiCard label="Ø Gap-Score" value={empLoading ? "…" : avgGap} icon={Target} color={avgGap >= 15 ? "text-[hsl(var(--severity-critical))]" : "text-[hsl(var(--severity-low))]"} index={1} />
+        <KpiCard label="Maßnahmen abgeschl." value={empLoading ? "…" : totalCompleted} icon={CheckCircle2} color="text-[hsl(var(--severity-low))]" index={2} />
+        <KpiCard label="Investiert" value={empLoading ? "…" : `€${totalSpent.toLocaleString("de-DE")}`} icon={Wallet} color="text-primary" index={3} />
       </div>
 
       {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-3">
+      <div className="flex flex-col sm:flex-row gap-2 animate-fade-in-up" style={{ animationDelay: '120ms' }}>
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
           <Input
             placeholder="Anwalt suchen..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10"
+            className="pl-9 h-8 text-xs"
           />
         </div>
         <Select value={teamFilter} onValueChange={setTeamFilter}>
-          <SelectTrigger className="w-full sm:w-44">
+          <SelectTrigger className="w-full sm:w-40 h-8 text-xs">
             <SelectValue placeholder="Team" />
           </SelectTrigger>
           <SelectContent>
@@ -231,15 +213,15 @@ const ReportsPage = () => {
           ) : (
             <Table>
               <TableHeader>
-                <TableRow>
-                  <TableHead>Anwalt</TableHead>
-                  <TableHead>Rolle</TableHead>
-                  <TableHead className="text-right">Ø Level</TableHead>
-                  <TableHead className="text-right">Gap-Score</TableHead>
-                  <TableHead className="text-right">Krit. Gaps</TableHead>
-                  <TableHead className="text-right">Maßnahmen</TableHead>
-                  <TableHead className="text-right">Investiert</TableHead>
-                  <TableHead className="text-right">€/Punkt</TableHead>
+                <TableRow className="border-border/30 hover:bg-transparent">
+                  <TableHead className="text-xs">Anwalt</TableHead>
+                  <TableHead className="text-xs">Rolle</TableHead>
+                  <TableHead className="text-xs text-right">Ø Level</TableHead>
+                  <TableHead className="text-xs text-right">Gap-Score</TableHead>
+                  <TableHead className="text-xs text-right">Krit. Gaps</TableHead>
+                  <TableHead className="text-xs text-right">Maßnahmen</TableHead>
+                  <TableHead className="text-xs text-right">Investiert</TableHead>
+                  <TableHead className="text-xs text-right">€/Punkt</TableHead>
                   <TableHead />
                 </TableRow>
               </TableHeader>
@@ -247,12 +229,12 @@ const ReportsPage = () => {
                 {filtered.map((r) => (
                   <TableRow
                     key={r.id}
-                    className="cursor-pointer hover:bg-secondary/40"
+                    className="cursor-pointer hover:bg-muted/30 transition-colors border-border/20"
                     onClick={() => setSelectedEmployee(r.id)}
                   >
-                    <TableCell className="font-medium text-foreground">{r.name}</TableCell>
-                    <TableCell className="text-muted-foreground text-sm">{r.role}</TableCell>
-                    <TableCell className="text-right tabular-nums">{r.avgLevel}</TableCell>
+                    <TableCell className="font-medium text-xs text-foreground py-2">{r.name}</TableCell>
+                    <TableCell className="text-muted-foreground text-xs py-2">{r.role}</TableCell>
+                    <TableCell className="text-right tabular-nums text-xs py-2">{r.avgLevel}</TableCell>
                     <TableCell className="text-right">
                       <Badge
                         variant="outline"

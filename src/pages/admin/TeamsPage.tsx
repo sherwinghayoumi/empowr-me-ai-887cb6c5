@@ -147,22 +147,22 @@ const TeamsPage = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div className="flex items-center justify-between animate-fade-in-up">
         <div>
-          <div className="flex items-center gap-4">
-            <h1 className="text-2xl font-bold text-foreground">Teams</h1>
+          <div className="flex items-center gap-3">
+            <h1 className="text-lg font-semibold text-foreground tracking-tight">Teams</h1>
             <Tabs value={showArchived ? "archived" : "active"} onValueChange={(v) => setShowArchived(v === "archived")}>
-              <TabsList>
-                <TabsTrigger value="active" className="flex items-center gap-2">
-                  <Users className="w-4 h-4" />
+              <TabsList className="h-8">
+                <TabsTrigger value="active" className="flex items-center gap-1.5 text-xs h-7 px-2.5">
+                  <Users className="w-3.5 h-3.5" />
                   Aktiv
                 </TabsTrigger>
-                <TabsTrigger value="archived" className="flex items-center gap-2">
-                  <Archive className="w-4 h-4" />
+                <TabsTrigger value="archived" className="flex items-center gap-1.5 text-xs h-7 px-2.5">
+                  <Archive className="w-3.5 h-3.5" />
                   Archiviert
                   {archivedCount > 0 && (
-                    <span className="ml-1 text-xs bg-secondary px-1.5 py-0.5 rounded-full tabular-nums">
+                    <span className="ml-1 text-[10px] bg-secondary px-1.5 py-0.5 rounded-full tabular-nums">
                       {archivedCount}
                     </span>
                   )}
@@ -170,10 +170,10 @@ const TeamsPage = () => {
               </TabsList>
             </Tabs>
           </div>
-          <p className="text-sm text-muted-foreground mt-1">Teams organisieren und Budget zuweisen</p>
+          <p className="text-xs text-muted-foreground mt-0.5">Teams organisieren und Budget zuweisen</p>
         </div>
-        <Button onClick={handleOpenCreate}>
-          <Plus className="w-4 h-4 mr-2" />
+        <Button size="sm" onClick={handleOpenCreate} className="h-8 text-xs">
+          <Plus className="w-3.5 h-3.5 mr-1.5" />
           Team hinzufügen
         </Button>
       </div>
@@ -200,7 +200,7 @@ const TeamsPage = () => {
           )}
         </div>
       ) : (
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
           {displayedTeams.map((team, index) => (
             <div key={team.id} className="animate-fade-in-up" style={{ animationDelay: `${index * 80}ms` }}>
               <TeamCard

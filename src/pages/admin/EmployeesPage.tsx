@@ -476,36 +476,36 @@ const EmployeesPage = () => {
     ));
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 animate-fade-in-up">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 animate-fade-in-up">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">
-            Anwälte <span className="text-muted-foreground font-normal text-lg tabular-nums">({employees?.length || 0})</span>
+          <h1 className="text-lg font-semibold text-foreground tracking-tight">
+            Anwälte <span className="text-muted-foreground font-normal text-sm tabular-nums">({employees?.length || 0})</span>
           </h1>
-          <p className="text-sm text-muted-foreground mt-1">Kompetenzprofile verwalten und KI-Assessments durchführen</p>
+          <p className="text-xs text-muted-foreground mt-0.5">Kompetenzprofile verwalten und KI-Assessments durchführen</p>
         </div>
         <div className="flex gap-2">
           {needsBulkUpdate && (
-            <Button variant="outline" onClick={() => setShowBulkModal(true)} className="gap-2">
-              <RefreshCw className="w-4 h-4" />Profile aktualisieren
+            <Button variant="outline" size="sm" onClick={() => setShowBulkModal(true)} className="gap-1.5 h-8 text-xs">
+              <RefreshCw className="w-3.5 h-3.5" />Profile aktualisieren
             </Button>
           )}
-          <Button onClick={openCreateDialog} className="gap-2">
-            <UserPlus className="w-4 h-4" />Neuer Anwalt
+          <Button size="sm" onClick={openCreateDialog} className="gap-1.5 h-8 text-xs">
+            <UserPlus className="w-3.5 h-3.5" />Neuer Anwalt
           </Button>
         </div>
       </div>
 
       {/* Search + View switcher */}
-      <div className="flex flex-col sm:flex-row gap-3 animate-fade-in-up" style={{ animationDelay: '80ms' }}>
+      <div className="flex flex-col sm:flex-row gap-2 animate-fade-in-up" style={{ animationDelay: '80ms' }}>
         <div className="relative flex-1 max-w-md">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
             placeholder="Suchen nach Name, E-Mail, Rolle oder Team..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10"
+            className="pl-9 h-8 text-xs"
           />
         </div>
         <div className="flex gap-1 bg-secondary/30 rounded-lg p-1">

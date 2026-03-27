@@ -156,25 +156,25 @@ const SettingsPage = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 animate-fade-in-up">
         <div>
-          <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-            <Settings className="w-6 h-6 text-primary" />
+          <h1 className="text-lg font-semibold text-foreground tracking-tight flex items-center gap-2">
+            <Settings className="w-4 h-4 text-primary" />
             Einstellungen
           </h1>
-          <p className="text-muted-foreground">
+          <p className="text-xs text-muted-foreground mt-0.5">
             Konfigurieren Sie Ihre Organisation und erhalten Sie Support
           </p>
         </div>
-        <Button onClick={() => setSupportDialogOpen(true)}>
-          <HelpCircle className="w-4 h-4 mr-2" />
+        <Button size="sm" onClick={() => setSupportDialogOpen(true)} className="h-8 text-xs">
+          <HelpCircle className="w-3.5 h-3.5 mr-1.5" />
           Support-Anfrage
         </Button>
       </div>
 
-      <Tabs defaultValue="organization" className="space-y-6">
+      <Tabs defaultValue="organization" className="space-y-4">
         <TabsList className="bg-muted/30 border border-border/50">
           <TabsTrigger value="organization" className="gap-2">
             <Building2 className="w-4 h-4" />
@@ -409,7 +409,7 @@ const SettingsPage = () => {
                     return (
                       <div
                         key={req.id}
-                        className="flex items-start gap-4 p-4 rounded-xl bg-muted/20 border border-border/30"
+                        className="flex items-start gap-3 p-3 rounded-lg bg-muted/20 border border-border/30"
                       >
                         <div className="p-2 rounded-lg bg-primary/10">
                           <MessageSquare className="w-4 h-4 text-primary" />
@@ -446,7 +446,7 @@ const SettingsPage = () => {
               }}
             >
               <CardContent className="pt-6 text-center">
-                <div className="p-3 rounded-xl bg-primary/10 w-fit mx-auto mb-3">
+                <div className="p-2.5 rounded-lg bg-primary/10 w-fit mx-auto mb-2">
                   <Shield className="w-6 h-6 text-primary" />
                 </div>
                 <h3 className="font-medium text-foreground text-sm">Passwort ändern</h3>
@@ -464,7 +464,7 @@ const SettingsPage = () => {
               }}
             >
               <CardContent className="pt-6 text-center">
-                <div className="p-3 rounded-xl bg-[hsl(var(--severity-critical))]/10 w-fit mx-auto mb-3">
+                <div className="p-2.5 rounded-lg bg-[hsl(var(--severity-critical))]/10 w-fit mx-auto mb-2">
                   <AlertTriangle className="w-6 h-6 text-[hsl(var(--severity-critical))]" />
                 </div>
                 <h3 className="font-medium text-foreground text-sm">Fehler melden</h3>
@@ -482,7 +482,7 @@ const SettingsPage = () => {
               }}
             >
               <CardContent className="pt-6 text-center">
-                <div className="p-3 rounded-xl bg-[hsl(var(--severity-low))]/10 w-fit mx-auto mb-3">
+                <div className="p-2.5 rounded-lg bg-[hsl(var(--severity-low))]/10 w-fit mx-auto mb-2">
                   <FileText className="w-6 h-6 text-[hsl(var(--severity-low))]" />
                 </div>
                 <h3 className="font-medium text-foreground text-sm">Feature-Wunsch</h3>
@@ -555,14 +555,14 @@ const SettingsPage = () => {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="p-4 rounded-xl bg-muted/20 border border-border/30">
-                  <Label className="text-muted-foreground text-xs">Aufbewahrungsfrist</Label>
-                  <p className="font-medium text-foreground text-lg">
+                <div className="p-3 rounded-lg bg-muted/20 border border-border/30">
+                  <Label className="text-muted-foreground text-[10px] uppercase tracking-wider">Aufbewahrungsfrist</Label>
+                  <p className="font-semibold text-foreground text-lg tabular-nums">
                     {Number(orgSettings$.data_retention_days) || 2555} Tage
                   </p>
-                  <p className="text-xs text-muted-foreground">≈ {Math.round((Number(orgSettings$.data_retention_days) || 2555) / 365)} Jahre</p>
+                  <p className="text-[10px] text-muted-foreground">≈ {Math.round((Number(orgSettings$.data_retention_days) || 2555) / 365)} Jahre</p>
                 </div>
-                <div className="p-4 rounded-xl bg-muted/20 border border-border/30">
+                <div className="p-3 rounded-lg bg-muted/20 border border-border/30">
                   <Label className="text-muted-foreground text-xs">AVV Status</Label>
                   {orgSettings$.data_processing_agreement_signed_at ? (
                     <div className="flex items-center gap-2 mt-1">

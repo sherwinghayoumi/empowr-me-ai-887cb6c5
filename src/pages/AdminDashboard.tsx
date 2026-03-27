@@ -71,17 +71,15 @@ const AdminDashboard = () => {
 
   // ─── Derived data ──────────────────────────────────
 
-  const criticalGapCount = useMemo(() => {
-    if (!gapAnalysis) return 0;
-    return gapAnalysis.criticalGaps.length;
-  }, [gapAnalysis]);
+  const currentGapCount = gapAnalysis?.currentGapCount || 0;
+  const futureRiskCount = gapAnalysis?.futureRiskCount || 0;
 
-  // Top 10 employees sorted by total gap (desc)
+  // Top 10 employees sorted by currentGapTotal (desc)
   const top10 = useMemo(() => {
     if (!gapAnalysis) return [];
     return [...gapAnalysis.byEmployee]
-      .filter((e) => e.totalGap > 0)
-      .sort((a, b) => b.totalGap - a.totalGap)
+      .filter((e) => e.currentGapTotal > 0)
+      .sort((a, b) => b.currentGapTotal - a.currentGapTotal)
       .slice(0, 10);
   }, [gapAnalysis]);
 
@@ -93,9 +91,10 @@ const AdminDashboard = () => {
     let low = 0;
     for (const emp of gapAnalysis.byEmployee) {
       for (const g of emp.gaps) {
-        if (g.gap >= 20) critical++;
-        else if (g.gap >= 10) medium++;
-        else if (g.gap > 0) low++;
+        const gap = g.gap; // current gap (demanded - current)
+        if (gap >= 30) critical++;
+        else if (gap >= 15) medium++;
+        else if (gap > 0) low++;
       }
     }
     return [
@@ -167,11 +166,11 @@ const AdminDashboard = () => {
       color: "text-[hsl(var(--severity-low))]",
     },
     {
-      label: "Kritische Gaps",
-      value: criticalGapCount,
+      label: "Aktuelle Gaps",
+      value: currentGapCount,
       icon: AlertTriangle,
-      color: criticalGapCount > 0 ? "text-[hsl(var(--severity-critical))]" : "text-muted-foreground",
-      pulse: criticalGapCount > 0,
+      color: currentGapCount > 0 ? "text-[hsl(var(--severity-critical))]" : "text-muted-foreground",
+      pulse: currentGapCount > 5,
     },
     {
       label: "Budget verbraucht",
@@ -279,10 +278,10 @@ const AdminDashboard = () => {
                         </TableCell>
                         <TableCell className="text-xs py-2 text-muted-foreground">{emp.role || "—"}</TableCell>
                         <TableCell className="text-xs py-2 text-right tabular-nums font-semibold severity-critical">
-                          {Math.round(emp.totalGap)}
+                          {Math.round(emp.currentGapTotal)}
                         </TableCell>
                         <TableCell className="py-2">
-                          <SeverityBadge severity={severityLevel(emp.totalGap)} />
+                          <SeverityBadge severity={severityLevel(emp.currentGapTotal)} />
                         </TableCell>
                       </TableRow>
                     ))}

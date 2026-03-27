@@ -1,13 +1,12 @@
 import { useMemo, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { KpiCard } from "@/components/KpiCard";
-import { SkillGapCardDb } from "@/components/SkillGapCardDb";
-import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
@@ -17,7 +16,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import {
   AlertTriangle, TrendingUp, Users, FileQuestion,
-  Search, X, Target, Sparkles, Loader2,
+  Search, X, Target, Sparkles, Loader2, ShieldAlert, Clock,
 } from "lucide-react";
 
 interface DbEmployee {
@@ -43,7 +42,7 @@ interface DbEmployee {
   }>;
 }
 
-interface EmployeeGap {
+interface GapRow {
   employee: DbEmployee;
   competencyId: string;
   competencyName: string;
@@ -51,29 +50,36 @@ interface EmployeeGap {
   currentLevel: number;
   demandedLevel: number;
   futureLevel: number;
-  weightedGap: number;
+  currentGap: number;   // demanded - current
+  futureRisk: number;   // future - current
 }
 
 const GAP_TOLERANCE = 10;
 
-function getSeverityLabel(weightedGap: number, demandedLevel: number): "focus" | "building" | "ontrack" {
-  const effectiveGap = Math.max(0, weightedGap - GAP_TOLERANCE);
-  const ratio = demandedLevel > 0 ? effectiveGap / demandedLevel : 0;
-  if (ratio >= 0.4) return "focus";
-  if (ratio >= 0.2) return "building";
-  return "ontrack";
+type GapTab = "current" | "future";
+
+function getSeverity(gap: number, target: number): "kritisch" | "mittel" | "gering" {
+  const ratio = target > 0 ? gap / target : 0;
+  if (ratio >= 0.4) return "kritisch";
+  if (ratio >= 0.2) return "mittel";
+  return "gering";
 }
 
 const severityBadge: Record<string, string> = {
-  focus: "bg-[hsl(var(--severity-medium))]/15 text-[hsl(var(--severity-medium))]",
-  building: "bg-primary/15 text-primary",
-  ontrack: "bg-[hsl(var(--severity-low))]/15 text-[hsl(var(--severity-low))]",
+  kritisch: "bg-[hsl(var(--severity-critical))]/15 text-[hsl(var(--severity-critical))]",
+  mittel: "bg-[hsl(var(--severity-medium))]/15 text-[hsl(var(--severity-medium))]",
+  gering: "bg-[hsl(var(--severity-low))]/15 text-[hsl(var(--severity-low))]",
 };
-const severityLabel: Record<string, string> = { focus: "Potenzial", building: "Wachstum", ontrack: "Stark" };
+const futureBadge: Record<string, string> = {
+  kritisch: "bg-amber-500/15 text-amber-400",
+  mittel: "bg-amber-500/10 text-amber-300",
+  gering: "bg-[hsl(var(--severity-low))]/15 text-[hsl(var(--severity-low))]",
+};
 
 const SkillGapPage = () => {
   const { data: employees, isLoading, error } = useEmployees();
   const queryClient = useQueryClient();
+  const [tab, setTab] = useState<GapTab>("current");
   const [searchQuery, setSearchQuery] = useState("");
   const [filterSeverity, setFilterSeverity] = useState("all");
   const [filterEmployee, setFilterEmployee] = useState("all");
@@ -82,51 +88,82 @@ const SkillGapPage = () => {
   const [sortKey, setSortKey] = useState<'gap' | 'name' | 'employee'>('gap');
   const [sortAsc, setSortAsc] = useState(false);
 
-  const allGaps = useMemo<EmployeeGap[]>(() => {
+  // Build unified gap rows
+  const allRows = useMemo<GapRow[]>(() => {
     if (!employees?.length) return [];
-    const gaps: EmployeeGap[] = [];
+    const rows: GapRow[] = [];
     (employees as DbEmployee[]).forEach((emp) => {
       (emp.competencies || []).filter(c => !c.is_deprecated).forEach((comp) => {
+        if (!comp.competency) return;
         const cur = comp.current_level ?? 0;
         const dem = comp.demanded_level ?? 0;
         const fut = comp.future_level ?? 0;
-        const weighted = (dem - cur) * 0.4 + (fut - cur) * 0.6;
-        if (weighted >= GAP_TOLERANCE && comp.competency) {
-          gaps.push({
+        const currentGap = Math.max(0, dem - cur);
+        const futureRisk = Math.max(0, fut - cur);
+        if (currentGap >= GAP_TOLERANCE || futureRisk >= GAP_TOLERANCE) {
+          rows.push({
             employee: emp, competencyId: comp.competency.id, competencyName: comp.competency.name,
             clusterName: comp.competency.cluster?.name || "Sonstige",
-            currentLevel: cur, demandedLevel: dem, futureLevel: fut, weightedGap: weighted,
+            currentLevel: cur, demandedLevel: dem, futureLevel: fut, currentGap, futureRisk,
           });
         }
       });
     });
-    return gaps;
+    return rows;
   }, [employees]);
 
-  const uniqueEmployees = useMemo(() => { const m = new Map<string,string>(); allGaps.forEach(g => m.set(g.employee.id, g.employee.full_name)); return [...m.entries()].sort(([,a],[,b]) => a.localeCompare(b)); }, [allGaps]);
-  const uniqueRoles = useMemo(() => { const m = new Map<string,string>(); allGaps.forEach(g => { if (g.employee.role_profile) m.set(g.employee.role_profile.id, g.employee.role_profile.role_title); }); return [...m.entries()].sort(([,a],[,b]) => a.localeCompare(b)); }, [allGaps]);
+  // Split by tab
+  const tabRows = useMemo(() => {
+    if (tab === "current") return allRows.filter(r => r.currentGap >= GAP_TOLERANCE);
+    return allRows.filter(r => r.futureRisk >= GAP_TOLERANCE);
+  }, [allRows, tab]);
 
-  const filteredGaps = useMemo(() => allGaps.filter(g => {
+  const uniqueEmployees = useMemo(() => {
+    const m = new Map<string,string>();
+    tabRows.forEach(g => m.set(g.employee.id, g.employee.full_name));
+    return [...m.entries()].sort(([,a],[,b]) => a.localeCompare(b));
+  }, [tabRows]);
+
+  const uniqueRoles = useMemo(() => {
+    const m = new Map<string,string>();
+    tabRows.forEach(g => { if (g.employee.role_profile) m.set(g.employee.role_profile.id, g.employee.role_profile.role_title); });
+    return [...m.entries()].sort(([,a],[,b]) => a.localeCompare(b));
+  }, [tabRows]);
+
+  const filteredGaps = useMemo(() => tabRows.filter(g => {
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
       if (!g.employee.full_name.toLowerCase().includes(q) && !g.competencyName.toLowerCase().includes(q)) return false;
     }
-    if (filterSeverity !== "all" && getSeverityLabel(g.weightedGap, g.demandedLevel) !== filterSeverity) return false;
+    const gapVal = tab === "current" ? g.currentGap : g.futureRisk;
+    const target = tab === "current" ? g.demandedLevel : g.futureLevel;
+    const sev = getSeverity(gapVal, target);
+    if (filterSeverity !== "all" && sev !== filterSeverity) return false;
     if (filterEmployee !== "all" && g.employee.id !== filterEmployee) return false;
     if (filterRole !== "all" && g.employee.role_profile?.id !== filterRole) return false;
     return true;
   }).sort((a, b) => {
+    const gapA = tab === "current" ? a.currentGap : a.futureRisk;
+    const gapB = tab === "current" ? b.currentGap : b.futureRisk;
     let cmp = 0;
-    if (sortKey === 'gap') cmp = a.weightedGap - b.weightedGap;
+    if (sortKey === 'gap') cmp = gapA - gapB;
     else if (sortKey === 'name') cmp = a.competencyName.localeCompare(b.competencyName);
     else cmp = a.employee.full_name.localeCompare(b.employee.full_name);
     return sortAsc ? cmp : -cmp;
-  }), [allGaps, searchQuery, filterSeverity, filterEmployee, filterRole, sortKey, sortAsc]);
+  }), [tabRows, searchQuery, filterSeverity, filterEmployee, filterRole, sortKey, sortAsc, tab]);
 
   const hasFilters = filterSeverity !== "all" || filterEmployee !== "all" || filterRole !== "all" || searchQuery !== "";
   const totalGaps = filteredGaps.length;
-  const focusCount = filteredGaps.filter(g => getSeverityLabel(g.weightedGap, g.demandedLevel) === "focus").length;
+  const kritischCount = filteredGaps.filter(g => {
+    const gapVal = tab === "current" ? g.currentGap : g.futureRisk;
+    const target = tab === "current" ? g.demandedLevel : g.futureLevel;
+    return getSeverity(gapVal, target) === "kritisch";
+  }).length;
   const affectedCount = new Set(filteredGaps.map(g => g.employee.id)).size;
+
+  // Counts for tab badges
+  const currentCount = allRows.filter(r => r.currentGap >= GAP_TOLERANCE).length;
+  const futureCount = allRows.filter(r => r.futureRisk >= GAP_TOLERANCE).length;
 
   const toggleSort = (key: typeof sortKey) => {
     if (sortKey === key) setSortAsc(!sortAsc);
@@ -162,7 +199,7 @@ const SkillGapPage = () => {
       }
       queryClient.invalidateQueries({ queryKey: ["competency_descriptions"] });
       toast({ title: "Beschreibungen generiert", description: `${totalGenerated} neue Beschreibungen.` });
-    } catch (err) {
+    } catch {
       toast({ title: "Fehler", description: "Beschreibungen konnten nicht generiert werden.", variant: "destructive" });
     } finally {
       setIsGenerating(false);
@@ -173,9 +210,7 @@ const SkillGapPage = () => {
     return (
       <div className="p-4 space-y-4">
         <Skeleton className="h-7 w-40" />
-        <div className="grid grid-cols-3 gap-3">
-          {[1,2,3].map(i => <Skeleton key={i} className="h-20" />)}
-        </div>
+        <div className="grid grid-cols-3 gap-3">{[1,2,3].map(i => <Skeleton key={i} className="h-20" />)}</div>
         <Skeleton className="h-64 w-full" />
       </div>
     );
@@ -208,6 +243,9 @@ const SkillGapPage = () => {
     );
   }
 
+  const isCurrent = tab === "current";
+  const badgeStyles = isCurrent ? severityBadge : futureBadge;
+
   return (
     <div className="p-4 space-y-4">
       {/* Header */}
@@ -219,23 +257,45 @@ const SkillGapPage = () => {
         </Button>
       </div>
 
+      {/* Tabs */}
+      <Tabs value={tab} onValueChange={(v) => { setTab(v as GapTab); setFilterSeverity("all"); }}>
+        <TabsList className="bg-card/80 border border-border/50">
+          <TabsTrigger value="current" className="text-xs gap-1.5 data-[state=active]:bg-[hsl(var(--severity-critical))]/15">
+            <ShieldAlert className="w-3.5 h-3.5" />
+            Aktuelle Gaps
+            <Badge variant="outline" className="ml-1 text-[10px] px-1.5 py-0">{currentCount}</Badge>
+          </TabsTrigger>
+          <TabsTrigger value="future" className="text-xs gap-1.5 data-[state=active]:bg-amber-500/15">
+            <Clock className="w-3.5 h-3.5" />
+            Zukunftsrisiken
+            <Badge variant="outline" className="ml-1 text-[10px] px-1.5 py-0">{futureCount}</Badge>
+          </TabsTrigger>
+        </TabsList>
+      </Tabs>
+
       {/* KPIs */}
       <div className="grid grid-cols-3 gap-3">
-        <KpiCard label="Entwicklungsbereiche" value={totalGaps} icon={TrendingUp} color="text-primary" index={0} />
-        <KpiCard label="Großes Potenzial" value={focusCount} icon={Target} color="text-[hsl(var(--severity-medium))]" index={1} />
-        <KpiCard label="Betroffene Mitarbeiter" value={affectedCount} icon={Users} color="text-primary" index={2} />
+        <KpiCard
+          label={isCurrent ? "Aktuelle Gaps" : "Zukunftsrisiken"}
+          value={totalGaps}
+          icon={isCurrent ? ShieldAlert : Clock}
+          color={isCurrent ? "text-[hsl(var(--severity-critical))]" : "text-amber-400"}
+          index={0}
+        />
+        <KpiCard label="Kritisch" value={kritischCount} icon={Target} color={isCurrent ? "text-[hsl(var(--severity-critical))]" : "text-amber-400"} index={1} />
+        <KpiCard label="Betroffene MA" value={affectedCount} icon={Users} color="text-primary" index={2} />
       </div>
 
       {/* Filters */}
       <div className="flex flex-wrap gap-2">
         <Input placeholder="Suchen…" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="w-48 h-8 text-xs bg-card/80 border-border/50" />
         <Select value={filterSeverity} onValueChange={setFilterSeverity}>
-          <SelectTrigger className="w-36 h-8 text-xs bg-card/80 border-border/50"><SelectValue placeholder="Status" /></SelectTrigger>
+          <SelectTrigger className="w-36 h-8 text-xs bg-card/80 border-border/50"><SelectValue placeholder="Severity" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Alle</SelectItem>
-            <SelectItem value="focus">Potenzial</SelectItem>
-            <SelectItem value="building">Wachstum</SelectItem>
-            <SelectItem value="ontrack">Stark</SelectItem>
+            <SelectItem value="kritisch">Kritisch</SelectItem>
+            <SelectItem value="mittel">Mittel</SelectItem>
+            <SelectItem value="gering">Gering</SelectItem>
           </SelectContent>
         </Select>
         <Select value={filterEmployee} onValueChange={setFilterEmployee}>
@@ -275,20 +335,21 @@ const SkillGapPage = () => {
                     Kompetenz{sortIndicator('name')}
                   </TableHead>
                   <TableHead className="text-xs text-right">Ist</TableHead>
-                  <TableHead className="text-xs text-right">Soll</TableHead>
+                  <TableHead className="text-xs text-right">{isCurrent ? "Soll" : "Zukunft"}</TableHead>
                   <TableHead className="text-xs text-right cursor-pointer hover:text-primary" onClick={() => toggleSort('gap')}>
-                    Gap{sortIndicator('gap')}
+                    {isCurrent ? "Gap" : "Risiko"}{sortIndicator('gap')}
                   </TableHead>
-                  <TableHead className="text-xs">Status</TableHead>
+                  <TableHead className="text-xs">Severity</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredGaps.slice(0, 100).map((g, i) => {
-                  const sev = getSeverityLabel(g.weightedGap, g.demandedLevel);
-                  const gap = g.demandedLevel - g.currentLevel;
+                  const gapVal = isCurrent ? g.currentGap : g.futureRisk;
+                  const target = isCurrent ? g.demandedLevel : g.futureLevel;
+                  const sev = getSeverity(gapVal, target);
                   return (
                     <TableRow
-                      key={`${g.employee.id}-${g.competencyId}`}
+                      key={`${g.employee.id}-${g.competencyId}-${tab}`}
                       className="border-border/30 hover:bg-muted/30 animate-fade-in-up opacity-0"
                       style={{ animationDelay: `${Math.min(i, 20) * 0.02}s` }}
                     >
@@ -296,12 +357,14 @@ const SkillGapPage = () => {
                       <TableCell className="text-xs py-2 text-muted-foreground">{g.employee.role_profile?.role_title || '—'}</TableCell>
                       <TableCell className="text-xs py-2">{g.competencyName}</TableCell>
                       <TableCell className="text-xs py-2 text-right tabular-nums">{g.currentLevel}%</TableCell>
-                      <TableCell className="text-xs py-2 text-right tabular-nums">{g.demandedLevel}%</TableCell>
+                      <TableCell className="text-xs py-2 text-right tabular-nums">{target}%</TableCell>
                       <TableCell className="text-xs py-2 text-right tabular-nums font-semibold">
-                        {gap > 0 ? <span className="text-[hsl(var(--severity-critical))]">-{gap}</span> : '0'}
+                        <span className={sev === "kritisch" ? (isCurrent ? "text-[hsl(var(--severity-critical))]" : "text-amber-400") : "text-foreground"}>
+                          -{gapVal}
+                        </span>
                       </TableCell>
                       <TableCell className="py-2">
-                        <Badge variant="outline" className={`text-[10px] ${severityBadge[sev]}`}>{severityLabel[sev]}</Badge>
+                        <Badge variant="outline" className={`text-[10px] ${badgeStyles[sev]}`}>{sev === "kritisch" ? "Kritisch" : sev === "mittel" ? "Mittel" : "Gering"}</Badge>
                       </TableCell>
                     </TableRow>
                   );
@@ -313,13 +376,13 @@ const SkillGapPage = () => {
       ) : (
         <Card className="bg-card/80 border-border/50">
           <CardContent className="py-12 text-center">
-            <p className="text-foreground font-medium">{hasFilters ? "Keine Gaps für diese Filter" : "Keine Skill Gaps erkannt"}</p>
-            <p className="text-xs text-muted-foreground mt-1">{hasFilters ? "Filter anpassen." : "Alle Mitarbeiter erfüllen ihre Anforderungen."}</p>
+            <p className="text-foreground font-medium">{hasFilters ? "Keine Einträge für diese Filter" : (isCurrent ? "Keine aktuellen Gaps erkannt" : "Keine Zukunftsrisiken erkannt")}</p>
+            <p className="text-xs text-muted-foreground mt-1">{hasFilters ? "Filter anpassen." : "Alle Mitarbeiter erfüllen die Anforderungen."}</p>
           </CardContent>
         </Card>
       )}
 
-      <p className="text-xs text-muted-foreground">{totalGaps} Gaps{filteredGaps.length > 100 ? ` (erste 100 angezeigt)` : ''}</p>
+      <p className="text-xs text-muted-foreground">{totalGaps} {isCurrent ? "Gaps" : "Risiken"}{filteredGaps.length > 100 ? ` (erste 100 angezeigt)` : ''}</p>
     </div>
   );
 };

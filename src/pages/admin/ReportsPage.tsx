@@ -81,7 +81,7 @@ const ReportsPage = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [teamFilter, setTeamFilter] = useState<string>("all");
   const [assessmentFilter, setAssessmentFilter] = useState<string>("all");
-  const [selectedEmployee, setSelectedEmployee] = useState<string | null>(null);
+  const [selectedReport, setSelectedReport] = useState<any>(null);
 
   // Build per-employee report data
   const employeeReports = useMemo(() => {

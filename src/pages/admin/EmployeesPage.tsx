@@ -1,13 +1,10 @@
 import { useState, useMemo } from "react";
-import { Header } from "@/components/Header";
 import { EmployeeProfile } from "@/components/EmployeeProfile";
 import { EmployeeFormDialog, type EmployeeFormData } from "@/components/employees/EmployeeFormDialog";
 import { DeleteEmployeeDialog } from "@/components/employees/DeleteEmployeeDialog";
 import { ProfileGenerationModal } from "@/components/admin/ProfileGenerationModal";
 import { BulkReProfileModal } from "@/components/admin/BulkReProfileModal";
-import { GlassCard, GlassCardContent } from "@/components/GlassCard";
-import { ScrollReveal } from "@/components/ScrollReveal";
-import { AnimatedCounter } from "@/components/AnimatedCounter";
+import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -43,6 +40,8 @@ import { cn } from "@/lib/utils";
 
 // suppress unused import warning
 void supabase;
+void format;
+void de;
 
 interface DbEmployee {
   id: string;
@@ -95,10 +94,9 @@ function EmployeeCard({
   const docCount = [emp.cv_storage_path, emp.self_assessment_path, emp.manager_assessment_path].filter(Boolean).length;
 
   if (compact) {
-    // List view
     return (
-      <GlassCard className="hover-lift">
-        <GlassCardContent className="p-3">
+      <Card className="bg-card/80 border-border/50 hover-lift">
+        <CardContent className="p-3">
           <div className="flex items-center gap-3">
             <button
               onClick={onView}
@@ -134,7 +132,7 @@ function EmployeeCard({
             </div>
             <div className="flex items-center gap-1 shrink-0">
               <Badge variant={(emp.overall_score || 0) >= 75 ? "default" : "secondary"}>
-                {Math.round(emp.overall_score || 0)}%
+                <span className="tabular-nums">{Math.round(emp.overall_score || 0)}%</span>
               </Badge>
               <TooltipProvider>
                 <Tooltip>
@@ -161,14 +159,14 @@ function EmployeeCard({
               </DropdownMenu>
             </div>
           </div>
-        </GlassCardContent>
-      </GlassCard>
+        </CardContent>
+      </Card>
     );
   }
 
   return (
-    <GlassCard className="hover-lift">
-      <GlassCardContent className="p-4">
+    <Card className="bg-card/80 border-border/50 hover-lift">
+      <CardContent className="p-4">
         <div className="flex items-center gap-4">
           <button
             onClick={onView}
@@ -220,8 +218,8 @@ function EmployeeCard({
             )}
           </div>
           <div className="flex items-center gap-2">
-            <Badge variant={(emp.overall_score || 0) >= 75 ? "default" : "secondary"} className="backdrop-blur">
-              {Math.round(emp.overall_score || 0)}%
+            <Badge variant={(emp.overall_score || 0) >= 75 ? "default" : "secondary"}>
+              <span className="tabular-nums">{Math.round(emp.overall_score || 0)}%</span>
             </Badge>
             <TooltipProvider>
               <Tooltip>
@@ -248,8 +246,8 @@ function EmployeeCard({
             </DropdownMenu>
           </div>
         </div>
-      </GlassCardContent>
-    </GlassCard>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -259,36 +257,28 @@ const EmployeesPage = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [viewMode, setViewMode] = useState<ViewMode>("grid2");
 
-  // Filters
   const [filterTeam, setFilterTeam] = useState("all");
   const [filterRole, setFilterRole] = useState("all");
   const [filterScore, setFilterScore] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
 
-  // Open folder state
   const [openFolders, setOpenFolders] = useState<Record<string, boolean>>({});
 
-  // Form dialog state
   const [formDialogOpen, setFormDialogOpen] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState<DbEmployee | null>(null);
 
-  // Delete dialog state
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deletingEmployee, setDeletingEmployee] = useState<DbEmployee | null>(null);
 
-  // Profile generation modal state
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [selectedEmployeeForProfile, setSelectedEmployeeForProfile] = useState<DbEmployee | null>(null);
 
-  // Bulk re-profile modal state
   const [showBulkModal, setShowBulkModal] = useState(false);
 
-  // Data hooks
   const { data: employees, isLoading: employeesLoading, refetch } = useEmployees();
   const { data: teams } = useTeams();
   const { data: roleProfiles } = useRoleProfilesPublished();
 
-  // Build a map of role_profile_id -> Set of competency IDs
   const roleProfileCompetencyMap = useMemo(() => {
     const map = new Map<string, Set<string>>();
     if (!roleProfiles?.length) return map;
@@ -322,7 +312,6 @@ const EmployeesPage = () => {
 
   const needsBulkUpdate = useMemo(() => employeeMissingSkills.size > 0, [employeeMissingSkills]);
 
-  // Unique teams & roles for filter dropdowns
   const uniqueTeams = useMemo(() => {
     const set = new Map<string, string>();
     (employees as DbEmployee[] | undefined)?.forEach((e) => {
@@ -339,7 +328,6 @@ const EmployeesPage = () => {
     return [...set.entries()];
   }, [employees]);
 
-  // Filtered employees
   const filteredEmployees = useMemo(() => {
     return (employees as DbEmployee[] | undefined)?.filter((emp) => {
       const q = searchQuery.toLowerCase();
@@ -378,7 +366,6 @@ const EmployeesPage = () => {
     setFilterStatus("all");
   };
 
-  // Folder view: group by role
   const byRole = useMemo(() => {
     const grouped: Record<string, DbEmployee[]> = {};
     filteredEmployees?.forEach((emp) => {
@@ -424,7 +411,6 @@ const EmployeesPage = () => {
   const openEditDialog = (employee: DbEmployee) => { setEditingEmployee(employee); setFormDialogOpen(true); };
   const openDeleteDialog = (employee: DbEmployee) => { setDeletingEmployee(employee); setDeleteDialogOpen(true); };
 
-  // Mutations
   const createEmployee = useCreateEmployee();
   const updateEmployee = useUpdateEmployee();
   const archiveEmployee = useArchiveEmployee();
@@ -432,23 +418,22 @@ const EmployeesPage = () => {
 
   if (employeesLoading) {
     return (
-      <div className="min-h-screen bg-background">
-        <Header variant="admin" />
-        <main className="container py-8">
-          <div className="flex items-center justify-between mb-8">
-            <Skeleton className="h-9 w-48" />
-            <div className="flex gap-2">
-              <Skeleton className="h-10 w-44" />
-              <Skeleton className="h-10 w-44" />
-            </div>
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <Skeleton className="h-9 w-48" />
+          <div className="flex gap-2">
+            <Skeleton className="h-10 w-44" />
+            <Skeleton className="h-10 w-44" />
           </div>
-          <div className="flex gap-3 mb-4">
-            <Skeleton className="h-10 flex-1 max-w-md rounded-md" />
-            <Skeleton className="h-10 w-40 rounded-lg" />
-          </div>
-          <div className="grid md:grid-cols-2 gap-4">
-            {[...Array(6)].map((_, i) => (
-              <div key={i} className="glass-card p-4 animate-skeleton-pulse" style={{ animationDelay: `${i * 100}ms` }}>
+        </div>
+        <div className="flex gap-3">
+          <Skeleton className="h-10 flex-1 max-w-md rounded-md" />
+          <Skeleton className="h-10 w-40 rounded-lg" />
+        </div>
+        <div className="grid md:grid-cols-2 gap-4">
+          {[...Array(6)].map((_, i) => (
+            <Card key={i} className="bg-card/80 border-border/50 animate-skeleton-pulse" style={{ animationDelay: `${i * 100}ms` }}>
+              <CardContent className="p-4">
                 <div className="flex items-center gap-4">
                   <Skeleton className="w-12 h-12 rounded-full" />
                   <div className="flex-1 space-y-1.5">
@@ -461,10 +446,10 @@ const EmployeesPage = () => {
                     <Skeleton className="h-8 w-8 rounded-md" />
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        </main>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
       </div>
     );
   }
@@ -491,208 +476,185 @@ const EmployeesPage = () => {
     ));
 
   return (
-    <div className="min-h-screen bg-background">
-      <Header variant="admin" />
-      <main className="container py-8">
-        {/* Header */}
-        <ScrollReveal>
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-            <h1 className="text-3xl font-bold text-foreground">
-              Mitarbeiter (<AnimatedCounter value={employees?.length || 0} duration={1000} />)
-            </h1>
-            <div className="flex gap-2">
-              {needsBulkUpdate && (
-                <Button variant="outline" onClick={() => setShowBulkModal(true)} className="gap-2">
-                  <RefreshCw className="w-4 h-4" />Profile aktualisieren
-                </Button>
-              )}
-              <Button onClick={openCreateDialog} className="gap-2">
-                <UserPlus className="w-4 h-4" />Neuer Mitarbeiter
-              </Button>
-            </div>
-          </div>
-        </ScrollReveal>
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 animate-fade-in-up">
+        <h1 className="text-3xl font-bold text-foreground">
+          Mitarbeiter (<span className="tabular-nums">{employees?.length || 0}</span>)
+        </h1>
+        <div className="flex gap-2">
+          {needsBulkUpdate && (
+            <Button variant="outline" onClick={() => setShowBulkModal(true)} className="gap-2">
+              <RefreshCw className="w-4 h-4" />Profile aktualisieren
+            </Button>
+          )}
+          <Button onClick={openCreateDialog} className="gap-2">
+            <UserPlus className="w-4 h-4" />Neuer Mitarbeiter
+          </Button>
+        </div>
+      </div>
 
-        {/* Search + View switcher */}
-        <ScrollReveal delay={80}>
-          <div className="flex flex-col sm:flex-row gap-3 mb-4">
-            <div className="relative flex-1 max-w-md">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input
-                placeholder="Suchen nach Name, E-Mail, Rolle oder Team..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-            {/* View mode buttons */}
-            <div className="flex gap-1 bg-secondary/30 rounded-lg p-1">
-              {viewButtons.map(({ mode, icon, label }) => (
-                <TooltipProvider key={mode}>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant={viewMode === mode ? "default" : "ghost"}
-                        size="sm"
-                        className="h-8 px-3"
-                        onClick={() => setViewMode(mode)}
-                      >
-                        {icon}
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent><p>{label}</p></TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              ))}
-            </div>
-          </div>
-        </ScrollReveal>
+      {/* Search + View switcher */}
+      <div className="flex flex-col sm:flex-row gap-3 animate-fade-in-up" style={{ animationDelay: '80ms' }}>
+        <div className="relative flex-1 max-w-md">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input
+            placeholder="Suchen nach Name, E-Mail, Rolle oder Team..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10"
+          />
+        </div>
+        <div className="flex gap-1 bg-secondary/30 rounded-lg p-1">
+          {viewButtons.map(({ mode, icon, label }) => (
+            <TooltipProvider key={mode}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant={viewMode === mode ? "default" : "ghost"}
+                    size="sm"
+                    className="h-8 px-3"
+                    onClick={() => setViewMode(mode)}
+                  >
+                    {icon}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent><p>{label}</p></TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          ))}
+        </div>
+      </div>
 
-        {/* Filters */}
-        <ScrollReveal delay={120}>
-          <div className="flex flex-wrap gap-2 mb-6">
-            <Select value={filterTeam} onValueChange={setFilterTeam}>
-              <SelectTrigger className="w-44 h-8 text-xs">
-                <SelectValue placeholder="Team" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Alle Teams</SelectItem>
-                {uniqueTeams.map(([id, name]) => (
-                  <SelectItem key={id} value={id}>{name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+      {/* Filters */}
+      <div className="flex flex-wrap gap-2 animate-fade-in-up" style={{ animationDelay: '120ms' }}>
+        <Select value={filterTeam} onValueChange={setFilterTeam}>
+          <SelectTrigger className="w-44 h-8 text-xs"><SelectValue placeholder="Team" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Alle Teams</SelectItem>
+            {uniqueTeams.map(([id, name]) => (
+              <SelectItem key={id} value={id}>{name}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
 
-            <Select value={filterRole} onValueChange={setFilterRole}>
-              <SelectTrigger className="w-48 h-8 text-xs">
-                <SelectValue placeholder="Rolle" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Alle Rollen</SelectItem>
-                {uniqueRoles.map(([id, title]) => (
-                  <SelectItem key={id} value={id}>{title}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+        <Select value={filterRole} onValueChange={setFilterRole}>
+          <SelectTrigger className="w-48 h-8 text-xs"><SelectValue placeholder="Rolle" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Alle Rollen</SelectItem>
+            {uniqueRoles.map(([id, title]) => (
+              <SelectItem key={id} value={id}>{title}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
 
-            <Select value={filterScore} onValueChange={setFilterScore}>
-              <SelectTrigger className="w-44 h-8 text-xs">
-                <SelectValue placeholder="Score" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Alle Scores</SelectItem>
-                <SelectItem value="high">Hoch (≥75%)</SelectItem>
-                <SelectItem value="medium">Mittel (50–74%)</SelectItem>
-                <SelectItem value="low">Niedrig (&lt;50%)</SelectItem>
-              </SelectContent>
-            </Select>
+        <Select value={filterScore} onValueChange={setFilterScore}>
+          <SelectTrigger className="w-44 h-8 text-xs"><SelectValue placeholder="Score" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Alle Scores</SelectItem>
+            <SelectItem value="high">Hoch (≥75%)</SelectItem>
+            <SelectItem value="medium">Mittel (50–74%)</SelectItem>
+            <SelectItem value="low">Niedrig (&lt;50%)</SelectItem>
+          </SelectContent>
+        </Select>
 
-            <Select value={filterStatus} onValueChange={setFilterStatus}>
-              <SelectTrigger className="w-44 h-8 text-xs">
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Alle Status</SelectItem>
-                <SelectItem value="current">Aktuell</SelectItem>
-                <SelectItem value="update">Update verfügbar</SelectItem>
-              </SelectContent>
-            </Select>
+        <Select value={filterStatus} onValueChange={setFilterStatus}>
+          <SelectTrigger className="w-44 h-8 text-xs"><SelectValue placeholder="Status" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Alle Status</SelectItem>
+            <SelectItem value="current">Aktuell</SelectItem>
+            <SelectItem value="update">Update verfügbar</SelectItem>
+          </SelectContent>
+        </Select>
 
-            {hasActiveFilters && (
-              <Button variant="ghost" size="sm" className="h-8 gap-1 text-xs text-muted-foreground" onClick={clearFilters}>
-                <X className="w-3 h-3" />Filter zurücksetzen
-              </Button>
-            )}
+        {hasActiveFilters && (
+          <Button variant="ghost" size="sm" className="h-8 gap-1 text-xs text-muted-foreground" onClick={clearFilters}>
+            <X className="w-3 h-3" />Filter zurücksetzen
+          </Button>
+        )}
 
-            {filteredEmployees && (
-              <span className="text-xs text-muted-foreground self-center ml-auto">
-                {filteredEmployees.length} Mitarbeiter
-              </span>
-            )}
-          </div>
-        </ScrollReveal>
+        {filteredEmployees && (
+          <span className="text-xs text-muted-foreground self-center ml-auto">
+            {filteredEmployees.length} Mitarbeiter
+          </span>
+        )}
+      </div>
 
-        {/* ── Folder View ── */}
-        {viewMode === "folder" && (
-          <div className="space-y-3">
-            {byRole.map(([roleName, emps]) => {
-              const isOpen = openFolders[roleName] ?? false;
-              return (
-                <Collapsible key={roleName} open={isOpen} onOpenChange={(v) => setOpenFolders(prev => ({ ...prev, [roleName]: v }))}>
-                  <CollapsibleTrigger asChild>
-                    <GlassCard className="cursor-pointer hover-lift">
-                      <GlassCardContent className="p-4">
-                        <div className="flex items-center gap-3">
-                          <div className="p-2 rounded-lg bg-primary/20">
-                            <Folder className="w-5 h-5 text-primary" />
-                          </div>
-                          <div className="flex-1">
-                            <p className="font-semibold text-foreground">{roleName}</p>
-                            <p className="text-xs text-muted-foreground">{emps.length} Mitarbeiter</p>
-                          </div>
-                          <Badge variant="secondary">{emps.length}</Badge>
-                          {isOpen ? <ChevronDown className="w-4 h-4 text-muted-foreground" /> : <ChevronRight className="w-4 h-4 text-muted-foreground" />}
+      {/* ── Folder View ── */}
+      {viewMode === "folder" && (
+        <div className="space-y-3">
+          {byRole.map(([roleName, emps]) => {
+            const isOpen = openFolders[roleName] ?? false;
+            return (
+              <Collapsible key={roleName} open={isOpen} onOpenChange={(v) => setOpenFolders(prev => ({ ...prev, [roleName]: v }))}>
+                <CollapsibleTrigger asChild>
+                  <Card className="bg-card/80 border-border/50 cursor-pointer hover-lift">
+                    <CardContent className="p-4">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 rounded-lg bg-primary/20">
+                          <Folder className="w-5 h-5 text-primary" />
                         </div>
-                      </GlassCardContent>
-                    </GlassCard>
-                  </CollapsibleTrigger>
-                  <CollapsibleContent>
-                    <div className="mt-2 ml-6 grid md:grid-cols-2 gap-3">
-                      {renderCards(emps)}
-                    </div>
-                  </CollapsibleContent>
-                </Collapsible>
-              );
-            })}
-          </div>
-        )}
+                        <div className="flex-1">
+                          <p className="font-semibold text-foreground">{roleName}</p>
+                          <p className="text-xs text-muted-foreground">{emps.length} Mitarbeiter</p>
+                        </div>
+                        <Badge variant="secondary">{emps.length}</Badge>
+                        {isOpen ? <ChevronDown className="w-4 h-4 text-muted-foreground" /> : <ChevronRight className="w-4 h-4 text-muted-foreground" />}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <div className="mt-2 ml-6 grid md:grid-cols-2 gap-3">
+                    {renderCards(emps)}
+                  </div>
+                </CollapsibleContent>
+              </Collapsible>
+            );
+          })}
+        </div>
+      )}
 
-        {/* ── Grid 2 View ── */}
-        {viewMode === "grid2" && (
-          <div className="grid md:grid-cols-2 gap-4">
-            {renderCards(filteredEmployees || [])}
-          </div>
-        )}
+      {viewMode === "grid2" && (
+        <div className="grid md:grid-cols-2 gap-4">
+          {renderCards(filteredEmployees || [])}
+        </div>
+      )}
 
-        {/* ── Grid 4 View ── */}
-        {viewMode === "grid4" && (
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
-            {renderCards(filteredEmployees || [])}
-          </div>
-        )}
+      {viewMode === "grid4" && (
+        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          {renderCards(filteredEmployees || [])}
+        </div>
+      )}
 
-        {/* ── List View ── */}
-        {viewMode === "list" && (
-          <div className="space-y-2">
-            {renderCards(filteredEmployees || [], true)}
-          </div>
-        )}
+      {viewMode === "list" && (
+        <div className="space-y-2">
+          {renderCards(filteredEmployees || [], true)}
+        </div>
+      )}
 
-        {/* Empty state */}
-        {filteredEmployees?.length === 0 && (
-          <div className="text-center py-12">
-            <p className="text-muted-foreground">
-              {searchQuery || hasActiveFilters ? "Keine Mitarbeiter gefunden" : "Noch keine Mitarbeiter angelegt"}
-            </p>
-            {!searchQuery && !hasActiveFilters && (
-              <Button onClick={openCreateDialog} variant="outline" className="mt-4">
-                <UserPlus className="w-4 h-4 mr-2" />Ersten Mitarbeiter anlegen
-              </Button>
-            )}
-          </div>
-        )}
-      </main>
+      {filteredEmployees?.length === 0 && (
+        <div className="text-center py-12">
+          <p className="text-muted-foreground">
+            {searchQuery || hasActiveFilters ? "Keine Mitarbeiter gefunden" : "Noch keine Mitarbeiter angelegt"}
+          </p>
+          {!searchQuery && !hasActiveFilters && (
+            <Button onClick={openCreateDialog} variant="outline" className="mt-4">
+              <UserPlus className="w-4 h-4 mr-2" />Ersten Mitarbeiter anlegen
+            </Button>
+          )}
+        </div>
+      )}
 
       {/* Employee Profile Dialog */}
       <Dialog open={!!selectedEmployeeId} onOpenChange={() => setSelectedEmployeeId(null)}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto glass">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           {selectedEmployeeId && (
             <EmployeeProfile employeeId={selectedEmployeeId} onClose={() => setSelectedEmployeeId(null)} />
           )}
         </DialogContent>
       </Dialog>
 
-      {/* Create/Edit Employee Dialog */}
       <EmployeeFormDialog
         open={formDialogOpen}
         onOpenChange={(open) => { setFormDialogOpen(open); if (!open) setEditingEmployee(null); }}
@@ -704,7 +666,6 @@ const EmployeesPage = () => {
         mode={editingEmployee ? "edit" : "create"}
       />
 
-      {/* Delete Confirmation Dialog */}
       <DeleteEmployeeDialog
         open={deleteDialogOpen}
         onOpenChange={(open) => { setDeleteDialogOpen(open); if (!open) setDeletingEmployee(null); }}
@@ -714,7 +675,6 @@ const EmployeesPage = () => {
         employeeName={deletingEmployee?.full_name || ""}
       />
 
-      {/* Profile Generation Modal */}
       {showProfileModal && selectedEmployeeForProfile && (
         <ProfileGenerationModal
           open={showProfileModal}
@@ -746,7 +706,6 @@ const EmployeesPage = () => {
         />
       )}
 
-      {/* Bulk Re-Profile Modal */}
       <BulkReProfileModal
         open={showBulkModal}
         onClose={() => setShowBulkModal(false)}

@@ -9,6 +9,7 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 
 // Layouts
 import { SuperAdminLayout } from "@/layouts/SuperAdminLayout";
+import { AdminLayout } from "@/layouts/AdminLayout";
 
 // Auth Pages
 import LoginPage from "@/pages/auth/LoginPage";
@@ -33,11 +34,7 @@ import EmployeesPage from "@/pages/admin/EmployeesPage";
 import SkillGapPage from "@/pages/admin/SkillGapPage";
 import ReportsPage from "@/pages/admin/ReportsPage";
 import FutureSkillReportPage from "@/pages/admin/FutureSkillReportPage";
-
-// Employee Pages
-import EmployeeDashboard from "@/pages/EmployeeDashboard";
-import MySkillsPage from "@/pages/employee/MySkillsPage";
-import MyLearningPage from "@/pages/employee/MyLearningPage";
+import PlaceholderPage from "@/pages/admin/PlaceholderPage";
 
 // Other
 import NotFound from "@/pages/NotFound";
@@ -69,54 +66,21 @@ function AppRoutes() {
         <Route path="settings" element={<SuperAdminSettings />} />
       </Route>
 
-      {/* Org Admin Routes */}
+      {/* Org Admin Routes - with Sidebar Layout */}
       <Route path="/admin" element={
         <ProtectedRoute allowedRoles={['super_admin', 'org_admin']}>
-          <AdminDashboard />
+          <AdminLayout />
         </ProtectedRoute>
-      } />
-      <Route path="/admin/teams" element={
-        <ProtectedRoute allowedRoles={['super_admin', 'org_admin']}>
-          <TeamsPage />
-        </ProtectedRoute>
-      } />
-      <Route path="/admin/employees" element={
-        <ProtectedRoute allowedRoles={['super_admin', 'org_admin']}>
-          <EmployeesPage />
-        </ProtectedRoute>
-      } />
-      <Route path="/admin/skill-gaps" element={
-        <ProtectedRoute allowedRoles={['super_admin', 'org_admin']}>
-          <SkillGapPage />
-        </ProtectedRoute>
-      } />
-      <Route path="/admin/reports" element={
-        <ProtectedRoute allowedRoles={['super_admin', 'org_admin']}>
-          <ReportsPage />
-        </ProtectedRoute>
-      } />
-      <Route path="/admin/reports/future-skill-matrix" element={
-        <ProtectedRoute allowedRoles={['super_admin', 'org_admin']}>
-          <FutureSkillReportPage />
-        </ProtectedRoute>
-      } />
-
-      {/* Employee Routes */}
-      <Route path="/employee" element={
-        <ProtectedRoute allowedRoles={['super_admin', 'org_admin', 'employee']}>
-          <EmployeeDashboard />
-        </ProtectedRoute>
-      } />
-      <Route path="/employee/skills" element={
-        <ProtectedRoute allowedRoles={['super_admin', 'org_admin', 'employee']}>
-          <MySkillsPage />
-        </ProtectedRoute>
-      } />
-      <Route path="/employee/learning" element={
-        <ProtectedRoute allowedRoles={['super_admin', 'org_admin', 'employee']}>
-          <MyLearningPage />
-        </ProtectedRoute>
-      } />
+      }>
+        <Route index element={<AdminDashboard />} />
+        <Route path="teams" element={<TeamsPage />} />
+        <Route path="employees" element={<EmployeesPage />} />
+        <Route path="skill-gaps" element={<SkillGapPage />} />
+        <Route path="reports" element={<ReportsPage />} />
+        <Route path="reports/future-skill-matrix" element={<FutureSkillReportPage />} />
+        <Route path="measures" element={<PlaceholderPage title="Maßnahmen" description="Weiterbildungsmaßnahmen verwalten, Skill-Gaps zuordnen und den Fortschritt tracken." />} />
+        <Route path="budget" element={<PlaceholderPage title="Budget & ROI" description="Budget-Übersicht pro Team, ROI-Berechnung und €/Kompetenzpunkt-Analyse." />} />
+      </Route>
 
       {/* Default Redirect */}
       <Route path="/" element={<Navigate to="/login" replace />} />

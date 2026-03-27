@@ -1,12 +1,9 @@
 import { useState } from "react";
-import { Header } from "@/components/Header";
 import { SkillProgressBar } from "@/components/SkillProgressBar";
 import { DemandIndicator } from "@/components/DemandIndicator";
 import { EmployeeProfile } from "@/components/EmployeeProfile";
-import { AnimatedCounter } from "@/components/AnimatedCounter";
-import { ScrollReveal } from "@/components/ScrollReveal";
 import { GrowthJourneyChart } from "@/components/GrowthJourneyChart";
-import { GlassCard, GlassCardContent, GlassCardHeader, GlassCardTitle } from "@/components/GlassCard";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Select,
   SelectContent,
@@ -91,19 +88,18 @@ const AdminDashboard = () => {
   // Loading state
   if (statsLoading || employeesLoading || rolesLoading) {
     return (
-      <div className="min-h-screen bg-background">
-        <Header variant="admin" />
-        <main className="container py-8">
-          <div className="flex items-center gap-3 mb-6 animate-skeleton-pulse">
-            <Skeleton className="w-10 h-10 rounded-lg" />
-            <div className="space-y-1.5">
-              <Skeleton className="h-6 w-48" />
-              <Skeleton className="h-4 w-32" />
-            </div>
+      <div className="space-y-6">
+        <div className="flex items-center gap-3 animate-skeleton-pulse">
+          <Skeleton className="w-10 h-10 rounded-lg" />
+          <div className="space-y-1.5">
+            <Skeleton className="h-6 w-48" />
+            <Skeleton className="h-4 w-32" />
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-            {[1, 2, 3, 4].map(i => (
-              <div key={i} className="glass-card p-6 animate-skeleton-pulse" style={{ animationDelay: `${i * 100}ms` }}>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          {[1, 2, 3, 4].map(i => (
+            <Card key={i} className="bg-card/80 border-border/50 animate-skeleton-pulse" style={{ animationDelay: `${i * 100}ms` }}>
+              <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div className="space-y-2">
                     <Skeleton className="h-4 w-20" />
@@ -111,410 +107,337 @@ const AdminDashboard = () => {
                   </div>
                   <Skeleton className="w-12 h-12 rounded-lg" />
                 </div>
-              </div>
-            ))}
-          </div>
-          <div className="grid lg:grid-cols-3 gap-6">
-            <div className="glass-card p-6 animate-skeleton-pulse" style={{ animationDelay: '500ms' }}>
-              <Skeleton className="h-5 w-40 mb-4" />
-              <Skeleton className="h-48 w-full rounded-lg" />
-            </div>
-            <div className="glass-card p-6 lg:col-span-2 animate-skeleton-pulse" style={{ animationDelay: '600ms' }}>
-              <Skeleton className="h-5 w-48 mb-4" />
-              {[1, 2, 3].map(i => (
-                <div key={i} className="flex items-center gap-4 mb-3">
-                  <Skeleton className="w-8 h-8 rounded-full" />
-                  <Skeleton className="h-3 flex-1 rounded-full" />
-                  <Skeleton className="h-4 w-12" />
-                </div>
-              ))}
-            </div>
-          </div>
-        </main>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <Header variant="admin" />
+    <div className="space-y-6">
+      {/* Organization Header */}
+      {organization && (
+        <div className="flex items-center justify-between animate-fade-in-up">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center">
+              <Building2 className="w-5 h-5 text-primary" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h1 className="text-2xl font-bold text-foreground">{organization.name}</h1>
+                {organization.subscription_status && (
+                  <Badge variant={organization.subscription_status === 'active' ? 'default' : 'secondary'} className="text-xs">
+                    {organization.subscription_status === 'active' ? 'Aktiv' : organization.subscription_status === 'trial' ? 'Trial' : organization.subscription_status}
+                  </Badge>
+                )}
+              </div>
+              <p className="text-sm text-muted-foreground">
+                {stats?.employeeCount || 0} Mitarbeiter · {stats?.teamCount || 0} Teams
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
-      <main className="container py-8">
-        {/* Organization Header */}
-        {organization && (
-          <ScrollReveal>
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center">
-                  <Building2 className="w-5 h-5 text-primary" />
-                </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h1 className="text-2xl font-bold text-foreground">{organization.name}</h1>
-                    {organization.subscription_status && (
-                      <Badge variant={organization.subscription_status === 'active' ? 'default' : 'secondary'} className="text-xs">
-                        {organization.subscription_status === 'active' ? 'Aktiv' : organization.subscription_status === 'trial' ? 'Trial' : organization.subscription_status}
-                      </Badge>
-                    )}
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        {[
+          { label: "Mitarbeiter", value: stats?.employeeCount || 0, icon: Users, iconBg: "bg-primary/20", iconColor: "text-primary" },
+          { label: "Teams", value: stats?.teamCount || 0, icon: Building2, iconBg: "bg-secondary/50", iconColor: "text-muted-foreground" },
+          { label: "Ø Kompetenzniveau", value: `${stats?.avgCompetencyLevel || 0}%`, icon: TrendingUp, iconBg: "bg-[hsl(var(--skill-very-strong))]/20", iconColor: "text-[hsl(var(--skill-very-strong))]" },
+          { label: "Lernpfade", value: stats?.activeLearningPaths || 0, icon: BookOpen, iconBg: "bg-primary/20", iconColor: "text-primary" },
+        ].map((stat, i) => {
+          const Icon = stat.icon;
+          return (
+            <div key={stat.label} className="animate-fade-in-up" style={{ animationDelay: `${i * 80}ms` }}>
+              <Card className="bg-card/80 border-border/50 hover-lift">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-muted-foreground">{stat.label}</p>
+                      <p className="text-3xl font-bold text-foreground tabular-nums">{stat.value}</p>
+                    </div>
+                    <div className={`w-12 h-12 rounded-lg ${stat.iconBg} flex items-center justify-center`}>
+                      <Icon className={`w-6 h-6 ${stat.iconColor}`} />
+                    </div>
                   </div>
-                  <p className="text-sm text-muted-foreground">
-                    {stats?.employeeCount || 0} Mitarbeiter · {stats?.teamCount || 0} Teams
-                  </p>
+                </CardContent>
+              </Card>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Main Content Grid */}
+      <div className="grid lg:grid-cols-3 gap-6">
+        {/* Growth Journey Overview */}
+        <div className="animate-fade-in-up" style={{ animationDelay: '200ms' }}>
+          <Card className="bg-card/80 border-border/50 h-full">
+            <CardHeader>
+              <CardTitle className="text-foreground">Unternehmens-Entwicklung</CardTitle>
+              <p className="text-sm text-muted-foreground">ROI & Wachstums-Journey</p>
+            </CardHeader>
+            <CardContent>
+              <GrowthJourneyChart variant="admin" />
+              <div className="mt-4 pt-4 border-t border-border/50 space-y-2">
+                {teamsLoading ? (
+                  <Skeleton className="h-20" />
+                ) : teams?.map((team) => (
+                  <div 
+                    key={team.id} 
+                    className="flex items-center justify-between text-sm p-2 rounded-lg hover:bg-secondary/30 transition-colors cursor-pointer"
+                  >
+                    <span className="text-muted-foreground">{team.name}</span>
+                    <span className="font-medium text-foreground tabular-nums">
+                      {Math.round(team.average_score || 0)}%
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Employee Development / Skill Gap Analysis */}
+        <div className="lg:col-span-2 animate-fade-in-up" style={{ animationDelay: '300ms' }}>
+          <Card className="bg-card/80 border-border/50 h-full">
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div>
+                <CardTitle className="text-foreground">{selectedRole?.role_title || "Rolle wählen"}</CardTitle>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Mitarbeiterentwicklung / Kompetenz-Gap-Analyse
+                </p>
+              </div>
+              <Select value={effectiveRoleKey} onValueChange={setSelectedRoleKey}>
+                <SelectTrigger className="w-48">
+                  <SelectValue placeholder="Select role..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {roleProfiles?.map((role) => (
+                    <SelectItem key={role.id} value={role.role_key}>
+                      {role.role_title}
+                      {role.practice_group ? (
+                        <span className="text-muted-foreground ml-1 text-xs">— {role.practice_group}</span>
+                      ) : null}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </CardHeader>
+            <CardContent>
+              {/* Legend */}
+              <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground mb-4 pb-3 border-b border-border/50">
+                <div className="flex items-center gap-1.5">
+                  <div className="w-3 h-3 rounded bg-primary" />
+                  <span>Kompetenzniveau</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <div className="w-0.5 h-3 bg-[hsl(var(--skill-moderate))]" />
+                  <span>Ø Aktuelle Anforderung ({avgCurrentDemand}%)</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <div className="w-0.5 h-3 bg-[hsl(var(--skill-weak))]" />
+                  <span>Ø Zukünftige Anforderung ({avgFutureDemand}%)</span>
                 </div>
               </div>
-            </div>
-          </ScrollReveal>
-        )}
-
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-          <ScrollReveal delay={0}>
-            <GlassCard className="hover-lift">
-              <GlassCardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Mitarbeiter</p>
-                    <p className="text-3xl font-bold text-foreground">
-                      <AnimatedCounter value={stats?.employeeCount || 0} duration={1500} />
-                    </p>
-                  </div>
-                  <div className="w-12 h-12 rounded-lg bg-primary/20 flex items-center justify-center group">
-                    <Users className="w-6 h-6 text-primary transition-transform duration-300 group-hover:scale-110 group-hover:rotate-12" />
-                  </div>
-                </div>
-              </GlassCardContent>
-            </GlassCard>
-          </ScrollReveal>
-
-          <ScrollReveal delay={100}>
-            <GlassCard className="hover-lift">
-              <GlassCardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Teams</p>
-                    <p className="text-3xl font-bold text-foreground">
-                      <AnimatedCounter value={stats?.teamCount || 0} duration={1500} />
-                    </p>
-                  </div>
-                  <div className="w-12 h-12 rounded-lg bg-secondary/50 flex items-center justify-center group">
-                    <Building2 className="w-6 h-6 text-muted-foreground transition-transform duration-300 group-hover:scale-110" />
-                  </div>
-                </div>
-              </GlassCardContent>
-            </GlassCard>
-          </ScrollReveal>
-
-          <ScrollReveal delay={200}>
-            <GlassCard className="hover-lift">
-              <GlassCardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Ø Kompetenzniveau</p>
-                    <p className="text-3xl font-bold text-foreground">
-                      <AnimatedCounter value={stats?.avgCompetencyLevel || 0} duration={1500} />%
-                    </p>
-                  </div>
-                  <div className="w-12 h-12 rounded-lg bg-[hsl(var(--skill-very-strong))]/20 flex items-center justify-center group">
-                    <TrendingUp className="w-6 h-6 text-[hsl(var(--skill-very-strong))] transition-transform duration-300 group-hover:scale-110 group-hover:-translate-y-1" />
-                  </div>
-                </div>
-              </GlassCardContent>
-            </GlassCard>
-          </ScrollReveal>
-
-          <ScrollReveal delay={300}>
-            <GlassCard className="hover-lift">
-              <GlassCardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Lernpfade</p>
-                    <p className="text-3xl font-bold text-foreground">
-                      <AnimatedCounter value={stats?.activeLearningPaths || 0} duration={1500} delay={300} />
-                    </p>
-                  </div>
-                  <div className="w-12 h-12 rounded-lg bg-primary/20 flex items-center justify-center group">
-                    <BookOpen className="w-6 h-6 text-primary transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6" />
-                  </div>
-                </div>
-              </GlassCardContent>
-            </GlassCard>
-          </ScrollReveal>
-        </div>
-
-        {/* Main Content Grid */}
-        <div className="grid lg:grid-cols-3 gap-6">
-          {/* Growth Journey Overview */}
-          <ScrollReveal delay={100} direction="left">
-            <GlassCard className="hover-glow h-full">
-              <GlassCardHeader>
-                <GlassCardTitle className="text-foreground">Unternehmens-Entwicklung</GlassCardTitle>
-                <p className="text-sm text-muted-foreground">ROI & Wachstums-Journey</p>
-              </GlassCardHeader>
-              <GlassCardContent>
-                <GrowthJourneyChart variant="admin" />
-                <div className="mt-4 pt-4 border-t border-border/50 space-y-2">
-                  {teamsLoading ? (
-                    <Skeleton className="h-20" />
-                  ) : teams?.map((team) => (
-                    <div 
-                      key={team.id} 
-                      className="flex items-center justify-between text-sm p-2 rounded-lg hover:bg-secondary/30 transition-colors cursor-pointer group"
+              <div className="space-y-4 max-h-[400px] overflow-y-auto">
+                {roleEmployees.length > 0 ? (
+                  roleEmployees.map((employee) => (
+                    <button
+                      key={employee.id}
+                      onClick={() => setSelectedEmployee(employee)}
+                      className="w-full flex items-center gap-4 p-2 rounded-lg hover:bg-secondary/30 transition-all duration-200 text-left"
                     >
-                      <span className="text-muted-foreground group-hover:text-foreground transition-colors">{team.name}</span>
-                      <span className="font-medium text-foreground">
-                        {Math.round(team.average_score || 0)}%
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </GlassCardContent>
-            </GlassCard>
-          </ScrollReveal>
-
-          {/* Employee Development / Skill Gap Analysis */}
-          <ScrollReveal delay={200} direction="right" className="lg:col-span-2">
-            <GlassCard className="hover-glow h-full">
-              <GlassCardHeader className="flex flex-row items-center justify-between">
-                <div>
-                  <GlassCardTitle className="text-foreground">{selectedRole?.role_title || "Rolle wählen"}</GlassCardTitle>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Mitarbeiterentwicklung / Kompetenz-Gap-Analyse
+                      <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-sm font-medium text-primary">
+                        {employee.full_name.split(" ").map(n => n[0]).join("")}
+                      </div>
+                      <div className="w-32 truncate">
+                        <span className="text-sm text-foreground">{employee.full_name}</span>
+                        <p className="text-xs text-muted-foreground truncate">{employee.role_profile?.role_title}</p>
+                      </div>
+                      <div className="flex-1">
+                        <SkillProgressBar 
+                          value={Math.round(employee.overall_score || 0)} 
+                          currentDemand={avgCurrentDemand}
+                          futureDemand={avgFutureDemand}
+                          showLabel={true} 
+                        />
+                      </div>
+                    </button>
+                  ))
+                ) : (
+                  <p className="text-muted-foreground text-center py-8">
+                    Keine Mitarbeiter in dieser Rolle
                   </p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
+      {/* Bottom Section */}
+      <div className="grid lg:grid-cols-2 gap-6">
+        {/* Employee of Tomorrow */}
+        <div className="animate-fade-in-up" style={{ animationDelay: '400ms' }}>
+          <Card className="bg-card/80 border-border/50 h-full">
+            <CardHeader>
+              <CardTitle className="text-foreground text-center">
+                The "Employee of Tomorrow"
+              </CardTitle>
+              <p className="text-sm text-muted-foreground text-center">
+                {selectedRole?.role_title || "Role"} - Required Skills
+              </p>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-start gap-6">
+                <div className="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center">
+                  <Users className="w-8 h-8 text-primary" />
                 </div>
-                <Select value={effectiveRoleKey} onValueChange={setSelectedRoleKey}>
-                  <SelectTrigger className="w-48 glass">
-                    <SelectValue placeholder="Select role..." />
-                  </SelectTrigger>
-                  <SelectContent className="glass">
-                    {roleProfiles?.map((role) => (
-                      <SelectItem key={role.id} value={role.role_key}>
-                        {role.role_title}
-                        {role.practice_group ? (
-                          <span className="text-muted-foreground ml-1 text-xs">— {role.practice_group}</span>
-                        ) : null}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </GlassCardHeader>
-              <GlassCardContent>
-                {/* Legend */}
-                <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground mb-4 pb-3 border-b border-border/50">
-                  <div className="flex items-center gap-1.5">
-                    <div className="w-3 h-3 rounded bg-primary" />
-                    <span>Kompetenzniveau</span>
+                <div className="flex-1">
+                  <div className="grid grid-cols-4 gap-2 text-xs font-medium text-muted-foreground mb-3">
+                    <span className="col-span-2">Competency</span>
+                    <span className="text-center">Current</span>
+                    <span className="text-center">Future</span>
                   </div>
-                  <div className="flex items-center gap-1.5">
-                    <div className="w-0.5 h-3 bg-[hsl(var(--skill-moderate))]" />
-                    <span>Ø Aktuelle Anforderung ({avgCurrentDemand}%)</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <div className="w-0.5 h-3 bg-[hsl(var(--skill-weak))]" />
-                    <span>Ø Zukünftige Anforderung ({avgFutureDemand}%)</span>
+                  <div className="space-y-3 max-h-[250px] overflow-y-auto">
+                    {roleCompetencies.length > 0 ? (
+                      roleCompetencies.map((comp, index) => {
+                        const currentLevel = getSkillLevel(comp.demand_weight || 50);
+                        const futureLevel = getSkillLevel(comp.future_demand_max || 70);
+                        return (
+                          <div key={comp.id} className="grid grid-cols-4 gap-2 items-center p-2 rounded-lg hover:bg-secondary/30 transition-colors">
+                            <span className="text-sm text-foreground truncate col-span-2">
+                              {comp.name}
+                            </span>
+                            <div className="flex justify-center">
+                              <DemandIndicator level={currentLevel} showLabel={false} />
+                            </div>
+                            <div className="flex justify-center">
+                              <DemandIndicator level={futureLevel} showLabel={false} />
+                            </div>
+                          </div>
+                        );
+                      })
+                    ) : (
+                      <p className="text-muted-foreground text-center py-4 text-sm">
+                        No competencies defined for this role
+                      </p>
+                    )}
                   </div>
                 </div>
-                <div className="space-y-4 max-h-[400px] overflow-y-auto">
-                  {roleEmployees.length > 0 ? (
-                    roleEmployees.map((employee, index) => (
-                      <ScrollReveal key={employee.id} delay={index * 50} direction="left">
-                        <button
-                          onClick={() => setSelectedEmployee(employee)}
-                          className="w-full flex items-center gap-4 p-2 rounded-lg hover:bg-secondary/30 hover:scale-[1.01] transition-all duration-200 text-left group"
-                        >
-                          <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-sm font-medium text-primary transition-transform duration-200 group-hover:scale-110">
-                            {employee.full_name.split(" ").map(n => n[0]).join("")}
-                          </div>
-                          <div className="w-32 truncate">
-                            <span className="text-sm text-foreground">{employee.full_name}</span>
-                            <p className="text-xs text-muted-foreground truncate">{employee.role_profile?.role_title}</p>
-                          </div>
-                          <div className="flex-1">
-                            <SkillProgressBar 
-                              value={Math.round(employee.overall_score || 0)} 
-                              currentDemand={avgCurrentDemand}
-                              futureDemand={avgFutureDemand}
-                              showLabel={true} 
-                            />
-                          </div>
-                        </button>
-                      </ScrollReveal>
-                    ))
-                  ) : (
-                    <p className="text-muted-foreground text-center py-8">
-                      Keine Mitarbeiter in dieser Rolle
-                    </p>
-                  )}
-                </div>
-              </GlassCardContent>
-            </GlassCard>
-          </ScrollReveal>
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
-        {/* Bottom Section */}
-        <div className="grid lg:grid-cols-2 gap-6 mt-6">
-          {/* Employee of Tomorrow */}
-          <ScrollReveal delay={300} direction="up">
-            <GlassCard className="hover-glow h-full">
-              <GlassCardHeader>
-                <GlassCardTitle className="text-foreground text-center">
-                  The "Employee of Tomorrow"
-                </GlassCardTitle>
-                <p className="text-sm text-muted-foreground text-center">
-                  {selectedRole?.role_title || "Role"} - Required Skills
-                </p>
-              </GlassCardHeader>
-              <GlassCardContent>
-                <div className="flex items-start gap-6">
-                  <div className="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center group">
-                    <Users className="w-8 h-8 text-primary transition-transform duration-300 group-hover:scale-110" />
-                  </div>
-                  <div className="flex-1">
-                    <div className="grid grid-cols-4 gap-2 text-xs font-medium text-muted-foreground mb-3">
-                      <span className="col-span-2">Competency</span>
-                      <span className="text-center">Current</span>
-                      <span className="text-center">Future</span>
+        {/* Latest Future Skill Reports */}
+        <div className="animate-fade-in-up" style={{ animationDelay: '500ms' }}>
+          <Card className="bg-card/80 border-border/50 h-full">
+            <CardHeader>
+              <CardTitle className="text-foreground text-center">
+                Aktuelle Future Skill Berichte
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {reports && reports.length > 0 ? (
+                reports.slice(0, 4).map((report, index) => (
+                  <button 
+                    key={report.id}
+                    className={`w-full p-4 rounded-lg text-left transition-all duration-200 ${
+                      index === 0 
+                        ? 'bg-primary text-primary-foreground hover:bg-primary/90' 
+                        : 'bg-secondary/50 text-foreground hover:bg-secondary/70'
+                    }`}
+                  >
+                    <span>{report.title}</span>
+                    <p className={`text-xs mt-1 ${index === 0 ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}>
+                      Q{report.quarter} {report.year}
+                    </p>
+                  </button>
+                ))
+              ) : (
+                <>
+                  <button className="w-full p-4 rounded-lg bg-primary text-primary-foreground text-left hover:bg-primary/90 transition-all duration-200">
+                    <span>Future Role-Skill-Matrix für Senior Associate</span>
+                  </button>
+                  <button className="w-full p-4 rounded-lg bg-secondary/50 text-foreground text-left hover:bg-secondary/70 transition-all duration-200">
+                    <span>Legal Tech AI Integration - Q1 2025 Update</span>
+                  </button>
+                  <button className="w-full p-4 rounded-lg bg-secondary/50 text-foreground text-left hover:bg-secondary/70 transition-all duration-200">
+                    <span>EU AI Act Compliance Requirements</span>
+                  </button>
+                </>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
+      {/* Teams Overview */}
+      <div className="animate-fade-in-up" style={{ animationDelay: '600ms' }}>
+        <Card className="bg-card/80 border-border/50">
+          <CardHeader>
+            <CardTitle className="text-foreground">Team-Übersicht</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {teamsLoading ? (
+              <div className="grid md:grid-cols-3 gap-6">
+                {[1, 2, 3].map(i => (
+                  <Skeleton key={i} className="h-48 rounded-xl" />
+                ))}
+              </div>
+            ) : teams && teams.length > 0 ? (
+              <div className="grid md:grid-cols-3 gap-6">
+                {teams.map((team) => (
+                  <div key={team.id} className="p-4 rounded-lg bg-secondary/30 border border-border/50 hover:border-primary/30 hover:bg-secondary/50 transition-all duration-300">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="font-semibold text-foreground">{team.name}</h3>
+                      <Badge variant="secondary">
+                        <span className="tabular-nums">{Math.round(team.average_score || 0)}%</span>
+                      </Badge>
                     </div>
-                    <div className="space-y-3 max-h-[250px] overflow-y-auto">
-                      {roleCompetencies.length > 0 ? (
-                        roleCompetencies.map((comp, index) => {
-                          const currentLevel = getSkillLevel(comp.demand_weight || 50);
-                          const futureLevel = getSkillLevel(comp.future_demand_max || 70);
-                          return (
-                            <ScrollReveal key={comp.id} delay={index * 50}>
-                              <div className="grid grid-cols-4 gap-2 items-center p-2 rounded-lg hover:bg-secondary/30 transition-colors">
-                                <span className="text-sm text-foreground truncate col-span-2">
-                                  {comp.name}
-                                </span>
-                                <div className="flex justify-center">
-                                  <DemandIndicator level={currentLevel} showLabel={false} />
-                                </div>
-                                <div className="flex justify-center">
-                                  <DemandIndicator level={futureLevel} showLabel={false} />
-                                </div>
-                              </div>
-                            </ScrollReveal>
-                          );
-                        })
-                      ) : (
-                        <p className="text-muted-foreground text-center py-4 text-sm">
-                          No competencies defined for this role
+                    <p className="text-sm text-muted-foreground mb-3">
+                      {team.member_count || 0} Mitglieder
+                    </p>
+                    <div className="space-y-2">
+                      {team.members?.slice(0, 4).map((member) => (
+                        <button
+                          key={member.id}
+                          onClick={() => {
+                            const fullEmployee = employees?.find(e => e.id === member.id);
+                            if (fullEmployee) setSelectedEmployee(fullEmployee);
+                          }}
+                          className="w-full flex items-center gap-2 text-sm hover:bg-background/50 p-1 rounded transition-all duration-200"
+                        >
+                          <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center text-xs text-primary">
+                            {member.full_name.split(" ").map(n => n[0]).join("")}
+                          </div>
+                          <span className="text-foreground flex-1 truncate text-left">{member.full_name}</span>
+                          <span className="text-muted-foreground tabular-nums">{Math.round(member.overall_score || 0)}%</span>
+                        </button>
+                      ))}
+                      {(team.members?.length || 0) > 4 && (
+                        <p className="text-xs text-muted-foreground">
+                          +{(team.members?.length || 0) - 4} weitere
                         </p>
                       )}
                     </div>
                   </div>
-                </div>
-              </GlassCardContent>
-            </GlassCard>
-          </ScrollReveal>
-
-          {/* Latest Future Skill Reports */}
-          <ScrollReveal delay={400} direction="up">
-            <GlassCard className="hover-glow h-full">
-              <GlassCardHeader>
-                <GlassCardTitle className="text-foreground text-center">
-                  Aktuelle Future Skill Berichte
-                </GlassCardTitle>
-              </GlassCardHeader>
-              <GlassCardContent className="space-y-3">
-                {reports && reports.length > 0 ? (
-                  reports.slice(0, 4).map((report, index) => (
-                    <button 
-                      key={report.id}
-                      className={`w-full p-4 rounded-lg text-left hover:translate-x-1 transition-all duration-200 group ${
-                        index === 0 
-                          ? 'bg-primary text-primary-foreground hover:bg-primary/90' 
-                          : 'bg-secondary/50 backdrop-blur text-foreground hover:bg-secondary/70'
-                      }`}
-                    >
-                      <span className="group-hover:ml-1 transition-all duration-200">{report.title}</span>
-                      <p className={`text-xs mt-1 ${index === 0 ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}>
-                        Q{report.quarter} {report.year}
-                      </p>
-                    </button>
-                  ))
-                ) : (
-                  <>
-                    <button className="w-full p-4 rounded-lg bg-primary text-primary-foreground text-left hover:bg-primary/90 hover:translate-x-1 transition-all duration-200 group">
-                      <span className="group-hover:ml-1 transition-all duration-200">Future Role-Skill-Matrix für Senior Associate</span>
-                    </button>
-                    <button className="w-full p-4 rounded-lg bg-secondary/50 backdrop-blur text-foreground text-left hover:bg-secondary/70 hover:translate-x-1 transition-all duration-200 group">
-                      <span className="group-hover:ml-1 transition-all duration-200">Legal Tech AI Integration - Q1 2025 Update</span>
-                    </button>
-                    <button className="w-full p-4 rounded-lg bg-secondary/50 backdrop-blur text-foreground text-left hover:bg-secondary/70 hover:translate-x-1 transition-all duration-200 group">
-                      <span className="group-hover:ml-1 transition-all duration-200">EU AI Act Compliance Requirements</span>
-                    </button>
-                  </>
-                )}
-              </GlassCardContent>
-            </GlassCard>
-          </ScrollReveal>
-        </div>
-
-        {/* Teams Overview */}
-        <ScrollReveal delay={500} direction="up">
-          <GlassCard className="mt-6">
-            <GlassCardHeader>
-              <GlassCardTitle className="text-foreground">Team-Übersicht</GlassCardTitle>
-            </GlassCardHeader>
-            <GlassCardContent>
-              {teamsLoading ? (
-                <div className="grid md:grid-cols-3 gap-6">
-                  {[1, 2, 3].map(i => (
-                    <Skeleton key={i} className="h-48 rounded-xl" />
-                  ))}
-                </div>
-              ) : teams && teams.length > 0 ? (
-                <div className="grid md:grid-cols-3 gap-6">
-                  {teams.map((team, teamIndex) => (
-                    <ScrollReveal key={team.id} delay={teamIndex * 100}>
-                      <div className="p-4 rounded-lg bg-secondary/30 backdrop-blur border border-border/50 hover:border-primary/30 hover:bg-secondary/50 transition-all duration-300">
-                        <div className="flex items-center justify-between mb-4">
-                          <h3 className="font-semibold text-foreground">{team.name}</h3>
-                          <Badge variant="secondary" className="backdrop-blur">
-                            {Math.round(team.average_score || 0)}%
-                          </Badge>
-                        </div>
-                        <p className="text-sm text-muted-foreground mb-3">
-                          {team.member_count || 0} Mitglieder
-                        </p>
-                        <div className="space-y-2">
-                          {team.members?.slice(0, 4).map((member) => (
-                            <button
-                              key={member.id}
-                              onClick={() => {
-                                const fullEmployee = employees?.find(e => e.id === member.id);
-                                if (fullEmployee) setSelectedEmployee(fullEmployee);
-                              }}
-                              className="w-full flex items-center gap-2 text-sm hover:bg-background/50 p-1 rounded transition-all duration-200 group"
-                            >
-                              <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center text-xs text-primary transition-transform duration-200 group-hover:scale-110">
-                                {member.full_name.split(" ").map(n => n[0]).join("")}
-                              </div>
-                              <span className="text-foreground flex-1 truncate text-left">{member.full_name}</span>
-                              <span className="text-muted-foreground">{Math.round(member.overall_score || 0)}%</span>
-                            </button>
-                          ))}
-                          {(team.members?.length || 0) > 4 && (
-                            <p className="text-xs text-muted-foreground">
-                              +{(team.members?.length || 0) - 4} weitere
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                    </ScrollReveal>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-muted-foreground text-center py-8">Keine Teams gefunden</p>
-              )}
-            </GlassCardContent>
-          </GlassCard>
-        </ScrollReveal>
-      </main>
+                ))}
+              </div>
+            ) : (
+              <p className="text-muted-foreground text-center py-8">Keine Teams gefunden</p>
+            )}
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Employee Profile Dialog */}
       <Dialog open={!!selectedEmployee} onOpenChange={() => setSelectedEmployee(null)}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto glass">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           {selectedEmployee && (
             <EmployeeProfile 
               employeeId={selectedEmployee.id}

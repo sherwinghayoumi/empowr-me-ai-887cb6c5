@@ -290,8 +290,8 @@ const AdminDashboard = () => {
                   >
                     {kpi.value}
                   </p>
-                  {'sublabel' in kpi && kpi.sublabel && (
-                    <p className="text-[10px] text-muted-foreground mt-1">{kpi.sublabel}</p>
+                  {'sublabel' in kpi && (kpi as any).sublabel && (
+                    <p className="text-[10px] text-muted-foreground mt-1">{(kpi as any).sublabel}</p>
                   )}
                 </CardContent>
               </Card>

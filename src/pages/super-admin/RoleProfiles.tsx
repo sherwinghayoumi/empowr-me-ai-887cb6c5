@@ -29,7 +29,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { RoleProfileCard } from '@/components/role-profiles/RoleProfileCard';
 import { CSVUploadWizard } from '@/components/role-profiles/CSVUploadWizard';

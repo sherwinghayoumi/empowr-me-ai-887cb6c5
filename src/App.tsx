@@ -36,6 +36,7 @@ import ReportsPage from "@/pages/admin/ReportsPage";
 import FutureSkillReportPage from "@/pages/admin/FutureSkillReportPage";
 import MeasuresPage from "@/pages/admin/MeasuresPage";
 import BudgetPage from "@/pages/admin/BudgetPage";
+import SettingsPage from "@/pages/admin/SettingsPage";
 
 // Other
 import NotFound from "@/pages/NotFound";
@@ -81,6 +82,7 @@ function AppRoutes() {
         <Route path="reports/future-skill-matrix" element={<FutureSkillReportPage />} />
         <Route path="measures" element={<MeasuresPage />} />
         <Route path="budget" element={<BudgetPage />} />
+        <Route path="settings" element={<SettingsPage />} />
       </Route>
 
       {/* Default Redirect */}

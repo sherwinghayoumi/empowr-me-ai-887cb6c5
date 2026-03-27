@@ -40,7 +40,7 @@ const navItems = [
   { label: 'Maßnahmen', href: '/admin/measures', icon: ClipboardList },
   { label: 'Budget & ROI', href: '/admin/budget', icon: TrendingUp },
   { label: 'Reports', href: '/admin/reports', icon: FileText },
-  { label: 'Settings', href: '/admin/settings', icon: Settings, disabled: true },
+  { label: 'Settings', href: '/admin/settings', icon: Settings },
 ];
 
 const breadcrumbLabels: Record<string, string> = {

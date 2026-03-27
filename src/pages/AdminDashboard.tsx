@@ -26,6 +26,7 @@ import {
   useOrgStats,
   useSkillGapAnalysis,
 } from "@/hooks/useOrgData";
+import { useMeasures } from "@/hooks/useMeasures";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   PieChart,

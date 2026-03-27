@@ -81,7 +81,7 @@ function AppRoutes() {
         <Route path="reports" element={<ReportsPage />} />
         <Route path="reports/future-skill-matrix" element={<FutureSkillReportPage />} />
         <Route path="measures" element={<MeasuresPage />} />
-        <Route path="budget" element={<PlaceholderPage title="Budget & ROI" description="Budget-Übersicht pro Team, ROI-Berechnung und €/Kompetenzpunkt-Analyse." />} />
+        <Route path="budget" element={<BudgetPage />} />
       </Route>
 
       {/* Default Redirect */}

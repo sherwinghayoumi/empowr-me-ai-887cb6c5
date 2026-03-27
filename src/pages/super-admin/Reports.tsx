@@ -9,7 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { GlassCard, GlassCardContent, GlassCardHeader, GlassCardTitle } from '@/components/GlassCard';
+import { GlassCard, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ReportsList } from '@/components/reports/ReportsList';
 import { ReportFormWizard } from '@/components/reports/ReportFormWizard';
 import { ReportDetailDialog } from '@/components/reports/ReportDetailDialog';
@@ -172,14 +172,14 @@ const Reports = () => {
       </div>
 
       {/* Reports List */}
-      <GlassCard>
-        <GlassCardHeader>
-          <GlassCardTitle className="flex items-center gap-2">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
             <FileText className="w-5 h-5" />
             Reports ({filteredReports?.length || 0})
-          </GlassCardTitle>
-        </GlassCardHeader>
-        <GlassCardContent>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
           <ReportsList
             reports={filteredReports}
             isLoading={isLoading}
@@ -189,8 +189,8 @@ const Reports = () => {
             onPublish={handlePublish}
             onUnpublish={handleUnpublish}
           />
-        </GlassCardContent>
-      </GlassCard>
+        </CardContent>
+      </Card>
 
       {/* Wizard Dialog */}
       <ReportFormWizard

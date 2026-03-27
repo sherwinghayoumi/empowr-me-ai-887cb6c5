@@ -1,84 +1,116 @@
 
-# Skill-Gap Severity-Engine: Neukalibrierung & Sprachliches Reframing
 
-## Das Problem (mit echten Zahlen belegt)
+# FUTURA TEAMS v3 Migration — Schritt 1: Design-Tokens + Sidebar-Navigation + Farbsprache
 
-Die Datenbankabfrage zeigt:
-- Skala: 0–100 (bestätigt)
-- 127 von 211 Gaps (60 %) werden als "Kritisch" markiert
-- Durchschnittlicher Gap: ~24 Punkte – das ist normales Entwicklungspotenzial, kein Notfall
+## Zusammenfassung
 
-Die aktuelle Formel: `weighted = (dem - cur) * 0.4 + (fut - cur) * 0.6`
-- Threshold "Kritisch": >= 30 → wird bei einem Gap von z.B. Ist:50, Soll:80, Ziel:80 ausgelöst: (30×0.4) + (30×0.6) = 30 → sofort "Kritisch"
-- Das bedeutet: Wer auch nur 30 Punkte unter dem Soll liegt, wird als Notfall markiert. Das ist bei dieser Skala viel zu aggressiv.
+Schritt 1 legt das visuelle und strukturelle Fundament für v3: neues Farbschema (Dark Navy + Gold, kein Glassmorphism), Severity-Tokens, Sidebar-Navigation für Org-Admin, und Routing-Umbau. Alle bestehenden Admin-Seiten werden in ein neues Sidebar-Layout eingebettet. Employee-Routen werden entfernt.
 
-## Strategisches Reframing
-
-Kanzleien, die quartalsweise ihre Teams sehen und permanent rote "Kritisch"-Badges sehen, reagieren typischerweise so:
-1. **Kurzfristig** – Schock und Verunsicherung: "Ist unser Team wirklich so schlecht?"
-2. **Mittelfristig** – Alert Fatigue: Die roten Badges werden ignoriert, weil alles immer rot ist
-3. **Langfristig** – Tool-Abandonment: Das Tool wird als "zu pessimistisch" eingestuft und nicht mehr ernst genommen
-
-Das Ziel: Skill Gaps als **Wachstumschancen** darstellen, nicht als Krisen.
-
-## Änderungen
-
-### 1. Neue Schwellenwerte (angepasst an 0–100-Skala)
-
-Statt absoluter Gap-Werte wird der Gap relativ zur Soll-Anforderung bewertet:
-
-```
-gapRatio = weightedGap / demandedLevel (in %)
-```
-
-Neue Labels und Schwellen:
-- **Fokusbereich** (bisher "Kritisch"): gapRatio >= 50% → mehr als die Hälfte des Weges fehlt noch
-- **Im Aufbau** (bisher "Hoch"): gapRatio >= 25%
-- **Auf Kurs** (bisher "Moderat"): darunter
-
-Beispiel mit Ist:50, Soll:80:
-- Gap = 30, Soll = 80 → Ratio = 37.5% → "Im Aufbau" statt "Kritisch"
-
-Beispiel mit Ist:20, Soll:80:
-- Gap = 60, Soll = 80 → Ratio = 75% → "Fokusbereich"
-
-### 2. Neue Labels (positiv-konstruktiv, kein Alarmmodus)
-
-| Alt | Neu | Farbe |
-|---|---|---|
-| Kritisch | Fokusbereich | Amber/Orange (nicht Rot) |
-| Hoch | Im Aufbau | Blau/Teal |
-| Moderat | Auf Kurs | Grün |
-
-Die Farbe "Rot" (destructive) wird komplett entfernt für Severity-Badges. Rot bleibt nur für echte Systemfehler.
-
-### 3. Gap-Anzeige: Positiv formulieren
-
-Statt `−30%` (was wie ein Fehler wirkt):
-- `+30 Pkt. Potenzial` oder `Noch 30 Pkt.`
-
-Das gleiche Faktum, aber als Entwicklungsrichtung gelesen.
-
-### 4. Stats-Kacheln überarbeiten
-
-Statt "Kritisch"-Zähler oben (der Alarm auslöst):
-- Erste Kachel: "Entwicklungsbereiche" (neutral, alle Gaps)
-- Zweite Kachel: "Fokus-Kompetenzen" (nur >= 50% Ratio) mit Amber statt Rot
-- Dritte Kachel: Betroffene Mitarbeiter (bleibt)
-
-### 5. Filter-Labels anpassen
-
-Aus "Kritisch ≥30 / Hoch 15–29 / Moderat <15" wird:
-"Fokusbereich / Im Aufbau / Auf Kurs"
+---
 
 ## Betroffene Dateien
 
-- `src/components/SkillGapCardDb.tsx` – Neue `getGapSeverity()`-Funktion, neue Labels, neue Farben, Gap-Text positiv formulieren
-- `src/pages/admin/SkillGapPage.tsx` – Neue `getSeverityLabel()`-Funktion, Stats-Kacheln anpassen, Filter-Labels aktualisieren, Threshold für Anzeige-Mindestgap prüfen
+### 1. `src/index.css` — Design-Tokens ersetzen
 
-## Nicht geändert
+- Glassmorphism-Klassen entfernen: `.glass`, `.glass-card`, `.glass-strong`, `.glass-subtle`
+- Severity-Tokens hinzufügen: `--severity-critical: 0 84% 60%`, `--severity-medium: 45 75% 50%`, `--severity-low: 142 71% 45%`
+- Aufwändige Keyframes entfernen: `gradient-shift`, `gradient-shift-reverse`, `gradient-pulse`, `float`, `star-pulse`, `ai-sparkle-icon`, `ai-shimmer`
+- Behalten: `fadeIn`, `fadeInUp`, `scaleIn`, `slideInLeft/Right`, `pulseSoft`, `skeleton-pulse`, `progress-fill`
+- Hex-Pattern entfernen
+- Bestehende Farb-Tokens bleiben (bereits Dark Navy + Gold)
 
-- Die Formel selbst (`weighted = (dem - cur) * 0.4 + (fut - cur) * 0.6`) bleibt – sie ist mathematisch korrekt
-- Der Mindest-Schwellenwert für die Anzeige im Gap-Feed (aktuell >= 10) bleibt, damit wirklich nur relevante Gaps erscheinen
-- Keine Datenbankänderungen
-- Keine Engine-Änderungen
+### 2. `src/layouts/AdminLayout.tsx` — Neues Sidebar-Layout (NEU)
+
+Neues Layout analog zu `SuperAdminLayout.tsx`:
+- Sidebar (links, 280px, collapsible auf Mobile via Sheet)
+- Nav-Einträge: Dashboard, Anwälte, Skill Gaps, Maßnahmen*, Budget & ROI*, Reports, Settings*
+- Logo + Org-Name oben, User-Info + Logout unten
+- Breadcrumbs im Header
+- `<Outlet />` für Child-Routes
+- *Maßnahmen, Budget, Settings: Routen existieren noch nicht → werden in späteren Schritten erstellt, Navigation zeigt sie aber schon (disabled oder als Placeholder)
+
+### 3. `src/App.tsx` — Routing-Umbau
+
+- Employee-Routen entfernen (`/employee`, `/employee/skills`, `/employee/learning`)
+- Admin-Routen in nested Layout umbauen:
+  ```
+  <Route path="/admin" element={<ProtectedRoute><AdminLayout /></ProtectedRoute>}>
+    <Route index element={<AdminDashboard />} />
+    <Route path="teams" element={<TeamsPage />} />
+    <Route path="employees" element={<EmployeesPage />} />
+    <Route path="skill-gaps" element={<SkillGapPage />} />
+    <Route path="reports" element={<ReportsPage />} />
+    <Route path="reports/future-skill-matrix" element={<FutureSkillReportPage />} />
+    <Route path="measures" element={<PlaceholderPage title="Maßnahmen" />} />
+    <Route path="budget" element={<PlaceholderPage title="Budget & ROI" />} />
+  </Route>
+  ```
+- Default redirect `/` → `/login` bleibt
+- EmployeeDashboard, MySkillsPage, MyLearningPage Imports entfernen
+
+### 4. Admin-Seiten anpassen (6 Dateien)
+
+Jede Admin-Seite (`AdminDashboard`, `TeamsPage`, `EmployeesPage`, `SkillGapPage`, `ReportsPage`, `FutureSkillReportPage`):
+- `<Header variant="admin" />` entfernen (Sidebar übernimmt Navigation)
+- `GlassCard` → shadcn `Card` mit `className="bg-card/80 border-border/50"`
+- `AnimatedCounter` → statischer Wert mit `tabular-nums` Klasse
+- `ScrollReveal` → `<div className="animate-fade-in-up">` mit stagger-Klassen
+- `ParallaxBackground` entfernen
+- Äußeres `<div className="min-h-screen">` + `<main className="container py-8">` entfernen (Layout liefert das)
+
+### 5. Dateien entfernen / nicht mehr importieren
+
+- `src/components/GlassCard.tsx` — nicht mehr benötigt (kein Delete nötig, nur Imports entfernen)
+- `src/components/AnimatedCounter.tsx` — nicht mehr benötigt
+- `src/components/ScrollReveal.tsx` — nicht mehr benötigt
+- `src/components/ParallaxBackground.tsx` — nicht mehr benötigt
+- Employee-Seiten bleiben im Dateisystem, werden aber aus App.tsx entfernt
+- `src/components/Header.tsx` — wird von Admin-Seiten nicht mehr verwendet
+
+### 6. `tailwind.config.ts` — Minimal
+
+Keine Änderungen nötig — Farb-Tokens kommen aus CSS-Variablen, die bereits korrekt sind.
+
+---
+
+## Technische Details
+
+**Komponenten-Mapping (Suchen & Ersetzen):**
+
+| Alt | Neu |
+|-----|-----|
+| `<GlassCard>` | `<Card className="bg-card/80 border-border/50">` |
+| `<GlassCardHeader>` | `<CardHeader>` |
+| `<GlassCardTitle>` | `<CardTitle>` |
+| `<GlassCardContent>` | `<CardContent>` |
+| `<AnimatedCounter value={n} />` | `<span className="tabular-nums">{n}</span>` |
+| `<ScrollReveal delay={d}>` | `<div className="animate-fade-in-up" style={{animationDelay: `${d}ms`}}>` |
+| `<ParallaxBackground />` | entfernen |
+| `<Header variant="admin" />` | entfernen |
+
+**AdminLayout Sidebar-Nav-Items:**
+```typescript
+[
+  { label: "Dashboard",    href: "/admin",           icon: LayoutDashboard },
+  { label: "Anwälte",      href: "/admin/employees", icon: Users },
+  { label: "Teams",        href: "/admin/teams",     icon: Building2 },
+  { label: "Skill Gaps",   href: "/admin/skill-gaps",icon: AlertTriangle },
+  { label: "Maßnahmen",    href: "/admin/measures",  icon: ClipboardList },
+  { label: "Budget & ROI", href: "/admin/budget",    icon: TrendingUp },
+  { label: "Reports",      href: "/admin/reports",   icon: FileText },
+  { label: "Settings",     href: "/admin/settings",  icon: Settings },
+]
+```
+
+**Nicht anfassen:** Supabase-Client, Auth-Context, alle Hooks, Edge Functions, RLS, DB-Migrationen.
+
+---
+
+## Reihenfolge der Implementierung
+
+1. `index.css` — Glassmorphism entfernen, Severity-Tokens hinzufügen
+2. `AdminLayout.tsx` — Neues Sidebar-Layout erstellen
+3. `App.tsx` — Routing umbauen
+4. Admin-Seiten einzeln migrieren (GlassCard → Card, etc.)
+5. Placeholder-Seite für `/measures` und `/budget` erstellen
+

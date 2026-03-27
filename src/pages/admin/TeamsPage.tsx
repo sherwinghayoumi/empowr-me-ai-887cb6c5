@@ -19,6 +19,7 @@ interface TeamFormData {
   tags: string[];
   priority: number;
   isArchived: boolean;
+  annualBudget: number | null;
   members: { employeeId: string; employeeName: string; role: string }[];
 }
 
@@ -33,6 +34,7 @@ interface TeamData {
   is_archived?: boolean | null;
   average_score?: number | null;
   member_count?: number | null;
+  annual_budget?: number | null;
   members?: Array<{
     id: string;
     full_name: string;
@@ -82,6 +84,7 @@ const TeamsPage = () => {
       icon: data.icon,
       tags: data.tags,
       priority: data.priority,
+      annual_budget: data.annualBudget,
       members: data.members.map(m => ({ employeeId: m.employeeId, role: m.role })),
     };
 
@@ -105,6 +108,7 @@ const TeamsPage = () => {
       tags: selectedTeam.tags || [],
       priority: selectedTeam.priority || 0,
       isArchived: selectedTeam.is_archived || false,
+      annualBudget: selectedTeam.annual_budget ?? null,
       members: selectedTeam.members?.map(m => ({
         employeeId: m.id,
         employeeName: m.full_name,

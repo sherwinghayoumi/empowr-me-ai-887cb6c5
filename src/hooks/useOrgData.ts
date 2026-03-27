@@ -133,7 +133,7 @@ export function useTeams(includeArchived = false) {
       let query = supabase
         .from('teams')
         .select(`
-          *,
+          id, name, description, color, icon, tags, priority, is_archived, average_score, member_count, annual_budget, organization_id,
           members:employees(id, full_name, avatar_url, overall_score, team_role, role_profile:role_profiles!employees_role_profile_id_fkey(role_title))
         `)
         .eq('organization_id', organization?.id)
@@ -159,6 +159,7 @@ interface CreateTeamData {
   icon?: string;
   tags?: string[];
   priority?: number;
+  annual_budget?: number | null;
   members?: { employeeId: string; role: string }[];
 }
 
@@ -180,6 +181,7 @@ export function useCreateTeam() {
           icon: data.icon || 'Users',
           tags: data.tags || [],
           priority: data.priority || 0,
+          annual_budget: data.annual_budget ?? null,
           organization_id: organization.id,
         })
         .select()
@@ -214,6 +216,7 @@ export function useCreateTeam() {
 interface UpdateTeamData extends CreateTeamData {
   id: string;
   isArchived?: boolean;
+  annual_budget?: number | null;
 }
 
 export function useUpdateTeam() {
@@ -232,6 +235,7 @@ export function useUpdateTeam() {
           tags: data.tags,
           priority: data.priority,
           is_archived: data.isArchived || false,
+          annual_budget: data.annual_budget ?? null,
         })
         .eq('id', data.id)
         .select()

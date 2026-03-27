@@ -30,6 +30,7 @@ interface TeamData {
   is_archived?: boolean | null;
   average_score?: number | null;
   member_count?: number | null;
+  annual_budget?: number | null;
   members?: TeamMember[] | null;
 }
 
@@ -75,7 +76,10 @@ export function TeamCard({ team, index, onMemberClick, onEdit, onArchive, onDele
             </DropdownMenu>
           </div>
         </div>
-        <p className="text-xs text-muted-foreground">{memberCount} Mitglieder</p>
+        <p className="text-xs text-muted-foreground">
+          {memberCount} Mitglieder
+          {team.annual_budget ? ` · Budget: ${team.annual_budget.toLocaleString('de-DE')} €` : ''}
+        </p>
       </CardHeader>
       <CardContent className="p-0">
         {team.members && team.members.length > 0 ? (

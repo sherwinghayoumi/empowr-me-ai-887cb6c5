@@ -309,8 +309,8 @@ const SkillGapPage = () => {
         </Card>
         <Card className="bg-card/80 border-border/50">
           <CardContent className="py-3 px-4 flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-amber-500/15">
-              <Target className="w-4 h-4 text-amber-500" />
+            <div className="p-2 rounded-lg bg-[hsl(var(--severity-medium))]/15">
+              <Target className="w-4 h-4 text-[hsl(var(--severity-medium))]" />
             </div>
             <div>
               <p className="text-xl font-bold text-foreground leading-none tabular-nums">{focusCount}</p>

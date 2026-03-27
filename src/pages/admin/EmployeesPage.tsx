@@ -115,16 +115,16 @@ function EmployeeCard({
               </div>
               <div className="flex items-center gap-2 justify-end">
                 {employeeMissingSkills.has(emp.id) ? (
-                  <Badge variant="outline" className="text-xs gap-1 bg-amber-500/15 text-amber-500 border-amber-500/30">
+                  <Badge variant="outline" className="text-xs gap-1 bg-[hsl(var(--severity-medium))]/15 text-[hsl(var(--severity-medium))] border-[hsl(var(--severity-medium))]/30">
                     <RefreshCw className="w-3 h-3" />Update
                   </Badge>
                 ) : emp.overall_score != null && emp.overall_score > 0 ? (
-                  <Badge variant="outline" className="text-xs gap-1 bg-emerald-500/15 text-emerald-400 border-emerald-500/30">
+                  <Badge variant="outline" className="text-xs gap-1 bg-[hsl(var(--severity-low))]/15 text-[hsl(var(--severity-low))] border-[hsl(var(--severity-low))]/30">
                     <CheckCircle className="w-3 h-3" />Aktuell
                   </Badge>
                 ) : null}
                 {docCount > 0 && (
-                  <Badge variant="outline" className={cn("text-xs", docCount === 3 ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30" : "bg-amber-500/15 text-amber-500 border-amber-500/30")}>
+                  <Badge variant="outline" className={cn("text-xs", docCount === 3 ? "bg-[hsl(var(--severity-low))]/15 text-[hsl(var(--severity-low))] border-[hsl(var(--severity-low))]/30" : "bg-[hsl(var(--severity-medium))]/15 text-[hsl(var(--severity-medium))] border-[hsl(var(--severity-medium))]/30")}>
                     {docCount}/3
                   </Badge>
                 )}
@@ -187,11 +187,11 @@ function EmployeeCard({
                 <Tooltip>
                   <TooltipTrigger asChild>
                     {employeeMissingSkills.has(emp.id) ? (
-                      <Badge variant="outline" className="text-xs gap-1 mt-1 bg-amber-500/15 text-amber-500 border-amber-500/30">
+                      <Badge variant="outline" className="text-xs gap-1 mt-1 bg-[hsl(var(--severity-medium))]/15 text-[hsl(var(--severity-medium))] border-[hsl(var(--severity-medium))]/30">
                         <RefreshCw className="w-3 h-3" />Update verfügbar
                       </Badge>
                     ) : (
-                      <Badge variant="outline" className="text-xs gap-1 mt-1 bg-emerald-500/15 text-emerald-400 border-emerald-500/30">
+                      <Badge variant="outline" className="text-xs gap-1 mt-1 bg-[hsl(var(--severity-low))]/15 text-[hsl(var(--severity-low))] border-[hsl(var(--severity-low))]/30">
                         <CheckCircle className="w-3 h-3" />Aktuell
                       </Badge>
                     )}
@@ -206,7 +206,7 @@ function EmployeeCard({
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Badge variant="outline" className={cn("text-xs gap-1 mt-1", docCount === 3 ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30" : "bg-amber-500/15 text-amber-500 border-amber-500/30")}>
+                    <Badge variant="outline" className={cn("text-xs gap-1 mt-1", docCount === 3 ? "bg-[hsl(var(--severity-low))]/15 text-[hsl(var(--severity-low))] border-[hsl(var(--severity-low))]/30" : "bg-[hsl(var(--severity-medium))]/15 text-[hsl(var(--severity-medium))] border-[hsl(var(--severity-medium))]/30")}>
                       <FolderOpen className="w-3 h-3" />{docCount}/3 Dok.
                     </Badge>
                   </TooltipTrigger>
@@ -479,9 +479,12 @@ const EmployeesPage = () => {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 animate-fade-in-up">
-        <h1 className="text-3xl font-bold text-foreground">
-          Mitarbeiter (<span className="tabular-nums">{employees?.length || 0}</span>)
-        </h1>
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">
+            Anwälte <span className="text-muted-foreground font-normal text-lg tabular-nums">({employees?.length || 0})</span>
+          </h1>
+          <p className="text-sm text-muted-foreground mt-1">Kompetenzprofile verwalten und KI-Assessments durchführen</p>
+        </div>
         <div className="flex gap-2">
           {needsBulkUpdate && (
             <Button variant="outline" onClick={() => setShowBulkModal(true)} className="gap-2">
@@ -489,7 +492,7 @@ const EmployeesPage = () => {
             </Button>
           )}
           <Button onClick={openCreateDialog} className="gap-2">
-            <UserPlus className="w-4 h-4" />Neuer Mitarbeiter
+            <UserPlus className="w-4 h-4" />Neuer Anwalt
           </Button>
         </div>
       </div>

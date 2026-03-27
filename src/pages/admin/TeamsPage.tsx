@@ -149,25 +149,28 @@ const TeamsPage = () => {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between animate-fade-in-up">
-        <div className="flex items-center gap-4">
-          <h1 className="text-3xl font-bold text-foreground">Teams</h1>
-          <Tabs value={showArchived ? "archived" : "active"} onValueChange={(v) => setShowArchived(v === "archived")}>
-            <TabsList>
-              <TabsTrigger value="active" className="flex items-center gap-2">
-                <Users className="w-4 h-4" />
-                Aktiv
-              </TabsTrigger>
-              <TabsTrigger value="archived" className="flex items-center gap-2">
-                <Archive className="w-4 h-4" />
-                Archiviert
-                {archivedCount > 0 && (
-                  <span className="ml-1 text-xs bg-secondary px-1.5 py-0.5 rounded-full">
-                    {archivedCount}
-                  </span>
-                )}
-              </TabsTrigger>
-            </TabsList>
-          </Tabs>
+        <div>
+          <div className="flex items-center gap-4">
+            <h1 className="text-2xl font-bold text-foreground">Teams</h1>
+            <Tabs value={showArchived ? "archived" : "active"} onValueChange={(v) => setShowArchived(v === "archived")}>
+              <TabsList>
+                <TabsTrigger value="active" className="flex items-center gap-2">
+                  <Users className="w-4 h-4" />
+                  Aktiv
+                </TabsTrigger>
+                <TabsTrigger value="archived" className="flex items-center gap-2">
+                  <Archive className="w-4 h-4" />
+                  Archiviert
+                  {archivedCount > 0 && (
+                    <span className="ml-1 text-xs bg-secondary px-1.5 py-0.5 rounded-full tabular-nums">
+                      {archivedCount}
+                    </span>
+                  )}
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
+          </div>
+          <p className="text-sm text-muted-foreground mt-1">Teams organisieren und Budget zuweisen</p>
         </div>
         <Button onClick={handleOpenCreate}>
           <Plus className="w-4 h-4 mr-2" />

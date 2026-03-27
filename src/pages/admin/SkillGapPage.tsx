@@ -309,8 +309,8 @@ const SkillGapPage = () => {
         </Card>
         <Card className="bg-card/80 border-border/50">
           <CardContent className="py-3 px-4 flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-amber-500/15">
-              <Target className="w-4 h-4 text-amber-500" />
+            <div className="p-2 rounded-lg bg-[hsl(var(--severity-medium))]/15">
+              <Target className="w-4 h-4 text-[hsl(var(--severity-medium))]" />
             </div>
             <div>
               <p className="text-xl font-bold text-foreground leading-none tabular-nums">{focusCount}</p>
@@ -439,17 +439,17 @@ const SkillGapPage = () => {
                       </div>
                       <div className="flex items-center gap-1.5 shrink-0">
                         {roleCountFocus > 0 && (
-                          <Badge variant="outline" className="text-xs bg-amber-500/15 text-amber-500 border-amber-500/25">
+                          <Badge variant="outline" className="text-xs bg-[hsl(var(--severity-medium))]/15 text-[hsl(var(--severity-medium))] border-[hsl(var(--severity-medium))]/25">
                             {roleCountFocus}× Potenzial
                           </Badge>
                         )}
                         {roleCountBuilding > 0 && (
-                          <Badge variant="outline" className="text-xs bg-sky-500/15 text-sky-400 border-sky-500/25">
+                          <Badge variant="outline" className="text-xs bg-primary/15 text-primary border-primary/25">
                             {roleCountBuilding}× Wachstum
                           </Badge>
                         )}
                         {roleCountOntrack > 0 && (
-                          <Badge variant="outline" className="text-xs bg-emerald-500/15 text-emerald-500 border-emerald-500/25">
+                          <Badge variant="outline" className="text-xs bg-[hsl(var(--severity-low))]/15 text-[hsl(var(--severity-low))] border-[hsl(var(--severity-low))]/25">
                             {roleCountOntrack}× Stark
                           </Badge>
                         )}
@@ -486,17 +486,17 @@ const SkillGapPage = () => {
                                 <span className="text-sm text-foreground flex-1 truncate">{clusterName}</span>
                                 <div className="flex items-center gap-1.5 shrink-0">
                                   {clusterFocus > 0 && (
-                                    <Badge variant="outline" className="text-xs bg-amber-500/15 text-amber-500 border-amber-500/25">
+                                    <Badge variant="outline" className="text-xs bg-[hsl(var(--severity-medium))]/15 text-[hsl(var(--severity-medium))] border-[hsl(var(--severity-medium))]/25">
                                       {clusterFocus}× Potenzial
                                     </Badge>
                                   )}
                                   {clusterBuilding > 0 && (
-                                    <Badge variant="outline" className="text-xs bg-sky-500/15 text-sky-400 border-sky-500/25">
+                                    <Badge variant="outline" className="text-xs bg-primary/15 text-primary border-primary/25">
                                       {clusterBuilding}× Wachstum
                                     </Badge>
                                   )}
                                   {clusterOntrack > 0 && (
-                                    <Badge variant="outline" className="text-xs bg-emerald-500/15 text-emerald-500 border-emerald-500/25">
+                                    <Badge variant="outline" className="text-xs bg-[hsl(var(--severity-low))]/15 text-[hsl(var(--severity-low))] border-[hsl(var(--severity-low))]/25">
                                       {clusterOntrack}× Stark
                                     </Badge>
                                   )}

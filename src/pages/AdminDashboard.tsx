@@ -190,7 +190,7 @@ const AdminDashboard = () => {
   // ─── Render ────────────────────────────────────────
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Alert Banner */}
       {alerts.length > 0 && (
         <div className="animate-fade-in-up space-y-2">
@@ -210,10 +210,10 @@ const AdminDashboard = () => {
             const Icon = alert.category === "quarter" ? Clock : AlertCircle;
 
             const content = (
-              <div className={`flex items-center gap-3 px-4 py-3 rounded-lg border ${severityStyles} ${alert.link ? "cursor-pointer hover:opacity-80 transition-opacity" : ""}`}>
-                <Icon className={`w-4 h-4 shrink-0 ${iconColor} ${alert.severity === "critical" ? "animate-pulse-subtle" : ""}`} />
-                <span className="text-sm text-foreground flex-1">{alert.text}</span>
-                {alert.link && <ExternalLink className="w-3.5 h-3.5 text-muted-foreground shrink-0" />}
+              <div className={`flex items-center gap-3 px-3 py-2 rounded border ${severityStyles} ${alert.link ? "cursor-pointer hover:opacity-80 transition-opacity" : ""}`}>
+                <Icon className={`w-3.5 h-3.5 shrink-0 ${iconColor} ${alert.severity === "critical" ? "animate-pulse-subtle" : ""}`} />
+                <span className="text-xs text-foreground flex-1">{alert.text}</span>
+                {alert.link && <ExternalLink className="w-3 h-3 text-muted-foreground shrink-0" />}
               </div>
             );
 
@@ -226,51 +226,26 @@ const AdminDashboard = () => {
         </div>
       )}
 
-      {/* KPI Bar */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-        {kpis.map((kpi, i) => {
-          const Icon = kpi.icon;
-          return (
-            <div
-              key={kpi.label}
-              className="animate-fade-in-up"
-              style={{ animationDelay: `${i * 60}ms` }}
-            >
-              <Card className="bg-card/80 border-border/50 hover-lift">
-                <CardContent className="p-5">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs text-muted-foreground uppercase tracking-wider">
-                      {kpi.label}
-                    </span>
-                    <Icon className={`w-4 h-4 ${kpi.color}`} />
-                  </div>
-                  <p
-                    className={`text-2xl font-bold tabular-nums ${kpi.color} ${
-                      kpi.pulse ? "animate-pulse-subtle" : ""
-                    }`}
-                  >
-                    {kpi.value}
-                  </p>
-                  {'sublabel' in kpi && (kpi as any).sublabel && (
-                    <p className="text-[10px] text-muted-foreground mt-1">{(kpi as any).sublabel}</p>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
-          );
-        })}
+      {/* KPI Row */}
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+        {kpis.map((kpi, i) => (
+          <KpiCard
+            key={kpi.label}
+            label={kpi.label}
+            value={kpi.value}
+            icon={kpi.icon}
+            color={kpi.color}
+            pulse={kpi.pulse}
+            index={i}
+          />
+        ))}
       </div>
 
-      {/* Main Row: Top 10 + Gap Donut */}
-      <div className="grid lg:grid-cols-3 gap-6">
-        {/* Top 10 Handlungsbedarf */}
-        <div className="lg:col-span-2 animate-fade-in-up" style={{ animationDelay: "200ms" }}>
-          <Card className="bg-card/80 border-border/50 h-full">
-            <CardHeader className="pb-3">
+      <div className="grid lg:grid-cols-4 gap-4 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
+        <Card className="lg:col-span-3 bg-card/80 border-border/50 transition-shadow duration-200 hover:shadow-lg hover:shadow-primary/5">
+            <CardHeader className="py-3 px-4">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-foreground text-base">
-                  Top 10 Handlungsbedarf
-                </CardTitle>
+                <CardTitle className="text-sm font-medium">Top 10 Handlungsbedarf</CardTitle>
                 <Link
                   to="/admin/skill-gaps"
                   className="text-xs text-primary hover:underline flex items-center gap-1"

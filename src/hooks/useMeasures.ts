@@ -34,6 +34,7 @@ export const MEASURE_TYPES = [
   { value: 'conference', label: 'Konferenz' },
   { value: 'certification', label: 'Zertifizierung' },
   { value: 'self-study', label: 'Selbststudium' },
+  { value: 'learning-path', label: 'Individueller Lernpfad' },
 ] as const;
 
 export const MEASURE_STATUSES = [

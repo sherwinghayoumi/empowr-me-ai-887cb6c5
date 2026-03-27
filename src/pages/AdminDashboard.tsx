@@ -79,6 +79,7 @@ const AdminDashboard = () => {
   const { data: employees, isLoading: employeesLoading } = useEmployees();
   const { data: teams, isLoading: teamsLoading } = useTeams();
   const { data: gapAnalysis, isLoading: gapsLoading } = useSkillGapAnalysis();
+  const { data: measures } = useMeasures();
 
   // ─── Derived data ──────────────────────────────────
 

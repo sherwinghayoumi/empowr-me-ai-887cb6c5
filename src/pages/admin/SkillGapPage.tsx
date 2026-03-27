@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { KpiCard } from "@/components/KpiCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
@@ -17,6 +18,7 @@ import { toast } from "@/hooks/use-toast";
 import {
   AlertTriangle, TrendingUp, Users, FileQuestion,
   Search, X, Target, Sparkles, Loader2, ShieldAlert, Info, CheckCircle2,
+  LayoutList, Layers, ChevronDown, Briefcase,
 } from "lucide-react";
 
 // ─── Types ──────────────────────────────────────────
@@ -106,12 +108,15 @@ const SkillGapPage = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterEmployee, setFilterEmployee] = useState("all");
   const [filterRole, setFilterRole] = useState("all");
+  const [filterPracticeGroup, setFilterPracticeGroup] = useState("all");
   const [isGenerating, setIsGenerating] = useState(false);
   const [activeTab, setActiveTab] = useState("gaps");
   const [gapSortKey, setGapSortKey] = useState<'gap' | 'name' | 'employee'>('gap');
   const [gapSortAsc, setGapSortAsc] = useState(false);
   const [riskSortKey, setRiskSortKey] = useState<'risk' | 'name' | 'employee'>('risk');
   const [riskSortAsc, setRiskSortAsc] = useState(false);
+  const [groupedView, setGroupedView] = useState(false);
+  const [pgSummaryOpen, setPgSummaryOpen] = useState(false);
 
   // ─── Compute current gaps and future risks separately ─────
 
@@ -128,7 +133,6 @@ const SkillGapPage = () => {
         const currentGap = dem - cur;
         const futureRisk = fut - cur;
 
-        // Current gap: demanded > current by more than tolerance
         if (currentGap > GAP_TOLERANCE) {
           gaps.push({
             employee: emp, competencyId: comp.competency!.id, competencyName: comp.competency!.name,
@@ -137,7 +141,6 @@ const SkillGapPage = () => {
           });
         }
 
-        // Future risk: future > current by more than tolerance AND no significant current gap
         if (futureRisk > GAP_TOLERANCE && fut > dem && currentGap <= GAP_TOLERANCE) {
           risks.push({
             employee: emp, competencyId: comp.competency!.id, competencyName: comp.competency!.name,
@@ -150,11 +153,18 @@ const SkillGapPage = () => {
     return { currentGaps: gaps, futureRisks: risks };
   }, [employees]);
 
-  // ─── Unique filter options (from both lists) ──────────────
+  // ─── Unique filter options ────────────────────────────────
 
   const allItems = useMemo(() => [...currentGaps.map(g => g.employee), ...futureRisks.map(r => r.employee)], [currentGaps, futureRisks]);
   const uniqueEmployees = useMemo(() => { const m = new Map<string,string>(); allItems.forEach(e => m.set(e.id, e.full_name)); return [...m.entries()].sort(([,a],[,b]) => a.localeCompare(b)); }, [allItems]);
   const uniqueRoles = useMemo(() => { const m = new Map<string,string>(); allItems.forEach(e => { if (e.role_profile) m.set(e.role_profile.id, e.role_profile.role_title); }); return [...m.entries()].sort(([,a],[,b]) => a.localeCompare(b)); }, [allItems]);
+  const uniquePracticeGroups = useMemo(() => {
+    const s = new Set<string>();
+    (employees as DbEmployee[] | undefined)?.forEach(e => {
+      if (e.role_profile?.practice_group) s.add(e.role_profile.practice_group);
+    });
+    return [...s].sort();
+  }, [employees]);
 
   // ─── Filter helper ────────────────────────────────────────
 
@@ -165,10 +175,11 @@ const SkillGapPage = () => {
     }
     if (filterEmployee !== "all" && emp.id !== filterEmployee) return false;
     if (filterRole !== "all" && emp.role_profile?.id !== filterRole) return false;
+    if (filterPracticeGroup !== "all" && emp.role_profile?.practice_group !== filterPracticeGroup) return false;
     return true;
   };
 
-  // ─── Filtered + sorted gaps ───────────────────────────────
+  // ─── Filtered + sorted ───────────────────────────────────
 
   const filteredGaps = useMemo(() => {
     return currentGaps
@@ -180,7 +191,7 @@ const SkillGapPage = () => {
         else cmp = a.employee.full_name.localeCompare(b.employee.full_name);
         return gapSortAsc ? cmp : -cmp;
       });
-  }, [currentGaps, searchQuery, filterEmployee, filterRole, gapSortKey, gapSortAsc]);
+  }, [currentGaps, searchQuery, filterEmployee, filterRole, filterPracticeGroup, gapSortKey, gapSortAsc]);
 
   const filteredRisks = useMemo(() => {
     return futureRisks
@@ -192,7 +203,63 @@ const SkillGapPage = () => {
         else cmp = a.employee.full_name.localeCompare(b.employee.full_name);
         return riskSortAsc ? cmp : -cmp;
       });
-  }, [futureRisks, searchQuery, filterEmployee, filterRole, riskSortKey, riskSortAsc]);
+  }, [futureRisks, searchQuery, filterEmployee, filterRole, filterPracticeGroup, riskSortKey, riskSortAsc]);
+
+  // ─── Grouped by practice group ────────────────────────────
+
+  const groupedGaps = useMemo(() => {
+    const map = new Map<string, CurrentGapRow[]>();
+    filteredGaps.forEach(g => {
+      const pg = g.employee.role_profile?.practice_group || "Ohne Practice Group";
+      if (!map.has(pg)) map.set(pg, []);
+      map.get(pg)!.push(g);
+    });
+    return [...map.entries()].sort(([a], [b]) => a.localeCompare(b));
+  }, [filteredGaps]);
+
+  const groupedRiskRows = useMemo(() => {
+    const map = new Map<string, FutureRiskRow[]>();
+    filteredRisks.forEach(r => {
+      const pg = r.employee.role_profile?.practice_group || "Ohne Practice Group";
+      if (!map.has(pg)) map.set(pg, []);
+      map.get(pg)!.push(r);
+    });
+    return [...map.entries()].sort(([a], [b]) => a.localeCompare(b));
+  }, [filteredRisks]);
+
+  // ─── Practice Group Summary ───────────────────────────────
+
+  const pgSummary = useMemo(() => {
+    const map = new Map<string, { employees: Set<string>; totalCur: number; totalDem: number; countCur: number; gaps: number; risks: number }>();
+    const ensure = (pg: string) => {
+      if (!map.has(pg)) map.set(pg, { employees: new Set(), totalCur: 0, totalDem: 0, countCur: 0, gaps: 0, risks: 0 });
+      return map.get(pg)!;
+    };
+    currentGaps.forEach(g => {
+      const pg = g.employee.role_profile?.practice_group || "Ohne Practice Group";
+      const s = ensure(pg);
+      s.employees.add(g.employee.id);
+      s.totalCur += g.currentLevel;
+      s.totalDem += g.demandedLevel;
+      s.countCur++;
+      s.gaps++;
+    });
+    futureRisks.forEach(r => {
+      const pg = r.employee.role_profile?.practice_group || "Ohne Practice Group";
+      const s = ensure(pg);
+      s.employees.add(r.employee.id);
+      if (!s.countCur) { s.totalCur += r.currentLevel; s.totalDem += r.demandedLevel; s.countCur++; }
+      s.risks++;
+    });
+    return [...map.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([pg, s]) => ({
+      practiceGroup: pg,
+      employeeCount: s.employees.size,
+      avgCurrent: s.countCur ? Math.round(s.totalCur / s.countCur) : 0,
+      avgDemanded: s.countCur ? Math.round(s.totalDem / s.countCur) : 0,
+      gaps: s.gaps,
+      risks: s.risks,
+    }));
+  }, [currentGaps, futureRisks]);
 
   // ─── KPI stats ────────────────────────────────────────────
 
@@ -208,7 +275,7 @@ const SkillGapPage = () => {
     affected: new Set(filteredRisks.map(r => r.employee.id)).size,
   }), [filteredRisks]);
 
-  const hasFilters = filterEmployee !== "all" || filterRole !== "all" || searchQuery !== "";
+  const hasFilters = filterEmployee !== "all" || filterRole !== "all" || filterPracticeGroup !== "all" || searchQuery !== "";
 
   // ─── Sort helpers ─────────────────────────────────────────
 
@@ -223,6 +290,20 @@ const SkillGapPage = () => {
     else { setRiskSortKey(key); setRiskSortAsc(key !== 'risk'); }
   };
   const riskSortIndicator = (key: typeof riskSortKey) => riskSortKey === key ? (riskSortAsc ? ' ↑' : ' ↓') : '';
+
+  // ─── Avg severity for a group ─────────────────────────────
+
+  const getAvgGapSeverity = (rows: CurrentGapRow[]): GapSeverity => {
+    if (!rows.length) return "minor";
+    const avg = rows.reduce((s, r) => s + r.gap, 0) / rows.length;
+    return getGapSeverity(avg);
+  };
+
+  const getAvgRiskSeverity = (rows: FutureRiskRow[]): RiskSeverity => {
+    if (!rows.length) return "low";
+    const avg = rows.reduce((s, r) => s + r.risk, 0) / rows.length;
+    return getRiskSeverity(avg);
+  };
 
   // ─── Generate descriptions ────────────────────────────────
 
@@ -260,6 +341,102 @@ const SkillGapPage = () => {
       setIsGenerating(false);
     }
   };
+
+  const clearFilters = () => { setSearchQuery(""); setFilterEmployee("all"); setFilterRole("all"); setFilterPracticeGroup("all"); };
+
+  // ─── Render helpers ───────────────────────────────────────
+
+  const renderGapRow = (g: CurrentGapRow, i: number) => {
+    const sev = getGapSeverity(g.gap);
+    return (
+      <TableRow key={`${g.employee.id}-${g.competencyId}`} className="border-border/30 hover:bg-muted/30 animate-fade-in-up opacity-0" style={{ animationDelay: `${Math.min(i, 20) * 0.02}s` }}>
+        <TableCell className="text-xs py-2 font-medium">
+          {g.employee.full_name}
+          {g.employee.role_profile?.practice_group && (
+            <Badge variant="outline" className="ml-1.5 text-[9px] text-muted-foreground border-border/40 py-0 px-1">{g.employee.role_profile.practice_group}</Badge>
+          )}
+        </TableCell>
+        <TableCell className="text-xs py-2 text-muted-foreground">{g.employee.role_profile?.role_title || '—'}</TableCell>
+        <TableCell className="text-xs py-2">{g.competencyName}</TableCell>
+        <TableCell className="text-xs py-2 text-right tabular-nums">{g.currentLevel}%</TableCell>
+        <TableCell className="text-xs py-2 text-right tabular-nums">{g.demandedLevel}%</TableCell>
+        <TableCell className="text-xs py-2 text-right tabular-nums font-semibold">
+          <span className="text-[hsl(var(--severity-critical))]">-{g.gap}</span>
+        </TableCell>
+        <TableCell className="py-2">
+          <Badge variant="outline" className={`text-[10px] ${gapBadgeClass[sev]}`}>{gapLabel[sev]}</Badge>
+        </TableCell>
+      </TableRow>
+    );
+  };
+
+  const renderRiskRow = (r: FutureRiskRow, i: number) => {
+    const sev = getRiskSeverity(r.risk);
+    return (
+      <TableRow key={`${r.employee.id}-${r.competencyId}`} className="border-border/30 hover:bg-muted/30 animate-fade-in-up opacity-0" style={{ animationDelay: `${Math.min(i, 20) * 0.02}s` }}>
+        <TableCell className="text-xs py-2 font-medium">
+          {r.employee.full_name}
+          {r.employee.role_profile?.practice_group && (
+            <Badge variant="outline" className="ml-1.5 text-[9px] text-muted-foreground border-border/40 py-0 px-1">{r.employee.role_profile.practice_group}</Badge>
+          )}
+        </TableCell>
+        <TableCell className="text-xs py-2 text-muted-foreground">{r.employee.role_profile?.role_title || '—'}</TableCell>
+        <TableCell className="text-xs py-2">{r.competencyName}</TableCell>
+        <TableCell className="text-xs py-2 text-right tabular-nums">{r.currentLevel}%</TableCell>
+        <TableCell className="text-xs py-2 text-right tabular-nums">{r.demandedLevel}%</TableCell>
+        <TableCell className="text-xs py-2 text-right tabular-nums">{r.futureLevel}%</TableCell>
+        <TableCell className="text-xs py-2 text-right tabular-nums font-semibold">
+          <span className="text-[hsl(var(--severity-medium))]">+{r.risk}</span>
+        </TableCell>
+        <TableCell className="py-2">
+          <Badge variant="outline" className={`text-[10px] ${riskBadgeClass[sev]}`}>{riskLabel[sev]}</Badge>
+        </TableCell>
+      </TableRow>
+    );
+  };
+
+  const gapTableHeader = (
+    <TableHeader>
+      <TableRow className="border-border/50">
+        <TableHead className="text-xs cursor-pointer hover:text-primary" onClick={() => toggleGapSort('employee')}>Mitarbeiter{gapSortIndicator('employee')}</TableHead>
+        <TableHead className="text-xs">Rolle</TableHead>
+        <TableHead className="text-xs cursor-pointer hover:text-primary" onClick={() => toggleGapSort('name')}>Kompetenz{gapSortIndicator('name')}</TableHead>
+        <TableHead className="text-xs text-right">Ist-Level</TableHead>
+        <TableHead className="text-xs text-right">Soll-Level</TableHead>
+        <TableHead className="text-xs text-right cursor-pointer hover:text-primary" onClick={() => toggleGapSort('gap')}>Entwicklungsfeld{gapSortIndicator('gap')}</TableHead>
+        <TableHead className="text-xs">Status</TableHead>
+      </TableRow>
+    </TableHeader>
+  );
+
+  const riskTableHeader = (
+    <TableHeader>
+      <TableRow className="border-border/50">
+        <TableHead className="text-xs cursor-pointer hover:text-primary" onClick={() => toggleRiskSort('employee')}>Mitarbeiter{riskSortIndicator('employee')}</TableHead>
+        <TableHead className="text-xs">Rolle</TableHead>
+        <TableHead className="text-xs cursor-pointer hover:text-primary" onClick={() => toggleRiskSort('name')}>Kompetenz{riskSortIndicator('name')}</TableHead>
+        <TableHead className="text-xs text-right">Ist-Level</TableHead>
+        <TableHead className="text-xs text-right">Soll-Level</TableHead>
+        <TableHead className="text-xs text-right">Zukunfts-Level</TableHead>
+        <TableHead className="text-xs text-right cursor-pointer hover:text-primary" onClick={() => toggleRiskSort('risk')}>Risiko{riskSortIndicator('risk')}</TableHead>
+        <TableHead className="text-xs">Status</TableHead>
+      </TableRow>
+    </TableHeader>
+  );
+
+  const emptyState = (hasF: boolean, type: "gap" | "risk") => (
+    <Card className="bg-card/80 border-border/50">
+      <CardContent className="py-12 text-center">
+        <CheckCircle2 className="w-10 h-10 text-[hsl(var(--severity-low))] mx-auto mb-3" />
+        <p className="text-foreground font-medium">
+          {hasF ? (type === "gap" ? "Keine Entwicklungsfelder in diesem Filter" : "Keine Risiken in diesem Filter") : (type === "gap" ? "Keine aktuellen Entwicklungsfelder" : "Keine Zukunftsrisiken erkannt")}
+        </p>
+        <p className="text-xs text-muted-foreground mt-1">
+          {hasF ? "Das Team ist für die aktuellen Rollenanforderungen gut aufgestellt." : (type === "gap" ? "Alle Mitarbeiter erfüllen ihre aktuellen Anforderungen." : "Keine Kompetenzen mit steigendem Zukunftsbedarf über dem Ist-Niveau.")}
+        </p>
+      </CardContent>
+    </Card>
+  );
 
   // ─── Loading / Error / Empty ──────────────────────────────
 
@@ -324,7 +501,7 @@ const SkillGapPage = () => {
       </Card>
 
       {/* Filters */}
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-2 items-center">
         <Input placeholder="Suchen…" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="w-48 h-8 text-xs bg-card/80 border-border/50" />
         <Select value={filterEmployee} onValueChange={setFilterEmployee}>
           <SelectTrigger className="w-44 h-8 text-xs bg-card/80 border-border/50"><SelectValue placeholder="Mitarbeiter" /></SelectTrigger>
@@ -340,9 +517,24 @@ const SkillGapPage = () => {
             {uniqueRoles.map(([id, title]) => <SelectItem key={id} value={id}>{title}</SelectItem>)}
           </SelectContent>
         </Select>
+        <Select value={filterPracticeGroup} onValueChange={setFilterPracticeGroup}>
+          <SelectTrigger className="w-52 h-8 text-xs bg-card/80 border-border/50"><SelectValue placeholder="Practice Group" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Alle Practice Groups</SelectItem>
+            {uniquePracticeGroups.map(pg => <SelectItem key={pg} value={pg}>{pg}</SelectItem>)}
+          </SelectContent>
+        </Select>
+        <Button
+          variant={groupedView ? "default" : "outline"}
+          size="sm"
+          className="h-8 text-xs gap-1.5"
+          onClick={() => setGroupedView(!groupedView)}
+        >
+          {groupedView ? <Layers className="w-3.5 h-3.5" /> : <LayoutList className="w-3.5 h-3.5" />}
+          {groupedView ? "Gruppiert" : "Liste"}
+        </Button>
         {hasFilters && (
-          <button onClick={() => { setSearchQuery(""); setFilterEmployee("all"); setFilterRole("all"); }}
-            className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
+          <button onClick={clearFilters} className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
             <X className="w-3 h-3" />zurücksetzen
           </button>
         )}
@@ -365,152 +557,138 @@ const SkillGapPage = () => {
 
         {/* ── Tab 1: Current Gaps ─────────────────────────── */}
         <TabsContent value="gaps" className="mt-4 space-y-4">
-          <div className="grid grid-cols-3 gap-3">
+          <div className={`grid gap-3 ${filterPracticeGroup !== "all" ? "grid-cols-4" : "grid-cols-3"}`}>
             <KpiCard label="Entwicklungsfelder" value={gapStats.total} icon={TrendingUp} color="text-primary" index={0} />
             <KpiCard label="Handlungsbedarf" value={gapStats.critical} icon={AlertTriangle} color="text-[hsl(var(--severity-critical))]" index={1} />
             <KpiCard label="Betroffene Mitarbeiter" value={gapStats.affected} icon={Users} color="text-primary" index={2} />
+            {filterPracticeGroup !== "all" && (
+              <KpiCard label={`${filterPracticeGroup}`} value={`${gapStats.affected} MA, ${gapStats.total} Felder`} icon={Briefcase} color="text-primary" index={3} />
+            )}
           </div>
 
           {filteredGaps.length > 0 ? (
-            <Card className="bg-card/80 border-border/50">
-              <CardContent className="p-0">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="border-border/50">
-                      <TableHead className="text-xs cursor-pointer hover:text-primary" onClick={() => toggleGapSort('employee')}>
-                        Mitarbeiter{gapSortIndicator('employee')}
-                      </TableHead>
-                      <TableHead className="text-xs">Rolle</TableHead>
-                      <TableHead className="text-xs cursor-pointer hover:text-primary" onClick={() => toggleGapSort('name')}>
-                        Kompetenz{gapSortIndicator('name')}
-                      </TableHead>
-                      <TableHead className="text-xs text-right">Ist-Level</TableHead>
-                      <TableHead className="text-xs text-right">Soll-Level</TableHead>
-                      <TableHead className="text-xs text-right cursor-pointer hover:text-primary" onClick={() => toggleGapSort('gap')}>
-                        Entwicklungsfeld{gapSortIndicator('gap')}
-                      </TableHead>
-                      <TableHead className="text-xs">Status</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredGaps.slice(0, 100).map((g, i) => {
-                      const sev = getGapSeverity(g.gap);
-                      return (
-                        <TableRow
-                          key={`${g.employee.id}-${g.competencyId}`}
-                          className="border-border/30 hover:bg-muted/30 animate-fade-in-up opacity-0"
-                          style={{ animationDelay: `${Math.min(i, 20) * 0.02}s` }}
-                        >
-                          <TableCell className="text-xs py-2 font-medium">
-                            {g.employee.full_name}
-                            {g.employee.role_profile?.practice_group && (
-                              <Badge variant="outline" className="ml-1.5 text-[9px] text-muted-foreground border-border/40 py-0 px-1">{g.employee.role_profile.practice_group}</Badge>
-                            )}
-                          </TableCell>
-                          <TableCell className="text-xs py-2 text-muted-foreground">{g.employee.role_profile?.role_title || '—'}</TableCell>
-                          <TableCell className="text-xs py-2">{g.competencyName}</TableCell>
-                          <TableCell className="text-xs py-2 text-right tabular-nums">{g.currentLevel}%</TableCell>
-                          <TableCell className="text-xs py-2 text-right tabular-nums">{g.demandedLevel}%</TableCell>
-                          <TableCell className="text-xs py-2 text-right tabular-nums font-semibold">
-                            <span className="text-[hsl(var(--severity-critical))]">-{g.gap}</span>
-                          </TableCell>
-                          <TableCell className="py-2">
-                            <Badge variant="outline" className={`text-[10px] ${gapBadgeClass[sev]}`}>{gapLabel[sev]}</Badge>
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-          ) : (
-            <Card className="bg-card/80 border-border/50">
-              <CardContent className="py-12 text-center">
-                <CheckCircle2 className="w-10 h-10 text-[hsl(var(--severity-low))] mx-auto mb-3" />
-                <p className="text-foreground font-medium">{hasFilters ? "Keine Entwicklungsfelder in diesem Filter" : "Keine aktuellen Entwicklungsfelder"}</p>
-                <p className="text-xs text-muted-foreground mt-1">{hasFilters ? "Das Team ist für die aktuellen Rollenanforderungen gut aufgestellt." : "Alle Mitarbeiter erfüllen ihre aktuellen Anforderungen."}</p>
-              </CardContent>
-            </Card>
-          )}
-          {filteredGaps.length > 100 && <p className="text-xs text-muted-foreground">Erste 100 von {filteredGaps.length} angezeigt</p>}
+            groupedView ? (
+              <div className="space-y-3">
+                {groupedGaps.map(([pg, rows]) => (
+                  <Card key={pg} className="bg-card/80 border-border/50">
+                    <div className="sticky top-0 z-10 bg-card border-b border-border/50 px-3 py-2 flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-semibold">{pg}</span>
+                        <span className="text-[10px] text-muted-foreground tabular-nums">{rows.length} Entwicklungsfelder</span>
+                      </div>
+                      <Badge variant="outline" className={`text-[10px] ${gapBadgeClass[getAvgGapSeverity(rows)]}`}>{gapLabel[getAvgGapSeverity(rows)]}</Badge>
+                    </div>
+                    <CardContent className="p-0">
+                      <Table>
+                        {gapTableHeader}
+                        <TableBody>{rows.slice(0, 50).map((g, i) => renderGapRow(g, i))}</TableBody>
+                      </Table>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <Card className="bg-card/80 border-border/50">
+                <CardContent className="p-0">
+                  <Table>
+                    {gapTableHeader}
+                    <TableBody>{filteredGaps.slice(0, 100).map((g, i) => renderGapRow(g, i))}</TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+            )
+          ) : emptyState(hasFilters, "gap")}
+          {!groupedView && filteredGaps.length > 100 && <p className="text-xs text-muted-foreground">Erste 100 von {filteredGaps.length} angezeigt</p>}
         </TabsContent>
 
         {/* ── Tab 2: Future Risks ─────────────────────────── */}
         <TabsContent value="risks" className="mt-4 space-y-4">
-          <div className="grid grid-cols-3 gap-3">
+          <div className={`grid gap-3 ${filterPracticeGroup !== "all" ? "grid-cols-4" : "grid-cols-3"}`}>
             <KpiCard label="Zukunftsrisiken" value={riskStats.total} icon={ShieldAlert} color="text-[hsl(var(--severity-medium))]" index={0} />
             <KpiCard label="Hohes Risiko" value={riskStats.high} icon={AlertTriangle} color="text-[hsl(var(--severity-critical))]" index={1} />
             <KpiCard label="Betroffene Mitarbeiter" value={riskStats.affected} icon={Users} color="text-primary" index={2} />
+            {filterPracticeGroup !== "all" && (
+              <KpiCard label={`${filterPracticeGroup}`} value={`${riskStats.affected} MA, ${riskStats.total} Risiken`} icon={Briefcase} color="text-primary" index={3} />
+            )}
           </div>
 
           {filteredRisks.length > 0 ? (
-            <Card className="bg-card/80 border-border/50">
-              <CardContent className="p-0">
+            groupedView ? (
+              <div className="space-y-3">
+                {groupedRiskRows.map(([pg, rows]) => (
+                  <Card key={pg} className="bg-card/80 border-border/50">
+                    <div className="sticky top-0 z-10 bg-card border-b border-border/50 px-3 py-2 flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-semibold">{pg}</span>
+                        <span className="text-[10px] text-muted-foreground tabular-nums">{rows.length} Risiken</span>
+                      </div>
+                      <Badge variant="outline" className={`text-[10px] ${riskBadgeClass[getAvgRiskSeverity(rows)]}`}>{riskLabel[getAvgRiskSeverity(rows)]}</Badge>
+                    </div>
+                    <CardContent className="p-0">
+                      <Table>
+                        {riskTableHeader}
+                        <TableBody>{rows.slice(0, 50).map((r, i) => renderRiskRow(r, i))}</TableBody>
+                      </Table>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <Card className="bg-card/80 border-border/50">
+                <CardContent className="p-0">
+                  <Table>
+                    {riskTableHeader}
+                    <TableBody>{filteredRisks.slice(0, 100).map((r, i) => renderRiskRow(r, i))}</TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+            )
+          ) : emptyState(hasFilters, "risk")}
+          {!groupedView && filteredRisks.length > 100 && <p className="text-xs text-muted-foreground">Erste 100 von {filteredRisks.length} angezeigt</p>}
+        </TabsContent>
+      </Tabs>
+
+      {/* Practice Group Summary Table */}
+      {pgSummary.length > 0 && (
+        <Collapsible open={pgSummaryOpen} onOpenChange={setPgSummaryOpen}>
+          <Card className="bg-card/80 border-border/50">
+            <CollapsibleTrigger asChild>
+              <button className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-muted/30 transition-colors">
+                <span className="text-xs font-semibold">Practice Group Übersicht</span>
+                <ChevronDown className={`w-3.5 h-3.5 text-muted-foreground transition-transform ${pgSummaryOpen ? 'rotate-180' : ''}`} />
+              </button>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <CardContent className="p-0 border-t border-border/50">
                 <Table>
                   <TableHeader>
                     <TableRow className="border-border/50">
-                      <TableHead className="text-xs cursor-pointer hover:text-primary" onClick={() => toggleRiskSort('employee')}>
-                        Mitarbeiter{riskSortIndicator('employee')}
-                      </TableHead>
-                      <TableHead className="text-xs">Rolle</TableHead>
-                      <TableHead className="text-xs cursor-pointer hover:text-primary" onClick={() => toggleRiskSort('name')}>
-                        Kompetenz{riskSortIndicator('name')}
-                      </TableHead>
-                      <TableHead className="text-xs text-right">Ist-Level</TableHead>
-                      <TableHead className="text-xs text-right">Soll-Level</TableHead>
-                      <TableHead className="text-xs text-right">Zukunfts-Level</TableHead>
-                      <TableHead className="text-xs text-right cursor-pointer hover:text-primary" onClick={() => toggleRiskSort('risk')}>
-                        Risiko{riskSortIndicator('risk')}
-                      </TableHead>
-                      <TableHead className="text-xs">Status</TableHead>
+                      <TableHead className="text-xs">Practice Group</TableHead>
+                      <TableHead className="text-xs text-right">Mitarbeiter</TableHead>
+                      <TableHead className="text-xs text-right">Ø Ist-Level</TableHead>
+                      <TableHead className="text-xs text-right">Ø Soll-Level</TableHead>
+                      <TableHead className="text-xs text-right">Lücken</TableHead>
+                      <TableHead className="text-xs text-right">Risiken</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredRisks.slice(0, 100).map((r, i) => {
-                      const sev = getRiskSeverity(r.risk);
-                      return (
-                        <TableRow
-                          key={`${r.employee.id}-${r.competencyId}`}
-                          className="border-border/30 hover:bg-muted/30 animate-fade-in-up opacity-0"
-                          style={{ animationDelay: `${Math.min(i, 20) * 0.02}s` }}
-                        >
-                          <TableCell className="text-xs py-2 font-medium">
-                            {r.employee.full_name}
-                            {r.employee.role_profile?.practice_group && (
-                              <Badge variant="outline" className="ml-1.5 text-[9px] text-muted-foreground border-border/40 py-0 px-1">{r.employee.role_profile.practice_group}</Badge>
-                            )}
-                          </TableCell>
-                          <TableCell className="text-xs py-2 text-muted-foreground">{r.employee.role_profile?.role_title || '—'}</TableCell>
-                          <TableCell className="text-xs py-2">{r.competencyName}</TableCell>
-                          <TableCell className="text-xs py-2 text-right tabular-nums">{r.currentLevel}%</TableCell>
-                          <TableCell className="text-xs py-2 text-right tabular-nums">{r.demandedLevel}%</TableCell>
-                          <TableCell className="text-xs py-2 text-right tabular-nums">{r.futureLevel}%</TableCell>
-                          <TableCell className="text-xs py-2 text-right tabular-nums font-semibold">
-                            <span className="text-[hsl(var(--severity-medium))]">+{r.risk}</span>
-                          </TableCell>
-                          <TableCell className="py-2">
-                            <Badge variant="outline" className={`text-[10px] ${riskBadgeClass[sev]}`}>{riskLabel[sev]}</Badge>
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
+                    {pgSummary.map(row => (
+                      <TableRow key={row.practiceGroup} className="border-border/30 hover:bg-muted/30">
+                        <TableCell className="text-xs py-2 font-medium">{row.practiceGroup}</TableCell>
+                        <TableCell className="text-xs py-2 text-right tabular-nums">{row.employeeCount}</TableCell>
+                        <TableCell className="text-xs py-2 text-right tabular-nums">{row.avgCurrent}%</TableCell>
+                        <TableCell className="text-xs py-2 text-right tabular-nums">{row.avgDemanded}%</TableCell>
+                        <TableCell className="text-xs py-2 text-right tabular-nums">{row.gaps}</TableCell>
+                        <TableCell className="text-xs py-2 text-right tabular-nums">{row.risks}</TableCell>
+                      </TableRow>
+                    ))}
                   </TableBody>
                 </Table>
               </CardContent>
-            </Card>
-          ) : (
-            <Card className="bg-card/80 border-border/50">
-              <CardContent className="py-12 text-center">
-                <CheckCircle2 className="w-10 h-10 text-[hsl(var(--severity-low))] mx-auto mb-3" />
-                <p className="text-foreground font-medium">{hasFilters ? "Keine Risiken in diesem Filter" : "Keine Zukunftsrisiken erkannt"}</p>
-                <p className="text-xs text-muted-foreground mt-1">{hasFilters ? "Das Team ist für die aktuellen Rollenanforderungen gut aufgestellt." : "Keine Kompetenzen mit steigendem Zukunftsbedarf über dem Ist-Niveau."}</p>
-              </CardContent>
-            </Card>
-          )}
-          {filteredRisks.length > 100 && <p className="text-xs text-muted-foreground">Erste 100 von {filteredRisks.length} angezeigt</p>}
-        </TabsContent>
-      </Tabs>
+            </CollapsibleContent>
+          </Card>
+        </Collapsible>
+      )}
     </div>
   );
 };

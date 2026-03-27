@@ -48,32 +48,15 @@ import {
   Area,
 } from "recharts";
 
-// ─── Helpers ────────────────────────────────────────
+const TOOLTIP_STYLE = {
+  contentStyle: { background: 'hsl(222 47% 11%)', border: '1px solid hsl(222 40% 18%)', borderRadius: '6px', fontSize: '11px' },
+  itemStyle: { color: 'hsl(210 40% 98%)' },
+};
 
-function severityClass(gap: number) {
-  if (gap >= 20) return "text-[hsl(var(--severity-critical))]";
-  if (gap >= 10) return "text-[hsl(var(--severity-medium))]";
-  return "text-[hsl(var(--severity-low))]";
-}
-
-function severityBadge(gap: number) {
-  if (gap >= 20)
-    return (
-      <Badge className="bg-[hsl(var(--severity-critical))]/15 text-[hsl(var(--severity-critical))] border-[hsl(var(--severity-critical))]/30 text-xs">
-        Kritisch
-      </Badge>
-    );
-  if (gap >= 10)
-    return (
-      <Badge className="bg-[hsl(var(--severity-medium))]/15 text-[hsl(var(--severity-medium))] border-[hsl(var(--severity-medium))]/30 text-xs">
-        Mittel
-      </Badge>
-    );
-  return (
-    <Badge className="bg-[hsl(var(--severity-low))]/15 text-[hsl(var(--severity-low))] border-[hsl(var(--severity-low))]/30 text-xs">
-      Gering
-    </Badge>
-  );
+function severityLevel(gap: number): "kritisch" | "mittel" | "gering" {
+  if (gap >= 20) return "kritisch";
+  if (gap >= 10) return "mittel";
+  return "gering";
 }
 
 // ─── Component ──────────────────────────────────────
@@ -150,31 +133,20 @@ const AdminDashboard = () => {
 
   if (isLoading) {
     return (
-      <div className="space-y-6">
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+      <div className="space-y-4">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
           {[1, 2, 3, 4, 5].map((i) => (
-            <Card key={i} className="bg-card/80 border-border/50">
-              <CardContent className="p-5">
-                <Skeleton className="h-4 w-16 mb-2" />
-                <Skeleton className="h-8 w-12" />
-              </CardContent>
+            <Card key={i} className="bg-card/80 border-border/50 px-4 py-3">
+              <Skeleton className="h-3 w-16 mb-2" />
+              <Skeleton className="h-7 w-12" />
             </Card>
           ))}
         </div>
-        <div className="grid lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2">
-            <Card className="bg-card/80 border-border/50">
-              <CardContent className="p-6">
-                <Skeleton className="h-64" />
-              </CardContent>
-            </Card>
-          </div>
-          <Card className="bg-card/80 border-border/50">
-            <CardContent className="p-6">
-              <Skeleton className="h-64" />
-            </CardContent>
-          </Card>
-        </div>
+        <Card className="bg-card/80 border-border/50">
+          <CardContent className="p-4">
+            <Skeleton className="h-48" />
+          </CardContent>
+        </Card>
       </div>
     );
   }

@@ -54,7 +54,7 @@ type SupportRequest = {
 
 const SettingsPage = () => {
   const { profile, organization } = useAuth();
-  const { teams } = useOrgData();
+  const orgSettings$ = (organization?.settings || {}) as Record<string, unknown>;
 
   // Support request state
   const [supportDialogOpen, setSupportDialogOpen] = useState(false);

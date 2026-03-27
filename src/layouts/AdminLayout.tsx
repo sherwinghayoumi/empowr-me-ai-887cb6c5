@@ -106,14 +106,10 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
           return (
             <Link
               key={item.href}
-              to={item.disabled ? '#' : item.href}
-              onClick={(e) => {
-                if (item.disabled) { e.preventDefault(); return; }
-                onNavigate?.();
-              }}
+              to={item.href}
+              onClick={() => onNavigate?.()}
               className={cn(
                 "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200",
-                item.disabled && "opacity-40 cursor-not-allowed",
                 active
                   ? "bg-primary/15 text-primary border-l-2 border-primary"
                   : "text-muted-foreground hover:text-foreground hover:bg-muted/50"

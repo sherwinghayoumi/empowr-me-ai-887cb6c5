@@ -1,6 +1,8 @@
 import { useMemo } from "react";
 import { Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { KpiCard } from "@/components/KpiCard";
+import { SeverityBadge } from "@/components/SeverityBadge";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -46,32 +48,15 @@ import {
   Area,
 } from "recharts";
 
-// ─── Helpers ────────────────────────────────────────
+const TOOLTIP_STYLE = {
+  contentStyle: { background: 'hsl(222 47% 11%)', border: '1px solid hsl(222 40% 18%)', borderRadius: '6px', fontSize: '11px' },
+  itemStyle: { color: 'hsl(210 40% 98%)' },
+};
 
-function severityClass(gap: number) {
-  if (gap >= 20) return "text-[hsl(var(--severity-critical))]";
-  if (gap >= 10) return "text-[hsl(var(--severity-medium))]";
-  return "text-[hsl(var(--severity-low))]";
-}
-
-function severityBadge(gap: number) {
-  if (gap >= 20)
-    return (
-      <Badge className="bg-[hsl(var(--severity-critical))]/15 text-[hsl(var(--severity-critical))] border-[hsl(var(--severity-critical))]/30 text-xs">
-        Kritisch
-      </Badge>
-    );
-  if (gap >= 10)
-    return (
-      <Badge className="bg-[hsl(var(--severity-medium))]/15 text-[hsl(var(--severity-medium))] border-[hsl(var(--severity-medium))]/30 text-xs">
-        Mittel
-      </Badge>
-    );
-  return (
-    <Badge className="bg-[hsl(var(--severity-low))]/15 text-[hsl(var(--severity-low))] border-[hsl(var(--severity-low))]/30 text-xs">
-      Gering
-    </Badge>
-  );
+function severityLevel(gap: number): "kritisch" | "mittel" | "gering" {
+  if (gap >= 20) return "kritisch";
+  if (gap >= 10) return "mittel";
+  return "gering";
 }
 
 // ─── Component ──────────────────────────────────────
@@ -148,31 +133,20 @@ const AdminDashboard = () => {
 
   if (isLoading) {
     return (
-      <div className="space-y-6">
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+      <div className="space-y-4">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
           {[1, 2, 3, 4, 5].map((i) => (
-            <Card key={i} className="bg-card/80 border-border/50">
-              <CardContent className="p-5">
-                <Skeleton className="h-4 w-16 mb-2" />
-                <Skeleton className="h-8 w-12" />
-              </CardContent>
+            <Card key={i} className="bg-card/80 border-border/50 px-4 py-3">
+              <Skeleton className="h-3 w-16 mb-2" />
+              <Skeleton className="h-7 w-12" />
             </Card>
           ))}
         </div>
-        <div className="grid lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2">
-            <Card className="bg-card/80 border-border/50">
-              <CardContent className="p-6">
-                <Skeleton className="h-64" />
-              </CardContent>
-            </Card>
-          </div>
-          <Card className="bg-card/80 border-border/50">
-            <CardContent className="p-6">
-              <Skeleton className="h-64" />
-            </CardContent>
-          </Card>
-        </div>
+        <Card className="bg-card/80 border-border/50">
+          <CardContent className="p-4">
+            <Skeleton className="h-48" />
+          </CardContent>
+        </Card>
       </div>
     );
   }
@@ -216,7 +190,7 @@ const AdminDashboard = () => {
   // ─── Render ────────────────────────────────────────
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Alert Banner */}
       {alerts.length > 0 && (
         <div className="animate-fade-in-up space-y-2">
@@ -236,10 +210,10 @@ const AdminDashboard = () => {
             const Icon = alert.category === "quarter" ? Clock : AlertCircle;
 
             const content = (
-              <div className={`flex items-center gap-3 px-4 py-3 rounded-lg border ${severityStyles} ${alert.link ? "cursor-pointer hover:opacity-80 transition-opacity" : ""}`}>
-                <Icon className={`w-4 h-4 shrink-0 ${iconColor} ${alert.severity === "critical" ? "animate-pulse-subtle" : ""}`} />
-                <span className="text-sm text-foreground flex-1">{alert.text}</span>
-                {alert.link && <ExternalLink className="w-3.5 h-3.5 text-muted-foreground shrink-0" />}
+              <div className={`flex items-center gap-3 px-3 py-2 rounded border ${severityStyles} ${alert.link ? "cursor-pointer hover:opacity-80 transition-opacity" : ""}`}>
+                <Icon className={`w-3.5 h-3.5 shrink-0 ${iconColor} ${alert.severity === "critical" ? "animate-pulse-subtle" : ""}`} />
+                <span className="text-xs text-foreground flex-1">{alert.text}</span>
+                {alert.link && <ExternalLink className="w-3 h-3 text-muted-foreground shrink-0" />}
               </div>
             );
 
@@ -252,51 +226,26 @@ const AdminDashboard = () => {
         </div>
       )}
 
-      {/* KPI Bar */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-        {kpis.map((kpi, i) => {
-          const Icon = kpi.icon;
-          return (
-            <div
-              key={kpi.label}
-              className="animate-fade-in-up"
-              style={{ animationDelay: `${i * 60}ms` }}
-            >
-              <Card className="bg-card/80 border-border/50 hover-lift">
-                <CardContent className="p-5">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs text-muted-foreground uppercase tracking-wider">
-                      {kpi.label}
-                    </span>
-                    <Icon className={`w-4 h-4 ${kpi.color}`} />
-                  </div>
-                  <p
-                    className={`text-2xl font-bold tabular-nums ${kpi.color} ${
-                      kpi.pulse ? "animate-pulse-subtle" : ""
-                    }`}
-                  >
-                    {kpi.value}
-                  </p>
-                  {'sublabel' in kpi && (kpi as any).sublabel && (
-                    <p className="text-[10px] text-muted-foreground mt-1">{(kpi as any).sublabel}</p>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
-          );
-        })}
+      {/* KPI Row */}
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+        {kpis.map((kpi, i) => (
+          <KpiCard
+            key={kpi.label}
+            label={kpi.label}
+            value={kpi.value}
+            icon={kpi.icon}
+            color={kpi.color}
+            pulse={kpi.pulse}
+            index={i}
+          />
+        ))}
       </div>
 
-      {/* Main Row: Top 10 + Gap Donut */}
-      <div className="grid lg:grid-cols-3 gap-6">
-        {/* Top 10 Handlungsbedarf */}
-        <div className="lg:col-span-2 animate-fade-in-up" style={{ animationDelay: "200ms" }}>
-          <Card className="bg-card/80 border-border/50 h-full">
-            <CardHeader className="pb-3">
+      <div className="grid lg:grid-cols-4 gap-4 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
+        <Card className="lg:col-span-3 bg-card/80 border-border/50 transition-shadow duration-200 hover:shadow-lg hover:shadow-primary/5">
+            <CardHeader className="py-3 px-4">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-foreground text-base">
-                  Top 10 Handlungsbedarf
-                </CardTitle>
+                <CardTitle className="text-sm font-medium">Top 10 Handlungsbedarf</CardTitle>
                 <Link
                   to="/admin/skill-gaps"
                   className="text-xs text-primary hover:underline flex items-center gap-1"
@@ -305,41 +254,35 @@ const AdminDashboard = () => {
                 </Link>
               </div>
             </CardHeader>
-            <CardContent className="pt-0">
+            <CardContent className="p-0">
               {top10.length > 0 ? (
                 <Table>
                   <TableHeader>
-                    <TableRow className="border-border/30 hover:bg-transparent">
+                    <TableRow className="border-border/50">
                       <TableHead className="text-xs">Anwalt</TableHead>
                       <TableHead className="text-xs">Rolle</TableHead>
                       <TableHead className="text-xs text-right">Gap-Score</TableHead>
-                      <TableHead className="text-xs text-right">Schwere</TableHead>
+                      <TableHead className="text-xs">Severity</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {top10.map((emp) => (
+                    {top10.map((emp, i) => (
                       <TableRow
                         key={emp.id}
-                        className="border-border/20 cursor-pointer hover:bg-muted/30"
+                        className="border-border/30 cursor-pointer hover:bg-muted/30 transition-colors duration-150 animate-fade-in-up opacity-0"
+                        style={{ animationDelay: `${i * 0.04}s` }}
                       >
-                        <TableCell className="font-medium text-sm py-3">
-                          <Link
-                            to={`/admin/employees`}
-                            className="hover:text-primary transition-colors"
-                          >
+                        <TableCell className="text-xs py-2 font-medium">
+                          <Link to="/admin/employees" className="hover:text-primary transition-colors">
                             {emp.name}
                           </Link>
                         </TableCell>
-                        <TableCell className="text-sm text-muted-foreground py-3">
-                          {emp.role || "—"}
-                        </TableCell>
-                        <TableCell
-                          className={`text-sm font-mono text-right tabular-nums py-3 ${severityClass(emp.totalGap)}`}
-                        >
+                        <TableCell className="text-xs py-2 text-muted-foreground">{emp.role || "—"}</TableCell>
+                        <TableCell className="text-xs py-2 text-right tabular-nums font-semibold severity-critical">
                           {Math.round(emp.totalGap)}
                         </TableCell>
-                        <TableCell className="text-right py-3">
-                          {severityBadge(emp.totalGap)}
+                        <TableCell className="py-2">
+                          <SeverityBadge severity={severityLevel(emp.totalGap)} />
                         </TableCell>
                       </TableRow>
                     ))}
@@ -348,19 +291,16 @@ const AdminDashboard = () => {
               ) : (
                 <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
                   <Target className="w-8 h-8 mb-2 opacity-50" />
-                  <p className="text-sm">Keine Kompetenzlücken erkannt</p>
-                  <p className="text-xs mt-1">Laden Sie Assessments hoch, um Gaps zu analysieren</p>
+                  <p className="text-xs">Keine Kompetenzlücken erkannt</p>
                 </div>
               )}
             </CardContent>
           </Card>
-        </div>
 
         {/* Gap Distribution Donut */}
-        <div className="animate-fade-in-up" style={{ animationDelay: "300ms" }}>
-          <Card className="bg-card/80 border-border/50 h-full">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-foreground text-base">Gap-Verteilung</CardTitle>
+          <Card className="bg-card/80 border-border/50">
+            <CardHeader className="py-3 px-4">
+              <CardTitle className="text-sm font-medium">Gap-Verteilung</CardTitle>
             </CardHeader>
             <CardContent>
               {gapDistribution.length > 0 ? (
@@ -381,15 +321,7 @@ const AdminDashboard = () => {
                           <Cell key={index} fill={entry.fill} stroke="transparent" />
                         ))}
                       </Pie>
-                      <Tooltip
-                        contentStyle={{
-                          backgroundColor: "hsl(222 47% 11%)",
-                          border: "1px solid hsl(222 40% 20% / 0.5)",
-                          borderRadius: "8px",
-                          fontSize: "12px",
-                        }}
-                        itemStyle={{ color: "hsl(210 40% 98%)" }}
-                      />
+                      <Tooltip {...TOOLTIP_STYLE} />
                     </PieChart>
                   </ResponsiveContainer>
                   <div className="flex flex-wrap justify-center gap-4 mt-4">
@@ -413,15 +345,12 @@ const AdminDashboard = () => {
               )}
             </CardContent>
           </Card>
-        </div>
       </div>
 
       {/* Bottom Row: Budget per Team + Trend */}
-      <div className="grid lg:grid-cols-2 gap-6">
-        {/* Budget per Team */}
-        <div className="animate-fade-in-up" style={{ animationDelay: "400ms" }}>
-          <Card className="bg-card/80 border-border/50 h-full">
-            <CardHeader className="pb-3">
+      <div className="grid lg:grid-cols-2 gap-4">
+        <Card className="bg-card/80 border-border/50">
+            <CardHeader className="py-3 px-4">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-foreground text-base">Budget pro Team</CardTitle>
                 <Badge variant="outline" className="text-[10px] text-muted-foreground">
@@ -554,15 +483,13 @@ const AdminDashboard = () => {
               </p>
             </CardContent>
           </Card>
-        </div>
       </div>
 
-      {/* Team Competency Radar placeholder */}
+      {/* Team-Übersicht */}
       {teams && teams.length > 0 && (
-        <div className="animate-fade-in-up" style={{ animationDelay: "600ms" }}>
           <Card className="bg-card/80 border-border/50">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-foreground text-base">
+            <CardHeader className="py-3 px-4">
+              <CardTitle className="text-sm font-medium">
                 Team-Übersicht
               </CardTitle>
             </CardHeader>

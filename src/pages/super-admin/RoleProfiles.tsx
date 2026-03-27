@@ -1,12 +1,10 @@
 import { useState, useMemo } from 'react';
-import { 
-  Plus, 
-  Upload, 
-  Search, 
+import {
+  Upload,
+  Search,
   Shield,
   Globe,
   Calendar,
-  Filter,
   Layers,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';

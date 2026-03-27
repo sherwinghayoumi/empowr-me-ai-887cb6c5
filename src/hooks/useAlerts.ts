@@ -72,12 +72,22 @@ export function useAlerts() {
     }
 
     // ─── Critical gaps ──────────────────────────────
-    const critCount = gapAnalysis?.criticalGaps?.length || 0;
-    if (critCount > 0) {
+    const critCurrentGaps = gapAnalysis?.criticalCurrentGaps?.filter(g => g.avgCurrentGap >= 30).length || 0;
+    const critFutureRisks = gapAnalysis?.criticalFutureRisks?.filter(g => g.avgFutureRisk >= 30).length || 0;
+    if (critCurrentGaps > 0) {
       items.push({
         id: 'critical-gaps',
-        text: `${critCount} kritische Kompetenzlücke${critCount === 1 ? '' : 'n'} identifiziert`,
+        text: `${critCurrentGaps} kritische aktuelle Gap${critCurrentGaps === 1 ? '' : 's'} identifiziert`,
         severity: 'critical',
+        category: 'gap',
+        link: '/admin/skill-gaps',
+      });
+    }
+    if (critFutureRisks > 0) {
+      items.push({
+        id: 'future-risks',
+        text: `${critFutureRisks} kritische Zukunftsrisik${critFutureRisks === 1 ? 'o' : 'en'} identifiziert`,
+        severity: 'medium',
         category: 'gap',
         link: '/admin/skill-gaps',
       });

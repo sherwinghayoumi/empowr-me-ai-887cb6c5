@@ -483,15 +483,13 @@ const AdminDashboard = () => {
               </p>
             </CardContent>
           </Card>
-        </div>
       </div>
 
-      {/* Team Competency Radar placeholder */}
+      {/* Team-Übersicht */}
       {teams && teams.length > 0 && (
-        <div className="animate-fade-in-up" style={{ animationDelay: "600ms" }}>
           <Card className="bg-card/80 border-border/50">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-foreground text-base">
+            <CardHeader className="py-3 px-4">
+              <CardTitle className="text-sm font-medium">
                 Team-Übersicht
               </CardTitle>
             </CardHeader>

@@ -41,7 +41,6 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { useAuth } from '@/contexts/AuthContext';
-import { useOrgData } from '@/hooks/useOrgData';
 import { toast } from 'sonner';
 
 type SupportRequest = {

@@ -9,7 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { GlassCard, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ReportsList } from '@/components/reports/ReportsList';
 import { ReportFormWizard } from '@/components/reports/ReportFormWizard';
 import { ReportDetailDialog } from '@/components/reports/ReportDetailDialog';

@@ -74,13 +74,13 @@ const SettingsPage = () => {
 
   // Organization settings
   const [orgSettings, setOrgSettings] = useState({
-    defaultBudgetPerTeam: organization?.settings?.defaultBudgetPerTeam || 50000,
-    fiscalYearStart: organization?.settings?.fiscalYearStart || 'Q1',
+    defaultBudgetPerTeam: Number(orgSettings$.defaultBudgetPerTeam) || 50000,
+    fiscalYearStart: String(orgSettings$.fiscalYearStart || 'Q1'),
     currentQuarter: 'Q1',
     currentYear: new Date().getFullYear(),
-    costPerCompetencyPoint: organization?.settings?.costPerCompetencyPoint || 850,
-    gapThresholdCritical: organization?.settings?.gapThresholdCritical || 30,
-    gapThresholdWarning: organization?.settings?.gapThresholdWarning || 15,
+    costPerCompetencyPoint: Number(orgSettings$.costPerCompetencyPoint) || 850,
+    gapThresholdCritical: Number(orgSettings$.gapThresholdCritical) || 30,
+    gapThresholdWarning: Number(orgSettings$.gapThresholdWarning) || 15,
   });
 
   // Notification settings
@@ -558,13 +558,13 @@ const SettingsPage = () => {
                 <div className="p-4 rounded-xl bg-muted/20 border border-border/30">
                   <Label className="text-muted-foreground text-xs">Aufbewahrungsfrist</Label>
                   <p className="font-medium text-foreground text-lg">
-                    {organization?.data_retention_days || 2555} Tage
+                    {Number(orgSettings$.data_retention_days) || 2555} Tage
                   </p>
-                  <p className="text-xs text-muted-foreground">≈ {Math.round((organization?.data_retention_days || 2555) / 365)} Jahre</p>
+                  <p className="text-xs text-muted-foreground">≈ {Math.round((Number(orgSettings$.data_retention_days) || 2555) / 365)} Jahre</p>
                 </div>
                 <div className="p-4 rounded-xl bg-muted/20 border border-border/30">
                   <Label className="text-muted-foreground text-xs">AVV Status</Label>
-                  {organization?.data_processing_agreement_signed_at ? (
+                  {orgSettings$.data_processing_agreement_signed_at ? (
                     <div className="flex items-center gap-2 mt-1">
                       <CheckCircle className="w-4 h-4 text-[hsl(var(--severity-low))]" />
                       <span className="font-medium text-foreground text-sm">Unterzeichnet</span>

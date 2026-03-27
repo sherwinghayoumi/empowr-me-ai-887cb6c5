@@ -72,7 +72,7 @@ export function TeamCard({
         boxShadow: isHovered ? `0 8px 32px ${color}20` : undefined
       }}
     >
-      <CardHeader>
+      <CardHeader className="pb-2 pt-4 px-4">
         <div className="flex items-center justify-between">
           <CardTitle className="text-foreground flex items-center gap-2">
             <div 
@@ -177,7 +177,7 @@ export function TeamCard({
           </div>
         )}
       </CardHeader>
-      <CardContent className="space-y-2">
+      <CardContent className="space-y-1 px-4 pb-4 pt-0">
         {team.members?.map((member) => (
           <button
             key={member.id}

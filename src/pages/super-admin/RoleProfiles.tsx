@@ -275,8 +275,8 @@ const RoleProfiles = () => {
 
       {/* Role Profiles List */}
       {isLoading ? (
-        <GlassCard>
-          <GlassCardContent className="py-6">
+        <Card>
+          <CardContent className="py-6">
             <div className="space-y-4">
               {[1, 2, 3, 4].map((i) => (
                 <div key={i} className="flex items-center gap-4 p-4 rounded-xl bg-muted/30">
@@ -289,11 +289,11 @@ const RoleProfiles = () => {
                 </div>
               ))}
             </div>
-          </GlassCardContent>
-        </GlassCard>
+          </CardContent>
+        </Card>
       ) : Object.keys(groupedProfiles).length === 0 ? (
-        <GlassCard>
-          <GlassCardContent className="py-12 text-center">
+        <Card>
+          <CardContent className="py-12 text-center">
             <Shield className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
             <h3 className="text-lg font-medium text-foreground mb-2">Keine Role Profiles gefunden</h3>
             <p className="text-muted-foreground mb-4">
@@ -303,31 +303,31 @@ const RoleProfiles = () => {
               <Upload className="w-4 h-4 mr-2" />
               CSV Import starten
             </Button>
-          </GlassCardContent>
-        </GlassCard>
+          </CardContent>
+        </Card>
       ) : (
         <div className="space-y-6">
           {Object.entries(groupedProfiles)
             .sort(([a], [b]) => b.localeCompare(a))
             .map(([quarter, profiles]) => (
-              <GlassCard key={quarter}>
-                <GlassCardHeader>
+              <Card key={quarter}>
+                <CardHeader>
                   <div className="flex items-center justify-between">
-                    <GlassCardTitle className="flex items-center gap-2">
+                    <CardTitle className="flex items-center gap-2">
                       <Calendar className="w-5 h-5" />
                       {quarter}
-                    </GlassCardTitle>
+                    </CardTitle>
                     <div className="flex items-center gap-2">
                       <Badge variant="outline">{profiles.length} Profile</Badge>
                       {profiles.some(p => !p.is_published) && (
-                        <Badge className="bg-skill-moderate/20 text-skill-moderate border-skill-moderate/30">
+                        <Badge className="bg-[hsl(var(--severity-medium))]/15 text-[hsl(var(--severity-medium))] border-[hsl(var(--severity-medium))]/30">
                           {profiles.filter(p => !p.is_published).length} Entwürfe
                         </Badge>
                       )}
                     </div>
                   </div>
-                </GlassCardHeader>
-                <GlassCardContent>
+                </CardHeader>
+                <CardContent>
                   <div className="space-y-3">
                     {profiles.map((profile) => (
                       <RoleProfileCard
@@ -342,8 +342,8 @@ const RoleProfiles = () => {
                       />
                     ))}
                   </div>
-                </GlassCardContent>
-              </GlassCard>
+                </CardContent>
+              </Card>
             ))}
         </div>
       )}

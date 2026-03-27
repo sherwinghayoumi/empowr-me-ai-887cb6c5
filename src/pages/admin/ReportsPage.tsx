@@ -1,10 +1,10 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -14,352 +14,452 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { 
-  FileText, TrendingUp, Calendar, Star,
-  Search, Globe, Building2, Clock,
-  ChevronRight, BookOpen, X, ArrowLeft,
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  FileText, TrendingUp, Search, Users, ArrowLeft, Target,
+  BarChart3, Wallet, ChevronRight, AlertTriangle, CheckCircle2,
 } from "lucide-react";
-import { useReports, type Report } from "@/hooks/useReports";
+import {
+  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
+  CartesianGrid, RadarChart, Radar, PolarGrid, PolarAngleAxis,
+  PolarRadiusAxis,
+} from "recharts";
+import { useEmployees, useTeams } from "@/hooks/useOrgData";
+import { useMeasures } from "@/hooks/useMeasures";
 import { cn } from "@/lib/utils";
-import { MarkdownRenderer } from "@/components/reports/MarkdownRenderer";
+
+// ─── Types ──────────────────────────────────────────
+
+interface EmployeeReport {
+  id: string;
+  name: string;
+  role: string;
+  teamName: string;
+  avgLevel: number;
+  avgDemanded: number;
+  gapScore: number;
+  criticalGaps: number;
+  completedMeasures: number;
+  totalMeasureCost: number;
+  costPerPoint: number | null;
+  competencies: {
+    name: string;
+    current: number;
+    demanded: number;
+    gap: number;
+  }[];
+}
+
+// ─── Page ───────────────────────────────────────────
 
 const ReportsPage = () => {
-  const { reports, isLoading } = useReports();
+  const { data: employees, isLoading: empLoading } = useEmployees();
+  const { data: teams } = useTeams();
+  const { data: measures } = useMeasures();
+
   const [searchQuery, setSearchQuery] = useState("");
-  const [yearFilter, setYearFilter] = useState<string>("all");
-  const [practiceGroupFilter, setPracticeGroupFilter] = useState<string>("all");
-  const [selectedReport, setSelectedReport] = useState<Report | null>(null);
+  const [teamFilter, setTeamFilter] = useState<string>("all");
+  const [selectedEmployee, setSelectedEmployee] = useState<string | null>(null);
 
-  const publishedReports = reports?.filter(r => r.is_published) || [];
-  
-  const filteredReports = publishedReports.filter(report => {
-    const matchesSearch = 
-      report.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      report.practice_group?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      report.executive_summary?.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesYear = yearFilter === "all" || report.year.toString() === yearFilter;
-    const matchesPracticeGroup = practiceGroupFilter === "all" || report.practice_group === practiceGroupFilter;
-    return matchesSearch && matchesYear && matchesPracticeGroup;
-  });
+  // Build per-employee report data
+  const employeeReports = useMemo(() => {
+    if (!employees) return [];
 
-  const years = [...new Set(publishedReports.map(r => r.year))].sort((a, b) => b - a);
-  const practiceGroups = [...new Set(publishedReports.map(r => r.practice_group).filter(Boolean))].sort() as string[];
+    const completedMeasures = measures?.filter(m => m.status === "completed") || [];
 
-  const mainReport = filteredReports.length > 0 ? filteredReports[0] : null;
-  const otherReports = filteredReports.slice(1);
+    return employees.map((emp): EmployeeReport => {
+      const activeComps = (emp.competencies || []).filter(
+        (c: any) => !c.is_deprecated && c.competency?.status === "active"
+      );
 
-  const totalReports = publishedReports.length;
-  const thisYearReports = publishedReports.filter(r => r.year === new Date().getFullYear()).length;
+      const compData = activeComps.map((c: any) => ({
+        name: c.competency?.name || "?",
+        current: c.current_level || 0,
+        demanded: c.demanded_level || 0,
+        gap: Math.max(0, (c.demanded_level || 0) - (c.current_level || 0)),
+      }));
 
-  if (selectedReport) {
-    return <ReportReader report={selectedReport} onBack={() => setSelectedReport(null)} />;
+      const avgLevel = compData.length > 0
+        ? Math.round(compData.reduce((s, c) => s + c.current, 0) / compData.length)
+        : 0;
+      const avgDemanded = compData.length > 0
+        ? Math.round(compData.reduce((s, c) => s + c.demanded, 0) / compData.length)
+        : 0;
+      const gapScore = compData.length > 0
+        ? Math.round(compData.reduce((s, c) => s + c.gap, 0) / compData.length)
+        : 0;
+      const criticalGaps = compData.filter(c => c.gap >= 20).length;
+
+      // Measures assigned to this employee
+      const empMeasures = completedMeasures.filter(
+        m => m.assigned_employee_ids?.includes(emp.id)
+      );
+      const totalCost = empMeasures.reduce((s, m) => s + (m.cost || 0), 0);
+      const linkedGaps = empMeasures.reduce(
+        (s, m) => s + (m.linked_competency_ids?.length || 0), 0
+      );
+
+      return {
+        id: emp.id,
+        name: emp.full_name,
+        role: (emp as any).role_profile?.role_title || "–",
+        teamName: (emp as any).team?.name || "–",
+        avgLevel,
+        avgDemanded,
+        gapScore,
+        criticalGaps,
+        completedMeasures: empMeasures.length,
+        totalMeasureCost: totalCost,
+        costPerPoint: linkedGaps > 0 && totalCost > 0 ? Math.round(totalCost / linkedGaps) : null,
+        competencies: compData.sort((a, b) => b.gap - a.gap),
+      };
+    }).sort((a, b) => b.gapScore - a.gapScore);
+  }, [employees, measures]);
+
+  // Filters
+  const filtered = useMemo(() => {
+    return employeeReports.filter(r => {
+      const matchesSearch = r.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        r.role.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesTeam = teamFilter === "all" || r.teamName === teamFilter;
+      return matchesSearch && matchesTeam;
+    });
+  }, [employeeReports, searchQuery, teamFilter]);
+
+  const teamNames = [...new Set(employeeReports.map(r => r.teamName).filter(t => t !== "–"))].sort();
+
+  // Aggregate KPIs
+  const totalEmployees = filtered.length;
+  const avgGap = totalEmployees > 0
+    ? Math.round(filtered.reduce((s, r) => s + r.gapScore, 0) / totalEmployees)
+    : 0;
+  const totalSpent = filtered.reduce((s, r) => s + r.totalMeasureCost, 0);
+  const totalCompleted = filtered.reduce((s, r) => s + r.completedMeasures, 0);
+
+  const selected = selectedEmployee
+    ? employeeReports.find(r => r.id === selectedEmployee) || null
+    : null;
+
+  if (selected) {
+    return <EmployeeReportDetail report={selected} onBack={() => setSelectedEmployee(null)} />;
   }
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 animate-fade-in-up">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">Reports</h1>
-          <p className="text-muted-foreground mt-1">
-            Quarterly Skill-Analysen und Future-Role-Skill-Matrices
-          </p>
-        </div>
+      {/* Header */}
+      <div>
+        <h1 className="text-2xl font-bold text-foreground">Q-Reports</h1>
+        <p className="text-muted-foreground">Individuelle Kompetenz-Reports pro Anwalt</p>
       </div>
-      
-      {/* Stats */}
-      <div className="grid md:grid-cols-3 gap-4">
+
+      {/* KPIs */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
-          { label: "Verfügbare Reports", value: totalReports, icon: FileText, iconBg: "bg-primary/20", iconColor: "text-primary" },
-          { label: `Reports ${new Date().getFullYear()}`, value: thisYearReports, icon: TrendingUp, iconBg: "bg-[hsl(var(--skill-very-strong))]/20", iconColor: "text-[hsl(var(--skill-very-strong))]" },
-          { label: "Aktuellstes Jahr", value: years[0] || "-", icon: Calendar, iconBg: "bg-primary/20", iconColor: "text-primary" },
-        ].map((stat, i) => {
-          const Icon = stat.icon;
+          { label: "Anwälte", value: totalEmployees, icon: Users, color: "text-primary" },
+          { label: "Ø Gap-Score", value: avgGap, icon: Target, color: avgGap >= 15 ? "text-[hsl(var(--severity-critical))]" : "text-[hsl(var(--severity-low))]" },
+          { label: "Maßnahmen abgeschl.", value: totalCompleted, icon: CheckCircle2, color: "text-[hsl(var(--severity-low))]" },
+          { label: "Investiert", value: `€${totalSpent.toLocaleString("de-DE")}`, icon: Wallet, color: "text-primary" },
+        ].map((kpi) => {
+          const Icon = kpi.icon;
           return (
-            <div key={stat.label} className="animate-fade-in-up" style={{ animationDelay: `${i * 80}ms` }}>
-              <Card className="bg-card/80 border-border/50 hover-lift">
-                <CardContent className="p-6 flex items-center gap-4">
-                  <div className={`w-12 h-12 rounded-lg ${stat.iconBg} flex items-center justify-center`}>
-                    <Icon className={`w-6 h-6 ${stat.iconColor}`} />
-                  </div>
+            <Card key={kpi.label} className="bg-card/80 border-border/50">
+              <CardContent className="p-5">
+                <div className="flex items-center gap-3">
+                  <Icon className={cn("w-5 h-5", kpi.color)} />
                   <div>
                     <p className="text-2xl font-bold text-foreground tabular-nums">
-                      {isLoading ? <Skeleton className="h-8 w-12" /> : stat.value}
+                      {empLoading ? <Skeleton className="h-7 w-12" /> : kpi.value}
                     </p>
-                    <p className="text-sm text-muted-foreground">{stat.label}</p>
+                    <p className="text-xs text-muted-foreground">{kpi.label}</p>
                   </div>
-                </CardContent>
-              </Card>
-            </div>
+                </div>
+              </CardContent>
+            </Card>
           );
         })}
       </div>
 
       {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-3 animate-fade-in-up" style={{ animationDelay: '250ms' }}>
+      <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
-            placeholder="Reports durchsuchen..."
+            placeholder="Anwalt suchen..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-10"
           />
         </div>
-        <Select value={yearFilter} onValueChange={setYearFilter}>
-          <SelectTrigger className="w-full sm:w-32"><SelectValue placeholder="Jahr" /></SelectTrigger>
+        <Select value={teamFilter} onValueChange={setTeamFilter}>
+          <SelectTrigger className="w-full sm:w-44">
+            <SelectValue placeholder="Team" />
+          </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Alle Jahre</SelectItem>
-            {years.map(year => (
-              <SelectItem key={year} value={year.toString()}>{year}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select value={practiceGroupFilter} onValueChange={setPracticeGroupFilter}>
-          <SelectTrigger className="w-full sm:w-52"><SelectValue placeholder="Practice Group" /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Alle Practice Groups</SelectItem>
-            {practiceGroups.map(pg => (
-              <SelectItem key={pg} value={pg}>{pg}</SelectItem>
+            <SelectItem value="all">Alle Teams</SelectItem>
+            {teamNames.map(t => (
+              <SelectItem key={t} value={t}>{t}</SelectItem>
             ))}
           </SelectContent>
         </Select>
       </div>
 
-      {isLoading ? (
-        <div className="space-y-4">
-          <Skeleton className="h-48 w-full rounded-xl" />
-          <Skeleton className="h-32 w-full rounded-xl" />
-        </div>
-      ) : filteredReports.length === 0 ? (
-        <Card className="bg-card/80 border-border/50">
-          <CardContent className="py-16 text-center">
-            <FileText className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-            <h3 className="text-lg font-medium text-foreground mb-2">Keine Reports gefunden</h3>
-            <p className="text-muted-foreground">
-              {searchQuery || yearFilter !== "all" 
-                ? "Versuchen Sie andere Suchkriterien."
-                : "Es sind noch keine veröffentlichten Reports verfügbar."}
-            </p>
-          </CardContent>
-        </Card>
-      ) : (
-        <>
-          {mainReport && (
-            <div className="animate-fade-in-up" style={{ animationDelay: '300ms' }}>
-              <Card 
-                className="bg-card/80 border-2 border-primary/50 hover:border-primary hover:shadow-lg transition-all duration-300 cursor-pointer group"
-                onClick={() => setSelectedReport(mainReport)}
-              >
-                <CardContent className="p-6">
-                  <div className="flex items-start gap-4">
-                    <div className="w-14 h-14 rounded-lg bg-primary/20 flex items-center justify-center">
-                      <Star className="w-7 h-7 text-primary transition-transform duration-300 group-hover:scale-110" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1 flex-wrap">
-                        <Badge className="bg-primary text-primary-foreground">{mainReport.quarter} {mainReport.year}</Badge>
-                        {mainReport.practice_group && <Badge variant="outline">{mainReport.practice_group}</Badge>}
-                      </div>
-                      <h3 className="text-xl font-semibold text-foreground mb-2 group-hover:text-primary transition-colors line-clamp-2">
-                        {mainReport.title}
-                      </h3>
-                      {mainReport.executive_summary && (
-                        <p className="text-sm text-muted-foreground line-clamp-2 mb-3">{mainReport.executive_summary}</p>
+      {/* Employee Reports Table */}
+      <Card className="bg-card/80 border-border/50">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-foreground flex items-center gap-2">
+            <FileText className="w-5 h-5" />
+            Individuelle Q-Reports ({filtered.length})
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {empLoading ? (
+            <div className="space-y-3">
+              {[1, 2, 3].map(i => <Skeleton key={i} className="h-14 w-full" />)}
+            </div>
+          ) : filtered.length === 0 ? (
+            <div className="py-12 text-center text-muted-foreground">
+              <FileText className="w-10 h-10 mx-auto mb-3 opacity-50" />
+              <p>Keine Anwälte gefunden.</p>
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Anwalt</TableHead>
+                  <TableHead>Rolle</TableHead>
+                  <TableHead className="text-right">Ø Level</TableHead>
+                  <TableHead className="text-right">Gap-Score</TableHead>
+                  <TableHead className="text-right">Krit. Gaps</TableHead>
+                  <TableHead className="text-right">Maßnahmen</TableHead>
+                  <TableHead className="text-right">Investiert</TableHead>
+                  <TableHead className="text-right">€/Punkt</TableHead>
+                  <TableHead />
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filtered.map((r) => (
+                  <TableRow
+                    key={r.id}
+                    className="cursor-pointer hover:bg-secondary/40"
+                    onClick={() => setSelectedEmployee(r.id)}
+                  >
+                    <TableCell className="font-medium text-foreground">{r.name}</TableCell>
+                    <TableCell className="text-muted-foreground text-sm">{r.role}</TableCell>
+                    <TableCell className="text-right tabular-nums">{r.avgLevel}</TableCell>
+                    <TableCell className="text-right">
+                      <Badge
+                        variant="outline"
+                        className={cn(
+                          "tabular-nums",
+                          r.gapScore >= 20 && "border-[hsl(var(--severity-critical))]/40 text-[hsl(var(--severity-critical))]",
+                          r.gapScore >= 10 && r.gapScore < 20 && "border-[hsl(var(--severity-medium))]/40 text-[hsl(var(--severity-medium))]",
+                          r.gapScore < 10 && "border-[hsl(var(--severity-low))]/40 text-[hsl(var(--severity-low))]",
+                        )}
+                      >
+                        {r.gapScore}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right tabular-nums">
+                      {r.criticalGaps > 0 ? (
+                        <span className="text-[hsl(var(--severity-critical))]">{r.criticalGaps}</span>
+                      ) : (
+                        <span className="text-muted-foreground">0</span>
                       )}
-                      <div className="flex items-center gap-4 text-sm text-muted-foreground flex-wrap">
-                        {mainReport.published_at && (
-                          <span className="flex items-center gap-1">
-                            <Clock className="w-3 h-3" />
-                            {new Date(mainReport.published_at).toLocaleDateString('de-DE')}
-                          </span>
-                        )}
-                        {mainReport.regions && mainReport.regions.length > 0 && (
-                          <span className="flex items-center gap-1">
-                            <Globe className="w-3 h-3" />
-                            {mainReport.regions.join(', ')}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-all shrink-0" />
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
+                    </TableCell>
+                    <TableCell className="text-right tabular-nums">{r.completedMeasures}</TableCell>
+                    <TableCell className="text-right tabular-nums text-muted-foreground">
+                      €{r.totalMeasureCost.toLocaleString("de-DE")}
+                    </TableCell>
+                    <TableCell className="text-right tabular-nums">
+                      {r.costPerPoint ? `€${r.costPerPoint.toLocaleString("de-DE")}` : "–"}
+                    </TableCell>
+                    <TableCell>
+                      <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           )}
-
-          {otherReports.length > 0 && (
-            <div className="animate-fade-in-up" style={{ animationDelay: '400ms' }}>
-              <Card className="bg-card/80 border-border/50">
-                <CardHeader>
-                  <CardTitle className="text-foreground flex items-center gap-2">
-                    <BookOpen className="w-5 h-5" />
-                    Weitere Reports ({otherReports.length})
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  {otherReports.map((report) => (
-                    <div 
-                      key={report.id}
-                      className="flex items-center gap-4 p-4 rounded-lg bg-secondary/30 hover:bg-secondary/50 transition-all duration-200 cursor-pointer group"
-                      onClick={() => setSelectedReport(report)}
-                    >
-                      <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                        <FileText className="w-5 h-5 text-primary" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-foreground group-hover:text-primary transition-colors line-clamp-1">
-                          {report.title}
-                        </p>
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground mt-0.5 flex-wrap">
-                          <Badge variant="outline" className="text-xs">{report.quarter} {report.year}</Badge>
-                          {report.practice_group && <span className="text-xs">{report.practice_group}</span>}
-                          {report.published_at && (
-                            <>
-                              <span>•</span>
-                              <span className="text-xs">{new Date(report.published_at).toLocaleDateString('de-DE')}</span>
-                            </>
-                          )}
-                        </div>
-                      </div>
-                      <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-all shrink-0" />
-                    </div>
-                  ))}
-                </CardContent>
-              </Card>
-            </div>
-          )}
-        </>
-      )}
+        </CardContent>
+      </Card>
     </div>
   );
 };
 
-// Full Report Reader Component
-interface ReportReaderProps {
-  report: Report;
-  onBack: () => void;
-}
+// ─── Detail View ────────────────────────────────────
 
-function ReportReader({ report, onBack }: ReportReaderProps) {
+function EmployeeReportDetail({ report, onBack }: { report: EmployeeReport; onBack: () => void }) {
+  const radarData = report.competencies.slice(0, 8).map(c => ({
+    subject: c.name.length > 18 ? c.name.slice(0, 16) + "…" : c.name,
+    current: c.current,
+    demanded: c.demanded,
+  }));
+
+  const gapBarData = report.competencies.filter(c => c.gap > 0).slice(0, 10).map(c => ({
+    name: c.name.length > 20 ? c.name.slice(0, 18) + "…" : c.name,
+    gap: c.gap,
+  }));
+
   return (
     <div className="space-y-6">
-      {/* Back Button & Header */}
+      {/* Back + Header */}
       <div>
-        <Button variant="ghost" onClick={onBack} className="mb-4 -ml-2">
+        <Button variant="ghost" onClick={onBack} className="-ml-2 mb-3">
           <ArrowLeft className="w-4 h-4 mr-2" />
-          Zurück zu Reports
+          Zurück zur Übersicht
         </Button>
-        
-        <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
-          <div className="flex items-start gap-4">
-            <div className="w-14 h-14 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-              <FileText className="w-7 h-7 text-primary" />
-            </div>
-            <div>
-              <h1 className="text-2xl lg:text-3xl font-bold text-foreground mb-2">{report.title}</h1>
-              <div className="flex items-center gap-2 flex-wrap">
-                <Badge className="bg-primary text-primary-foreground">{report.quarter} {report.year}</Badge>
-                {report.practice_group && <Badge variant="outline">{report.practice_group}</Badge>}
-                {report.version && report.version > 1 && <Badge variant="outline" className="text-xs">v{report.version}</Badge>}
-              </div>
+        <div className="flex items-start gap-4">
+          <div className="w-12 h-12 rounded-lg bg-primary/20 flex items-center justify-center">
+            <FileText className="w-6 h-6 text-primary" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold text-foreground">{report.name}</h1>
+            <div className="flex items-center gap-2 mt-1">
+              <Badge variant="outline">{report.role}</Badge>
+              <Badge variant="outline" className="text-xs">{report.teamName}</Badge>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Meta Info */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className="bg-card/80 border-border/50">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2 text-muted-foreground mb-1">
-              <Calendar className="w-4 h-4" />
-              <span className="text-xs">Erstellt</span>
-            </div>
-            <p className="text-sm font-medium text-foreground">
-              {report.created_at ? new Date(report.created_at).toLocaleDateString('de-DE') : '-'}
-            </p>
-          </CardContent>
-        </Card>
-        <Card className="bg-card/80 border-border/50">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2 text-muted-foreground mb-1">
-              <Clock className="w-4 h-4" />
-              <span className="text-xs">Veröffentlicht</span>
-            </div>
-            <p className="text-sm font-medium text-foreground">
-              {report.published_at ? new Date(report.published_at).toLocaleDateString('de-DE') : '-'}
-            </p>
-          </CardContent>
-        </Card>
-        <Card className="bg-card/80 border-border/50">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2 text-muted-foreground mb-1">
-              <Globe className="w-4 h-4" />
-              <span className="text-xs">Regionen</span>
-            </div>
-            <div className="flex flex-wrap gap-1">
-              {report.regions && report.regions.length > 0 ? (
-                report.regions.map(r => <Badge key={r} variant="outline" className="text-xs">{r}</Badge>)
-              ) : (
-                <span className="text-sm text-muted-foreground">-</span>
+      {/* KPI Row */}
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+        {[
+          { label: "Ø Level", value: report.avgLevel, max: 100 },
+          { label: "Ø Anforderung", value: report.avgDemanded, max: 100 },
+          { label: "Gap-Score", value: report.gapScore, severity: true },
+          { label: "Investiert", value: `€${report.totalMeasureCost.toLocaleString("de-DE")}` },
+          { label: "€/Kompetenzpunkt", value: report.costPerPoint ? `€${report.costPerPoint.toLocaleString("de-DE")}` : "–" },
+        ].map((kpi) => (
+          <Card key={kpi.label} className="bg-card/80 border-border/50">
+            <CardContent className="p-4">
+              <p className="text-xs text-muted-foreground mb-1">{kpi.label}</p>
+              <p className={cn(
+                "text-xl font-bold tabular-nums",
+                (kpi as any).severity && report.gapScore >= 20 && "text-[hsl(var(--severity-critical))]",
+                (kpi as any).severity && report.gapScore >= 10 && report.gapScore < 20 && "text-[hsl(var(--severity-medium))]",
+                (kpi as any).severity && report.gapScore < 10 && "text-[hsl(var(--severity-low))]",
+                !(kpi as any).severity && "text-foreground",
+              )}>
+                {kpi.value}
+              </p>
+              {kpi.max && typeof kpi.value === "number" && (
+                <Progress value={(kpi.value / kpi.max) * 100} className="mt-2 h-1.5" />
               )}
-            </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* Charts */}
+      <div className="grid md:grid-cols-2 gap-6">
+        {/* Radar Chart */}
+        <Card className="bg-card/80 border-border/50">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm text-foreground">Kompetenzprofil</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {radarData.length > 0 ? (
+              <ResponsiveContainer width="100%" height={300}>
+                <RadarChart data={radarData}>
+                  <PolarGrid stroke="hsl(var(--border))" />
+                  <PolarAngleAxis dataKey="subject" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 10 }} />
+                  <PolarRadiusAxis domain={[0, 100]} tick={{ fontSize: 9 }} />
+                  <Radar name="Ist" dataKey="current" stroke="hsl(var(--primary))" fill="hsl(var(--primary))" fillOpacity={0.3} />
+                  <Radar name="Soll" dataKey="demanded" stroke="hsl(var(--severity-medium))" fill="hsl(var(--severity-medium))" fillOpacity={0.15} />
+                  <Tooltip />
+                </RadarChart>
+              </ResponsiveContainer>
+            ) : (
+              <p className="text-muted-foreground text-center py-12">Keine Kompetenzdaten</p>
+            )}
           </CardContent>
         </Card>
+
+        {/* Gap Bar Chart */}
         <Card className="bg-card/80 border-border/50">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2 text-muted-foreground mb-1">
-              <Building2 className="w-4 h-4" />
-              <span className="text-xs">Practice Group</span>
-            </div>
-            <p className="text-sm font-medium text-foreground truncate">
-              {report.practice_group || '-'}
-            </p>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm text-foreground">Top Gaps</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {gapBarData.length > 0 ? (
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={gapBarData} layout="vertical" margin={{ left: 10, right: 20 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis type="number" domain={[0, "auto"]} tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} />
+                  <YAxis type="category" dataKey="name" width={130} tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} />
+                  <Tooltip />
+                  <Bar dataKey="gap" fill="hsl(var(--severity-critical))" radius={[0, 4, 4, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <p className="text-muted-foreground text-center py-12">Keine Gaps vorhanden</p>
+            )}
           </CardContent>
         </Card>
       </div>
 
-      {/* Report Content with Tabs */}
+      {/* Competency Table */}
       <Card className="bg-card/80 border-border/50">
-        <Tabs defaultValue="summary" className="w-full">
-          <CardHeader className="pb-0">
-            <TabsList className="w-full justify-start">
-              <TabsTrigger value="summary" className="flex-1 sm:flex-none">Executive Summary</TabsTrigger>
-              <TabsTrigger value="full" className="flex-1 sm:flex-none">Vollständiger Report</TabsTrigger>
-            </TabsList>
-          </CardHeader>
-          
-          <CardContent className="pt-6">
-            <TabsContent value="summary" className="mt-0">
-              {report.executive_summary ? (
-                <div className="p-6 rounded-lg bg-muted/30">
-                  <MarkdownRenderer content={report.executive_summary} />
-                </div>
-              ) : (
-                <div className="text-center py-12 text-muted-foreground">
-                  <FileText className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                  <p>Keine Executive Summary vorhanden.</p>
-                </div>
-              )}
-            </TabsContent>
-
-            <TabsContent value="full" className="mt-0">
-              {report.full_report_markdown ? (
-                <ScrollArea className="h-[calc(100vh-400px)] min-h-[400px]">
-                  <div className="p-6 rounded-lg bg-muted/30">
-                    <MarkdownRenderer content={report.full_report_markdown} />
-                  </div>
-                </ScrollArea>
-              ) : (
-                <div className="text-center py-12 text-muted-foreground">
-                  <FileText className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                  <p>Kein vollständiger Report vorhanden.</p>
-                </div>
-              )}
-            </TabsContent>
-          </CardContent>
-        </Tabs>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-foreground flex items-center gap-2 text-sm">
+            <BarChart3 className="w-4 h-4" />
+            Alle Kompetenzen ({report.competencies.length})
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Kompetenz</TableHead>
+                <TableHead className="text-right">Ist-Level</TableHead>
+                <TableHead className="text-right">Soll-Level</TableHead>
+                <TableHead className="text-right">Gap</TableHead>
+                <TableHead>Fortschritt</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {report.competencies.map((c) => {
+                const pct = c.demanded > 0 ? Math.min(100, (c.current / c.demanded) * 100) : 100;
+                return (
+                  <TableRow key={c.name}>
+                    <TableCell className="font-medium text-foreground">{c.name}</TableCell>
+                    <TableCell className="text-right tabular-nums">{c.current}</TableCell>
+                    <TableCell className="text-right tabular-nums text-muted-foreground">{c.demanded}</TableCell>
+                    <TableCell className="text-right">
+                      {c.gap > 0 ? (
+                        <Badge
+                          variant="outline"
+                          className={cn(
+                            "tabular-nums",
+                            c.gap >= 20 ? "text-[hsl(var(--severity-critical))] border-[hsl(var(--severity-critical))]/30"
+                              : c.gap >= 10 ? "text-[hsl(var(--severity-medium))] border-[hsl(var(--severity-medium))]/30"
+                              : "text-[hsl(var(--severity-low))] border-[hsl(var(--severity-low))]/30"
+                          )}
+                        >
+                          -{c.gap}
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="text-[hsl(var(--severity-low))] border-[hsl(var(--severity-low))]/30">✓</Badge>
+                      )}
+                    </TableCell>
+                    <TableCell className="w-32">
+                      <Progress value={pct} className="h-1.5" />
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </CardContent>
       </Card>
     </div>
   );

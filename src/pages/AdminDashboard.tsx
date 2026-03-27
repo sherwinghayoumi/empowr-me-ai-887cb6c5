@@ -418,10 +418,8 @@ const AdminDashboard = () => {
               )}
             </CardContent>
           </Card>
-        </div>
 
         {/* Competency Level Trend */}
-        <div className="animate-fade-in-up" style={{ animationDelay: "500ms" }}>
           <Card className="bg-card/80 border-border/50 h-full">
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">

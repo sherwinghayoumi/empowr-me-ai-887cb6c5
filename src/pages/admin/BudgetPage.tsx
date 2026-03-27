@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { KpiCard } from "@/components/KpiCard";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -179,65 +180,53 @@ const BudgetPage = () => {
   // ─── Render ────────────────────────────────────────
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Header */}
       <div className="animate-fade-in-up">
-        <h1 className="text-2xl font-bold text-foreground">Budget & ROI</h1>
-        <p className="text-sm text-muted-foreground mt-1">
+        <h1 className="text-lg font-semibold text-foreground tracking-tight">Budget & ROI</h1>
+        <p className="text-xs text-muted-foreground mt-0.5">
           Budget-Auslastung pro Team, Kosten-Effizienz und €/Kompetenzpunkt-Analyse
         </p>
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 animate-fade-in-up" style={{ animationDelay: "60ms" }}>
-        {[
-          {
-            label: "Gesamtbudget",
-            value: globalStats.totalBudget > 0 ? `${globalStats.totalBudget.toLocaleString("de-DE")} €` : "Nicht gesetzt",
-            icon: Wallet,
-            color: "text-primary",
-            sub: globalStats.totalBudget > 0 ? `${teamBudgets.filter(t => t.annualBudget > 0).length} Teams mit Budget` : "Budget in Team-Settings festlegen",
-          },
-          {
-            label: "Ausgegeben",
-            value: `${globalStats.totalSpent.toLocaleString("de-DE")} €`,
-            icon: Euro,
-            color: globalStats.totalSpent > 0 ? "text-[hsl(var(--severity-medium))]" : "text-muted-foreground",
-            sub: `${globalStats.completedCount} abgeschl. Maßnahmen`,
-          },
-          {
-            label: "Budget verbraucht",
-            value: globalStats.totalBudget > 0 ? `${globalStats.budgetUtilization}%` : "—",
-            icon: TrendingUp,
-            color: globalStats.budgetUtilization > 80 ? "text-[hsl(var(--severity-critical))]" : globalStats.budgetUtilization > 50 ? "text-[hsl(var(--severity-medium))]" : "text-[hsl(var(--severity-low))]",
-            sub: globalStats.totalBudget > 0 ? `${globalStats.totalPlanned.toLocaleString("de-DE")} € geplant` : undefined,
-          },
-          {
-            label: "€ / Kompetenzpunkt",
-            value: globalStats.costPerPoint !== null ? `${globalStats.costPerPoint.toLocaleString("de-DE")} €` : "—",
-            icon: Target,
-            color: "text-primary",
-            sub: globalStats.costPerPoint !== null ? "Basierend auf abgeschl. Maßnahmen" : "Noch keine abgeschl. Maßnahmen",
-          },
-        ].map((kpi) => {
-          const Icon = kpi.icon;
-          return (
-            <Card key={kpi.label} className="bg-card/80 border-border/50">
-              <CardContent className="p-5">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs text-muted-foreground uppercase tracking-wider">{kpi.label}</span>
-                  <Icon className={`w-4 h-4 ${kpi.color}`} />
-                </div>
-                <p className={`text-xl font-bold tabular-nums ${kpi.color}`}>{kpi.value}</p>
-                {kpi.sub && <p className="text-[10px] text-muted-foreground mt-1">{kpi.sub}</p>}
-              </CardContent>
-            </Card>
-          );
-        })}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 animate-fade-in-up" style={{ animationDelay: "60ms" }}>
+        <KpiCard
+          label="Gesamtbudget"
+          value={globalStats.totalBudget > 0 ? `${globalStats.totalBudget.toLocaleString("de-DE")} €` : "—"}
+          icon={Wallet}
+          color="text-primary"
+          sub={globalStats.totalBudget > 0 ? `${teamBudgets.filter(t => t.annualBudget > 0).length} Teams mit Budget` : "Budget in Team-Settings festlegen"}
+          index={0}
+        />
+        <KpiCard
+          label="Ausgegeben"
+          value={`${globalStats.totalSpent.toLocaleString("de-DE")} €`}
+          icon={Euro}
+          color={globalStats.totalSpent > 0 ? "text-[hsl(var(--severity-medium))]" : "text-muted-foreground"}
+          sub={`${globalStats.completedCount} abgeschl. Maßnahmen`}
+          index={1}
+        />
+        <KpiCard
+          label="Budget verbraucht"
+          value={globalStats.totalBudget > 0 ? `${globalStats.budgetUtilization}%` : "—"}
+          icon={TrendingUp}
+          color={globalStats.budgetUtilization > 80 ? "text-[hsl(var(--severity-critical))]" : globalStats.budgetUtilization > 50 ? "text-[hsl(var(--severity-medium))]" : "text-[hsl(var(--severity-low))]"}
+          sub={globalStats.totalBudget > 0 ? `${globalStats.totalPlanned.toLocaleString("de-DE")} € geplant` : undefined}
+          index={2}
+        />
+        <KpiCard
+          label="€ / Kompetenzpunkt"
+          value={globalStats.costPerPoint !== null ? `${globalStats.costPerPoint.toLocaleString("de-DE")} €` : "—"}
+          icon={Target}
+          color="text-primary"
+          sub={globalStats.costPerPoint !== null ? "Basierend auf abgeschl. Maßnahmen" : "Noch keine abgeschl. Maßnahmen"}
+          index={3}
+        />
       </div>
 
       {/* Budget per Team + Utilization */}
-      <div className="grid lg:grid-cols-2 gap-6">
+      <div className="grid lg:grid-cols-2 gap-4">
         {/* Stacked Bar Chart */}
         <div className="animate-fade-in-up" style={{ animationDelay: "140ms" }}>
           <Card className="bg-card/80 border-border/50 h-full">
@@ -332,7 +321,7 @@ const BudgetPage = () => {
       </div>
 
       {/* ROI Section */}
-      <div className="grid lg:grid-cols-2 gap-6">
+      <div className="grid lg:grid-cols-2 gap-4">
         {/* ROI Table */}
         <div className="animate-fade-in-up" style={{ animationDelay: "260ms" }}>
           <Card className="bg-card/80 border-border/50 h-full">

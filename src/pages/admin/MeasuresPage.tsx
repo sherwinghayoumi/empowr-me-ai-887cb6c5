@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { KpiCard } from "@/components/KpiCard";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -373,42 +374,27 @@ const MeasuresPage = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between animate-fade-in-up">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Maßnahmen</h1>
-          <p className="text-sm text-muted-foreground mt-1">
+          <h1 className="text-lg font-semibold text-foreground tracking-tight">Maßnahmen</h1>
+          <p className="text-xs text-muted-foreground mt-0.5">
             Weiterbildungsmaßnahmen verwalten und Skill-Gaps zuordnen
           </p>
         </div>
-        <Button onClick={() => { setEditMeasure(null); setFormOpen(true); }}>
-          <Plus className="w-4 h-4 mr-2" />
+        <Button size="sm" onClick={() => { setEditMeasure(null); setFormOpen(true); }} className="h-8 text-xs">
+          <Plus className="w-3.5 h-3.5 mr-1.5" />
           Neue Maßnahme
         </Button>
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 animate-fade-in-up" style={{ animationDelay: "80ms" }}>
-        {[
-          { label: "Gesamt", value: filtered.length, icon: ClipboardList, color: "text-primary" },
-          { label: "Abgeschlossen", value: completedCount, icon: Target, color: "text-[hsl(var(--severity-low))]" },
-          { label: "Gesamtkosten", value: `${totalCost.toLocaleString("de-DE")} €`, icon: Euro, color: "text-primary" },
-          { label: "Ø Dauer", value: filtered.length > 0 ? `${Math.round(filtered.reduce((s, m) => s + (m.duration_hours || 0), 0) / filtered.length)} Std.` : "—", icon: Clock, color: "text-muted-foreground" },
-        ].map((s, i) => {
-          const Icon = s.icon;
-          return (
-            <Card key={s.label} className="bg-card/80 border-border/50">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-xs text-muted-foreground uppercase tracking-wider">{s.label}</span>
-                  <Icon className={`w-4 h-4 ${s.color}`} />
-                </div>
-                <p className={`text-xl font-bold tabular-nums ${s.color}`}>{s.value}</p>
-              </CardContent>
-            </Card>
-          );
-        })}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 animate-fade-in-up" style={{ animationDelay: "80ms" }}>
+        <KpiCard label="Gesamt" value={filtered.length} icon={ClipboardList} color="text-primary" index={0} />
+        <KpiCard label="Abgeschlossen" value={completedCount} icon={Target} color="text-[hsl(var(--severity-low))]" index={1} />
+        <KpiCard label="Gesamtkosten" value={`${totalCost.toLocaleString("de-DE")} €`} icon={Euro} color="text-primary" index={2} />
+        <KpiCard label="Ø Dauer" value={filtered.length > 0 ? `${Math.round(filtered.reduce((s, m) => s + (m.duration_hours || 0), 0) / filtered.length)} Std.` : "—"} icon={Clock} color="text-muted-foreground" index={3} />
       </div>
 
       {/* Filters */}
@@ -466,8 +452,8 @@ const MeasuresPage = () => {
                 </TableHeader>
                 <TableBody>
                   {filtered.map((m) => (
-                    <TableRow key={m.id} className="border-border/20">
-                      <TableCell className="font-medium text-sm py-3">
+                    <TableRow key={m.id} className="border-border/20 hover:bg-muted/30 transition-colors">
+                      <TableCell className="font-medium text-xs py-2">
                         <div>
                           {m.title}
                           {m.duration_hours && (

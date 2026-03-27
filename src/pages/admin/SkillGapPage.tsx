@@ -272,63 +272,33 @@ const SkillGapPage = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Title */}
-      <div className="flex items-start justify-between gap-4 animate-fade-in-up">
+      <div className="flex items-start justify-between gap-3 animate-fade-in-up">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Skill Gap Analyse</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">Kompetenzlücken erkennen und gezielte Lernpfade einleiten</p>
+          <h1 className="text-lg font-semibold text-foreground tracking-tight">Skill Gap Analyse</h1>
+          <p className="text-xs text-muted-foreground mt-0.5">Kompetenzlücken erkennen und gezielte Lernpfade einleiten</p>
         </div>
         <Button
           variant="ai"
           size="sm"
           onClick={handleGenerateDescriptions}
           disabled={isGenerating}
-          className="shrink-0 gap-2 h-9"
+          className="shrink-0 gap-1.5 h-8 text-xs"
           title="Prüft alle Kompetenzen und generiert fehlende deutsche Beschreibungen automatisch per KI"
         >
           {isGenerating
-            ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
-            : <Sparkles className="w-3.5 h-3.5 animate-ai-sparkle-icon" />}
+            ? <Loader2 className="w-3 h-3 animate-spin" />
+            : <Sparkles className="w-3 h-3 animate-ai-sparkle-icon" />}
           {isGenerating ? "Generiere..." : "Beschreibungen aktualisieren"}
         </Button>
       </div>
 
       {/* Stats */}
       <div className="grid grid-cols-3 gap-3 animate-fade-in-up" style={{ animationDelay: '60ms' }}>
-        <Card className="bg-card/80 border-border/50">
-          <CardContent className="py-3 px-4 flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-primary/15">
-              <TrendingUp className="w-4 h-4 text-primary" />
-            </div>
-            <div>
-              <p className="text-xl font-bold text-foreground leading-none tabular-nums">{totalGaps}</p>
-              <p className="text-xs text-muted-foreground mt-0.5">Entwicklungsbereiche</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="bg-card/80 border-border/50">
-          <CardContent className="py-3 px-4 flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-[hsl(var(--severity-medium))]/15">
-              <Target className="w-4 h-4 text-[hsl(var(--severity-medium))]" />
-            </div>
-            <div>
-              <p className="text-xl font-bold text-foreground leading-none tabular-nums">{focusCount}</p>
-              <p className="text-xs text-muted-foreground mt-0.5">Großes Potenzial</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="bg-card/80 border-border/50">
-          <CardContent className="py-3 px-4 flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-primary/15">
-              <Users className="w-4 h-4 text-primary" />
-            </div>
-            <div>
-              <p className="text-xl font-bold text-foreground leading-none tabular-nums">{affectedCount}</p>
-              <p className="text-xs text-muted-foreground mt-0.5">Mitarbeiter</p>
-            </div>
-          </CardContent>
-        </Card>
+        <KpiCard label="Entwicklungsbereiche" value={totalGaps} icon={TrendingUp} color="text-primary" index={0} />
+        <KpiCard label="Großes Potenzial" value={focusCount} icon={Target} color="text-[hsl(var(--severity-medium))]" index={1} />
+        <KpiCard label="Mitarbeiter" value={affectedCount} icon={Users} color="text-primary" index={2} />
       </div>
 
       {/* Search */}

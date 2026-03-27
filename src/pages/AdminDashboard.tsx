@@ -19,6 +19,8 @@ import {
   Target,
   AlertCircle,
   ArrowRight,
+  Clock,
+  ExternalLink,
 } from "lucide-react";
 import {
   useEmployees,
@@ -26,6 +28,7 @@ import {
   useOrgStats,
   useSkillGapAnalysis,
 } from "@/hooks/useOrgData";
+import { useAlerts } from "@/hooks/useAlerts";
 import { useMeasures } from "@/hooks/useMeasures";
 import { useAuth } from "@/contexts/AuthContext";
 import {

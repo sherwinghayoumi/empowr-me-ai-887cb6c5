@@ -35,6 +35,7 @@ import SkillGapPage from "@/pages/admin/SkillGapPage";
 import ReportsPage from "@/pages/admin/ReportsPage";
 import FutureSkillReportPage from "@/pages/admin/FutureSkillReportPage";
 import PlaceholderPage from "@/pages/admin/PlaceholderPage";
+import MeasuresPage from "@/pages/admin/MeasuresPage";
 
 // Other
 import NotFound from "@/pages/NotFound";

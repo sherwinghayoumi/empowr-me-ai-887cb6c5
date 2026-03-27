@@ -254,41 +254,35 @@ const AdminDashboard = () => {
                 </Link>
               </div>
             </CardHeader>
-            <CardContent className="pt-0">
+            <CardContent className="p-0">
               {top10.length > 0 ? (
                 <Table>
                   <TableHeader>
-                    <TableRow className="border-border/30 hover:bg-transparent">
+                    <TableRow className="border-border/50">
                       <TableHead className="text-xs">Anwalt</TableHead>
                       <TableHead className="text-xs">Rolle</TableHead>
                       <TableHead className="text-xs text-right">Gap-Score</TableHead>
-                      <TableHead className="text-xs text-right">Schwere</TableHead>
+                      <TableHead className="text-xs">Severity</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {top10.map((emp) => (
+                    {top10.map((emp, i) => (
                       <TableRow
                         key={emp.id}
-                        className="border-border/20 cursor-pointer hover:bg-muted/30"
+                        className="border-border/30 cursor-pointer hover:bg-muted/30 transition-colors duration-150 animate-fade-in-up opacity-0"
+                        style={{ animationDelay: `${i * 0.04}s` }}
                       >
-                        <TableCell className="font-medium text-sm py-3">
-                          <Link
-                            to={`/admin/employees`}
-                            className="hover:text-primary transition-colors"
-                          >
+                        <TableCell className="text-xs py-2 font-medium">
+                          <Link to="/admin/employees" className="hover:text-primary transition-colors">
                             {emp.name}
                           </Link>
                         </TableCell>
-                        <TableCell className="text-sm text-muted-foreground py-3">
-                          {emp.role || "—"}
-                        </TableCell>
-                        <TableCell
-                          className={`text-sm font-mono text-right tabular-nums py-3 ${severityClass(emp.totalGap)}`}
-                        >
+                        <TableCell className="text-xs py-2 text-muted-foreground">{emp.role || "—"}</TableCell>
+                        <TableCell className="text-xs py-2 text-right tabular-nums font-semibold severity-critical">
                           {Math.round(emp.totalGap)}
                         </TableCell>
-                        <TableCell className="text-right py-3">
-                          {severityBadge(emp.totalGap)}
+                        <TableCell className="py-2">
+                          <SeverityBadge severity={severityLevel(emp.totalGap)} />
                         </TableCell>
                       </TableRow>
                     ))}
@@ -297,13 +291,11 @@ const AdminDashboard = () => {
               ) : (
                 <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
                   <Target className="w-8 h-8 mb-2 opacity-50" />
-                  <p className="text-sm">Keine Kompetenzlücken erkannt</p>
-                  <p className="text-xs mt-1">Laden Sie Assessments hoch, um Gaps zu analysieren</p>
+                  <p className="text-xs">Keine Kompetenzlücken erkannt</p>
                 </div>
               )}
             </CardContent>
           </Card>
-        </div>
 
         {/* Gap Distribution Donut */}
         <div className="animate-fade-in-up" style={{ animationDelay: "300ms" }}>

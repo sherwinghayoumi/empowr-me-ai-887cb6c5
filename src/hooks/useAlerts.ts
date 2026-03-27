@@ -77,7 +77,7 @@ export function useAlerts() {
     if (critCurrentGaps > 0) {
       items.push({
         id: 'critical-gaps',
-        text: `${critCurrentGaps} kritische aktuelle Gap${critCurrentGaps === 1 ? '' : 's'} identifiziert`,
+        text: `${critCurrentGaps} kritische${critCurrentGaps === 1 ? 's' : ''} Entwicklungsfeld${critCurrentGaps === 1 ? '' : 'er'} identifiziert`,
         severity: 'critical',
         category: 'gap',
         link: '/admin/skill-gaps',

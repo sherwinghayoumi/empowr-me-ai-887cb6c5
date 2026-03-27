@@ -10,13 +10,14 @@ import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
+import { PracticeGroupFilter } from "@/components/PracticeGroupFilter";
 import { useEmployees } from "@/hooks/useOrgData";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import {
   AlertTriangle, TrendingUp, Users, FileQuestion,
-  Search, X, Target, Sparkles, Loader2, ShieldAlert, Clock,
+  Search, X, Target, Sparkles, Loader2, ShieldAlert, Clock, CheckCircle2,
 } from "lucide-react";
 
 interface DbEmployee {
@@ -50,13 +51,13 @@ interface GapRow {
   currentLevel: number;
   demandedLevel: number;
   futureLevel: number;
-  currentGap: number;   // demanded - current
-  futureRisk: number;   // future - current
+  currentGap: number;
+  futureRisk: number;
 }
 
 const GAP_TOLERANCE = 10;
 
-type GapTab = "current" | "future";
+type GapTab = "current" | "future" | "strengths";
 
 function getSeverity(gap: number, target: number): "kritisch" | "mittel" | "gering" {
   const ratio = target > 0 ? gap / target : 0;
@@ -76,6 +77,15 @@ const futureBadge: Record<string, string> = {
   gering: "bg-[hsl(var(--severity-low))]/15 text-[hsl(var(--severity-low))]",
 };
 
+interface StrengthRow {
+  employee: DbEmployee;
+  competencyId: string;
+  competencyName: string;
+  currentLevel: number;
+  demandedLevel: number;
+  surplus: number; // current - demanded
+}
+
 const SkillGapPage = () => {
   const { data: employees, isLoading, error } = useEmployees();
   const queryClient = useQueryClient();
@@ -84,6 +94,7 @@ const SkillGapPage = () => {
   const [filterSeverity, setFilterSeverity] = useState("all");
   const [filterEmployee, setFilterEmployee] = useState("all");
   const [filterRole, setFilterRole] = useState("all");
+  const [filterPracticeGroup, setFilterPracticeGroup] = useState("all");
   const [isGenerating, setIsGenerating] = useState(false);
   const [sortKey, setSortKey] = useState<'gap' | 'name' | 'employee'>('gap');
   const [sortAsc, setSortAsc] = useState(false);
@@ -93,6 +104,7 @@ const SkillGapPage = () => {
     if (!employees?.length) return [];
     const rows: GapRow[] = [];
     (employees as DbEmployee[]).forEach((emp) => {
+      if (filterPracticeGroup !== "all" && emp.role_profile?.practice_group !== filterPracticeGroup) return;
       (emp.competencies || []).filter(c => !c.is_deprecated).forEach((comp) => {
         if (!comp.competency) return;
         const cur = comp.current_level ?? 0;
@@ -102,33 +114,57 @@ const SkillGapPage = () => {
         const futureRisk = Math.max(0, fut - cur);
         if (currentGap >= GAP_TOLERANCE || futureRisk >= GAP_TOLERANCE) {
           rows.push({
-            employee: emp, competencyId: comp.competency.id, competencyName: comp.competency.name,
-            clusterName: comp.competency.cluster?.name || "Sonstige",
+            employee: emp, competencyId: comp.competency!.id, competencyName: comp.competency!.name,
+            clusterName: comp.competency!.cluster?.name || "Sonstige",
             currentLevel: cur, demandedLevel: dem, futureLevel: fut, currentGap, futureRisk,
           });
         }
       });
     });
     return rows;
-  }, [employees]);
+  }, [employees, filterPracticeGroup]);
+
+  // Build strengths rows (on-track or above demanded)
+  const strengthRows = useMemo<StrengthRow[]>(() => {
+    if (!employees?.length) return [];
+    const rows: StrengthRow[] = [];
+    (employees as DbEmployee[]).forEach((emp) => {
+      if (filterPracticeGroup !== "all" && emp.role_profile?.practice_group !== filterPracticeGroup) return;
+      (emp.competencies || []).filter(c => !c.is_deprecated).forEach((comp) => {
+        if (!comp.competency) return;
+        const cur = comp.current_level ?? 0;
+        const dem = comp.demanded_level ?? 0;
+        if (dem > 0 && cur >= dem) {
+          rows.push({
+            employee: emp, competencyId: comp.competency!.id, competencyName: comp.competency!.name,
+            currentLevel: cur, demandedLevel: dem, surplus: cur - dem,
+          });
+        }
+      });
+    });
+    return rows.sort((a, b) => b.surplus - a.surplus);
+  }, [employees, filterPracticeGroup]);
 
   // Split by tab
   const tabRows = useMemo(() => {
     if (tab === "current") return allRows.filter(r => r.currentGap >= GAP_TOLERANCE);
-    return allRows.filter(r => r.futureRisk >= GAP_TOLERANCE);
+    if (tab === "future") return allRows.filter(r => r.futureRisk >= GAP_TOLERANCE);
+    return [];
   }, [allRows, tab]);
 
   const uniqueEmployees = useMemo(() => {
-    const m = new Map<string,string>();
-    tabRows.forEach(g => m.set(g.employee.id, g.employee.full_name));
-    return [...m.entries()].sort(([,a],[,b]) => a.localeCompare(b));
-  }, [tabRows]);
+    const source = tab === "strengths" ? strengthRows.map(r => ({ id: r.employee.id, name: r.employee.full_name })) : tabRows.map(r => ({ id: r.employee.id, name: r.employee.full_name }));
+    const m = new Map<string, string>();
+    source.forEach(s => m.set(s.id, s.name));
+    return [...m.entries()].sort(([, a], [, b]) => a.localeCompare(b));
+  }, [tabRows, strengthRows, tab]);
 
   const uniqueRoles = useMemo(() => {
-    const m = new Map<string,string>();
-    tabRows.forEach(g => { if (g.employee.role_profile) m.set(g.employee.role_profile.id, g.employee.role_profile.role_title); });
-    return [...m.entries()].sort(([,a],[,b]) => a.localeCompare(b));
-  }, [tabRows]);
+    const source = tab === "strengths" ? strengthRows : tabRows;
+    const m = new Map<string, string>();
+    source.forEach(g => { const rp = (g as any).employee?.role_profile; if (rp) m.set(rp.id, rp.role_title); });
+    return [...m.entries()].sort(([, a], [, b]) => a.localeCompare(b));
+  }, [tabRows, strengthRows, tab]);
 
   const filteredGaps = useMemo(() => tabRows.filter(g => {
     if (searchQuery) {
@@ -152,14 +188,26 @@ const SkillGapPage = () => {
     return sortAsc ? cmp : -cmp;
   }), [tabRows, searchQuery, filterSeverity, filterEmployee, filterRole, sortKey, sortAsc, tab]);
 
+  const filteredStrengths = useMemo(() => strengthRows.filter(s => {
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      if (!s.employee.full_name.toLowerCase().includes(q) && !s.competencyName.toLowerCase().includes(q)) return false;
+    }
+    if (filterEmployee !== "all" && s.employee.id !== filterEmployee) return false;
+    if (filterRole !== "all" && s.employee.role_profile?.id !== filterRole) return false;
+    return true;
+  }), [strengthRows, searchQuery, filterEmployee, filterRole]);
+
   const hasFilters = filterSeverity !== "all" || filterEmployee !== "all" || filterRole !== "all" || searchQuery !== "";
-  const totalGaps = filteredGaps.length;
+  const totalGaps = tab === "strengths" ? filteredStrengths.length : filteredGaps.length;
   const kritischCount = filteredGaps.filter(g => {
     const gapVal = tab === "current" ? g.currentGap : g.futureRisk;
     const target = tab === "current" ? g.demandedLevel : g.futureLevel;
     return getSeverity(gapVal, target) === "kritisch";
   }).length;
-  const affectedCount = new Set(filteredGaps.map(g => g.employee.id)).size;
+  const affectedCount = new Set(
+    tab === "strengths" ? filteredStrengths.map(s => s.employee.id) : filteredGaps.map(g => g.employee.id)
+  ).size;
 
   // Counts for tab badges
   const currentCount = allRows.filter(r => r.currentGap >= GAP_TOLERANCE).length;
@@ -170,6 +218,8 @@ const SkillGapPage = () => {
     else { setSortKey(key); setSortAsc(key === 'name' || key === 'employee'); }
   };
   const sortIndicator = (key: typeof sortKey) => sortKey === key ? (sortAsc ? ' ↑' : ' ↓') : '';
+
+  const clearFilters = () => { setSearchQuery(""); setFilterSeverity("all"); setFilterEmployee("all"); setFilterRole("all"); };
 
   const handleGenerateDescriptions = async () => {
     if (!employees?.length) return;
@@ -210,7 +260,7 @@ const SkillGapPage = () => {
     return (
       <div className="p-4 space-y-4">
         <Skeleton className="h-7 w-40" />
-        <div className="grid grid-cols-3 gap-3">{[1,2,3].map(i => <Skeleton key={i} className="h-20" />)}</div>
+        <div className="grid grid-cols-3 gap-3">{[1, 2, 3].map(i => <Skeleton key={i} className="h-20" />)}</div>
         <Skeleton className="h-64 w-full" />
       </div>
     );
@@ -244,17 +294,21 @@ const SkillGapPage = () => {
   }
 
   const isCurrent = tab === "current";
+  const isStrengths = tab === "strengths";
   const badgeStyles = isCurrent ? severityBadge : futureBadge;
 
   return (
     <div className="p-4 space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between animate-fade-in">
-        <h1 className="text-lg font-semibold">Skill Gap Analyse</h1>
-        <Button variant="outline" size="sm" onClick={handleGenerateDescriptions} disabled={isGenerating} className="h-8 text-xs gap-1.5">
-          {isGenerating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
-          {isGenerating ? "Generiere..." : "Beschreibungen"}
-        </Button>
+        <h1 className="text-lg font-semibold">Kompetenz-Analyse</h1>
+        <div className="flex items-center gap-2">
+          <PracticeGroupFilter value={filterPracticeGroup} onChange={setFilterPracticeGroup} />
+          <Button variant="outline" size="sm" onClick={handleGenerateDescriptions} disabled={isGenerating} className="h-8 text-xs gap-1.5">
+            {isGenerating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
+            {isGenerating ? "Generiere..." : "Beschreibungen"}
+          </Button>
+        </div>
       </div>
 
       {/* Tabs */}
@@ -262,7 +316,7 @@ const SkillGapPage = () => {
         <TabsList className="bg-card/80 border border-border/50">
           <TabsTrigger value="current" className="text-xs gap-1.5 data-[state=active]:bg-[hsl(var(--severity-critical))]/15">
             <ShieldAlert className="w-3.5 h-3.5" />
-            Aktuelle Gaps
+            Entwicklungsfelder
             <Badge variant="outline" className="ml-1 text-[10px] px-1.5 py-0">{currentCount}</Badge>
           </TabsTrigger>
           <TabsTrigger value="future" className="text-xs gap-1.5 data-[state=active]:bg-amber-500/15">
@@ -270,34 +324,50 @@ const SkillGapPage = () => {
             Zukunftsrisiken
             <Badge variant="outline" className="ml-1 text-[10px] px-1.5 py-0">{futureCount}</Badge>
           </TabsTrigger>
+          <TabsTrigger value="strengths" className="text-xs gap-1.5 data-[state=active]:bg-[hsl(var(--severity-low))]/15">
+            <CheckCircle2 className="w-3.5 h-3.5" />
+            Stärken
+            <Badge variant="outline" className="ml-1 text-[10px] px-1.5 py-0">{strengthRows.length}</Badge>
+          </TabsTrigger>
         </TabsList>
       </Tabs>
 
       {/* KPIs */}
-      <div className="grid grid-cols-3 gap-3">
-        <KpiCard
-          label={isCurrent ? "Aktuelle Gaps" : "Zukunftsrisiken"}
-          value={totalGaps}
-          icon={isCurrent ? ShieldAlert : Clock}
-          color={isCurrent ? "text-[hsl(var(--severity-critical))]" : "text-amber-400"}
-          index={0}
-        />
-        <KpiCard label="Kritisch" value={kritischCount} icon={Target} color={isCurrent ? "text-[hsl(var(--severity-critical))]" : "text-amber-400"} index={1} />
-        <KpiCard label="Betroffene MA" value={affectedCount} icon={Users} color="text-primary" index={2} />
-      </div>
+      {!isStrengths && (
+        <div className="grid grid-cols-3 gap-3">
+          <KpiCard
+            label={isCurrent ? "Entwicklungsfelder" : "Zukunftsrisiken"}
+            value={totalGaps}
+            icon={isCurrent ? ShieldAlert : Clock}
+            color={isCurrent ? "text-[hsl(var(--severity-critical))]" : "text-amber-400"}
+            index={0}
+          />
+          <KpiCard label="Kritisch" value={kritischCount} icon={Target} color={isCurrent ? "text-[hsl(var(--severity-critical))]" : "text-amber-400"} index={1} />
+          <KpiCard label="Betroffene MA" value={affectedCount} icon={Users} color="text-primary" index={2} />
+        </div>
+      )}
+      {isStrengths && (
+        <div className="grid grid-cols-3 gap-3">
+          <KpiCard label="Stärken gesamt" value={filteredStrengths.length} icon={CheckCircle2} color="text-[hsl(var(--severity-low))]" index={0} />
+          <KpiCard label="Über Soll" value={filteredStrengths.filter(s => s.surplus > 0).length} icon={TrendingUp} color="text-[hsl(var(--severity-low))]" index={1} />
+          <KpiCard label="Mitarbeiter" value={affectedCount} icon={Users} color="text-primary" index={2} />
+        </div>
+      )}
 
       {/* Filters */}
       <div className="flex flex-wrap gap-2">
         <Input placeholder="Suchen…" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="w-48 h-8 text-xs bg-card/80 border-border/50" />
-        <Select value={filterSeverity} onValueChange={setFilterSeverity}>
-          <SelectTrigger className="w-36 h-8 text-xs bg-card/80 border-border/50"><SelectValue placeholder="Severity" /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Alle</SelectItem>
-            <SelectItem value="kritisch">Kritisch</SelectItem>
-            <SelectItem value="mittel">Mittel</SelectItem>
-            <SelectItem value="gering">Gering</SelectItem>
-          </SelectContent>
-        </Select>
+        {!isStrengths && (
+          <Select value={filterSeverity} onValueChange={setFilterSeverity}>
+            <SelectTrigger className="w-36 h-8 text-xs bg-card/80 border-border/50"><SelectValue placeholder="Severity" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Alle</SelectItem>
+              <SelectItem value="kritisch">Kritisch</SelectItem>
+              <SelectItem value="mittel">Mittel</SelectItem>
+              <SelectItem value="gering">Gering</SelectItem>
+            </SelectContent>
+          </Select>
+        )}
         <Select value={filterEmployee} onValueChange={setFilterEmployee}>
           <SelectTrigger className="w-44 h-8 text-xs bg-card/80 border-border/50"><SelectValue placeholder="Mitarbeiter" /></SelectTrigger>
           <SelectContent>
@@ -313,15 +383,14 @@ const SkillGapPage = () => {
           </SelectContent>
         </Select>
         {hasFilters && (
-          <button onClick={() => { setSearchQuery(""); setFilterSeverity("all"); setFilterEmployee("all"); setFilterRole("all"); }}
-            className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
+          <button onClick={clearFilters} className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
             <X className="w-3 h-3" />zurücksetzen
           </button>
         )}
       </div>
 
-      {/* Table */}
-      {totalGaps > 0 ? (
+      {/* Gap/Risk Table */}
+      {!isStrengths && totalGaps > 0 && (
         <Card className="bg-card/80 border-border/50">
           <CardContent className="p-0">
             <Table>
@@ -337,9 +406,9 @@ const SkillGapPage = () => {
                   <TableHead className="text-xs text-right">Ist</TableHead>
                   <TableHead className="text-xs text-right">{isCurrent ? "Soll" : "Zukunft"}</TableHead>
                   <TableHead className="text-xs text-right cursor-pointer hover:text-primary" onClick={() => toggleSort('gap')}>
-                    {isCurrent ? "Gap" : "Risiko"}{sortIndicator('gap')}
+                    {isCurrent ? "Entwicklungsfeld" : "Risiko"}{sortIndicator('gap')}
                   </TableHead>
-                  <TableHead className="text-xs">Severity</TableHead>
+                  <TableHead className="text-xs">Status</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -347,6 +416,7 @@ const SkillGapPage = () => {
                   const gapVal = isCurrent ? g.currentGap : g.futureRisk;
                   const target = isCurrent ? g.demandedLevel : g.futureLevel;
                   const sev = getSeverity(gapVal, target);
+                  const pct = target > 0 ? Math.round((g.currentLevel / target) * 100) : 0;
                   return (
                     <TableRow
                       key={`${g.employee.id}-${g.competencyId}-${tab}`}
@@ -356,8 +426,8 @@ const SkillGapPage = () => {
                       <TableCell className="text-xs py-2 font-medium">{g.employee.full_name}</TableCell>
                       <TableCell className="text-xs py-2 text-muted-foreground">{g.employee.role_profile?.role_title || '—'}</TableCell>
                       <TableCell className="text-xs py-2">{g.competencyName}</TableCell>
-                      <TableCell className="text-xs py-2 text-right tabular-nums">{g.currentLevel}%</TableCell>
-                      <TableCell className="text-xs py-2 text-right tabular-nums">{target}%</TableCell>
+                      <TableCell className="text-xs py-2 text-right tabular-nums">{g.currentLevel} von {target}</TableCell>
+                      <TableCell className="text-xs py-2 text-right tabular-nums text-muted-foreground">{pct}% erreicht</TableCell>
                       <TableCell className="text-xs py-2 text-right tabular-nums font-semibold">
                         <span className={sev === "kritisch" ? (isCurrent ? "text-[hsl(var(--severity-critical))]" : "text-amber-400") : "text-foreground"}>
                           -{gapVal}
@@ -373,16 +443,71 @@ const SkillGapPage = () => {
             </Table>
           </CardContent>
         </Card>
-      ) : (
+      )}
+
+      {/* Strengths Table */}
+      {isStrengths && filteredStrengths.length > 0 && (
         <Card className="bg-card/80 border-border/50">
-          <CardContent className="py-12 text-center">
-            <p className="text-foreground font-medium">{hasFilters ? "Keine Einträge für diese Filter" : (isCurrent ? "Keine aktuellen Gaps erkannt" : "Keine Zukunftsrisiken erkannt")}</p>
-            <p className="text-xs text-muted-foreground mt-1">{hasFilters ? "Filter anpassen." : "Alle Mitarbeiter erfüllen die Anforderungen."}</p>
+          <CardContent className="p-0">
+            <Table>
+              <TableHeader>
+                <TableRow className="border-border/50">
+                  <TableHead className="text-xs">Mitarbeiter</TableHead>
+                  <TableHead className="text-xs">Rolle</TableHead>
+                  <TableHead className="text-xs">Kompetenz</TableHead>
+                  <TableHead className="text-xs text-right">Ist</TableHead>
+                  <TableHead className="text-xs text-right">Soll</TableHead>
+                  <TableHead className="text-xs text-right">Über Soll</TableHead>
+                  <TableHead className="text-xs">Status</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredStrengths.slice(0, 100).map((s, i) => (
+                  <TableRow
+                    key={`${s.employee.id}-${s.competencyId}`}
+                    className="border-border/30 hover:bg-muted/30 animate-fade-in-up opacity-0"
+                    style={{ animationDelay: `${Math.min(i, 20) * 0.02}s` }}
+                  >
+                    <TableCell className="text-xs py-2 font-medium">{s.employee.full_name}</TableCell>
+                    <TableCell className="text-xs py-2 text-muted-foreground">{s.employee.role_profile?.role_title || '—'}</TableCell>
+                    <TableCell className="text-xs py-2">{s.competencyName}</TableCell>
+                    <TableCell className="text-xs py-2 text-right tabular-nums text-[hsl(var(--severity-low))]">{s.currentLevel}%</TableCell>
+                    <TableCell className="text-xs py-2 text-right tabular-nums">{s.demandedLevel}%</TableCell>
+                    <TableCell className="text-xs py-2 text-right tabular-nums font-semibold text-[hsl(var(--severity-low))]">
+                      +{s.surplus}
+                    </TableCell>
+                    <TableCell className="py-2">
+                      <Badge variant="outline" className="text-[10px] bg-[hsl(var(--severity-low))]/15 text-[hsl(var(--severity-low))]">
+                        {s.surplus > 0 ? "Über Soll" : "On Track"}
+                      </Badge>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           </CardContent>
         </Card>
       )}
 
-      <p className="text-xs text-muted-foreground">{totalGaps} {isCurrent ? "Gaps" : "Risiken"}{filteredGaps.length > 100 ? ` (erste 100 angezeigt)` : ''}</p>
+      {/* Empty States */}
+      {!isStrengths && totalGaps === 0 && (
+        <Card className="bg-card/80 border-border/50">
+          <CardContent className="py-12 text-center">
+            <CheckCircle2 className="w-10 h-10 text-[hsl(var(--severity-low))] mx-auto mb-3" />
+            <p className="text-foreground font-medium">{hasFilters ? "Keine Einträge für diese Filter" : "Alle Anforderungen erfüllt"}</p>
+            <p className="text-xs text-muted-foreground mt-1">{hasFilters ? "Filter anpassen." : "Alle Mitarbeiter erfüllen die aktuellen Anforderungen."}</p>
+          </CardContent>
+        </Card>
+      )}
+      {isStrengths && filteredStrengths.length === 0 && (
+        <Card className="bg-card/80 border-border/50">
+          <CardContent className="py-12 text-center">
+            <p className="text-foreground font-medium">{hasFilters ? "Keine Einträge für diese Filter" : "Keine On-Track Kompetenzen gefunden"}</p>
+          </CardContent>
+        </Card>
+      )}
+
+      <p className="text-xs text-muted-foreground">{totalGaps} {isStrengths ? "Stärken" : isCurrent ? "Entwicklungsfelder" : "Risiken"}{(tab !== "strengths" && filteredGaps.length > 100) || (tab === "strengths" && filteredStrengths.length > 100) ? ` (erste 100 angezeigt)` : ''}</p>
     </div>
   );
 };

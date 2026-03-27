@@ -17,7 +17,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
-import { X, Target, GraduationCap, Briefcase, AlertTriangle, Maximize2, ChevronDown, ChevronUp, FileUp, BookOpen, BarChart3, ArrowLeft } from "lucide-react";
+import { X, Target, GraduationCap, Briefcase, AlertTriangle, Maximize2, ChevronDown, ChevronUp, FileUp, BookOpen, BarChart3, ArrowLeft, CheckCircle2 } from "lucide-react";
 import { capLevel } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
@@ -282,7 +282,7 @@ export function EmployeeProfile({ employeeId, onClose }: EmployeeProfileProps) {
                           <TableCell className="text-xs py-1.5 text-right tabular-nums">{comp.currentLevel}%</TableCell>
                           <TableCell className="text-xs py-1.5 text-right tabular-nums">{comp.demandedLevel}%</TableCell>
                           <TableCell className="text-xs py-1.5 text-right tabular-nums font-semibold">
-                            {gap > 0 ? <span className="text-[hsl(var(--severity-critical))]">-{gap}</span> : gap === 0 ? '0' : <span className="text-[hsl(var(--severity-low))]">+{Math.abs(gap)}</span>}
+                            {gap > 0 ? <span className="text-[hsl(var(--severity-critical))]">-{gap}</span> : gap === 0 ? <span className="text-[hsl(var(--severity-low))]">On Track</span> : <span className="text-[hsl(var(--severity-low))]">+{Math.abs(gap)}</span>}
                           </TableCell>
                         </TableRow>
                       );
@@ -293,14 +293,56 @@ export function EmployeeProfile({ employeeId, onClose }: EmployeeProfileProps) {
             </Card>
           </div>
 
-          {/* Skill Gaps */}
+          {/* Strengths Section */}
+          {(() => {
+            const strengths = mappedCompetencies.filter(c => c.currentLevel >= c.demandedLevel && c.demandedLevel > 0);
+            if (strengths.length === 0) return null;
+            return (
+              <Card className="bg-card/80 border-border/50 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
+                <CardHeader className="py-3 px-4">
+                  <CardTitle className="text-sm font-medium flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-[hsl(var(--severity-low))]" />
+                    Stärken ({strengths.length})
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-0">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="border-border/50">
+                        <TableHead className="text-xs">Kompetenz</TableHead>
+                        <TableHead className="text-xs text-right">Ist</TableHead>
+                        <TableHead className="text-xs text-right">Soll</TableHead>
+                        <TableHead className="text-xs">Status</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {strengths.map(comp => (
+                        <TableRow key={comp.id} className="border-border/30 cursor-pointer hover:bg-muted/30" onClick={() => setSelectedCompetencyId(comp.id)}>
+                          <TableCell className="text-xs py-1.5 font-medium">{comp.name}</TableCell>
+                          <TableCell className="text-xs py-1.5 text-right tabular-nums text-[hsl(var(--severity-low))]">{comp.currentLevel}%</TableCell>
+                          <TableCell className="text-xs py-1.5 text-right tabular-nums">{comp.demandedLevel}%</TableCell>
+                          <TableCell className="py-1.5">
+                            <Badge variant="outline" className="text-[10px] bg-[hsl(var(--severity-low))]/15 text-[hsl(var(--severity-low))]">
+                              {comp.currentLevel > comp.demandedLevel ? "Über Soll" : "On Track"}
+                            </Badge>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+            );
+          })()}
+
+          {/* Entwicklungsfelder */}
           {skillGaps.length > 0 && (
             <Card className="bg-card/80 border-border/50 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
               <CardHeader className="py-3 px-4">
-                <CardTitle className="text-sm font-medium flex items-center gap-2">
-                  <AlertTriangle className="w-4 h-4 text-primary" />
-                  Kompetenz-Gaps ({skillGaps.length})
-                </CardTitle>
+                 <CardTitle className="text-sm font-medium flex items-center gap-2">
+                   <AlertTriangle className="w-4 h-4 text-primary" />
+                   Entwicklungsfelder ({skillGaps.length})
+                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className="grid md:grid-cols-2 gap-3">

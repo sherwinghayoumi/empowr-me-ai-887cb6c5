@@ -445,9 +445,9 @@ const AdminDashboard = () => {
               </div>
             </CardHeader>
             <CardContent>
-              {budgetPerTeam.length > 0 ? (
+              {budgetData.perTeam.length > 0 ? (
                 <ResponsiveContainer width="100%" height={220}>
-                  <BarChart data={budgetPerTeam} barGap={2}>
+                  <BarChart data={budgetData.perTeam} barGap={2}>
                     <CartesianGrid
                       strokeDasharray="3 3"
                       stroke="hsl(222 40% 20% / 0.3)"

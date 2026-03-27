@@ -136,27 +136,23 @@ export function CertificateUploadModal({
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && handleClose()}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader className="flex flex-row items-center justify-between">
-          <DialogTitle className="text-xl flex items-center gap-2">
-            📜 Zertifikat hochladen
+      <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="text-sm font-medium flex items-center gap-2">
+            <FileText className="w-4 h-4 text-primary" />
+            Zertifikat hochladen
           </DialogTitle>
-          <Button variant="ghost" size="icon" onClick={handleClose}>
-            <X className="w-4 h-4" />
-          </Button>
         </DialogHeader>
 
-        <div className="space-y-6 py-4">
+        <div className="space-y-4">
           {/* Upload Dropzone */}
           <div
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
             className={cn(
-              "relative border-2 border-dashed rounded-xl p-8 text-center transition-all cursor-pointer",
-              isDragOver
-                ? "border-primary bg-primary/5"
-                : "border-border hover:border-primary/50 hover:bg-secondary/30",
+              "relative border-2 border-dashed rounded-lg p-6 text-center transition-all cursor-pointer",
+              isDragOver ? "border-primary bg-primary/5" : "border-border/50 hover:border-primary/50",
               file && "border-primary/50 bg-primary/5"
             )}
           >

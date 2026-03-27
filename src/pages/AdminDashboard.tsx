@@ -220,17 +220,15 @@ const AdminDashboard = () => {
     },
     {
       label: "Budget verbraucht",
-      value: "—",
+      value: budgetData.utilization,
       icon: Wallet,
-      color: "text-muted-foreground",
-      sublabel: "ab Schritt 4",
+      color: budgetData.utilization !== "—" ? "text-primary" : "text-muted-foreground",
     },
     {
       label: "€ / Kompetenzpunkt",
-      value: "—",
+      value: budgetData.costPerPoint !== null ? `${budgetData.costPerPoint.toLocaleString("de-DE")} €` : "—",
       icon: Target,
-      color: "text-muted-foreground",
-      sublabel: "ab Schritt 4",
+      color: budgetData.costPerPoint !== null ? "text-primary" : "text-muted-foreground",
     },
   ];
 
